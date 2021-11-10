@@ -112,9 +112,9 @@ void MeanFieldAnsatz::set_hamiltonian() {
 			tb_pair.get_sites(&row, &col);
 			if (row <= col) {
 				tb_pair.get_couplings(&tzr, &tzi, &txyr, &txyi);
-				HMF[row*dim + col] -= { txyr, txyi };
-				HMF[(row + N)*dim + col + N] -= { tzr, tzi };
-				HMF[(row + 2 * N)*dim + col + 2 * N] -= { txyr, txyi };
+				HMF[row*dim + col] -= std::complex<double>(txyr, txyi);
+				HMF[(row + N)*dim + col + N] -= std::complex<double>(tzr, tzi);
+				HMF[(row + 2 * N)*dim + col + 2 * N] -= std::complex<double>(txyr,txyi);
 			}
 		}
 	}

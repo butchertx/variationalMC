@@ -1,5 +1,4 @@
 #include "vmc_io.h"
-#include <direct.h>
 
 //------------------------------------------
 //	Forward Declarations

@@ -6,7 +6,11 @@
 #include <string>
 #include "json.hpp"
 #include "vmctype.h"
-#include <direct.h>
+#include <sys/stat.h> // stat
+#include <errno.h>    // errno, ENOENT, EEXIST
+#if defined(_WIN32)
+    #include <direct.h> //mkdir
+#endif
 
 // for convenience
 using json = nlohmann::json;

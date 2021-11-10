@@ -207,9 +207,9 @@ void ProjectedState::upinvhop2(int rowk, int colk, int rowl, int coll) {
 	cblas_zcopy(N3, &(Winv[coll]), N, &(UP1[1]), 2);
 	//print_matrix("UP1", 3 * N, 2, UP1, 2);
 	cblas_zcopy(N, &(Winv[rowk*N]), 1, UP2, 1);
-	UP2[colk] -= {1.0, 0.0};
+	UP2[colk] -= std::complex<double>(1.0, 0.0);
 	cblas_zcopy(N, &(Winv[rowl*N]), 1, &(UP2[N]), 1);
-	UP2[N + coll] -= {1.0, 0.0};
+	UP2[N + coll] -= std::complex<double>(1.0, 0.0);
 
 	g = std::complex<double>({ -1.0, 0.0 }) / g;
 

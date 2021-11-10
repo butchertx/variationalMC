@@ -8,7 +8,7 @@
 #ifndef MKL_Complex16
 #define MKL_Complex16 std::complex<double>
 #endif // !MKL_Complex16
-#include "mkl.h" // "C:\Program Files (x86)\Intel\oneAPI\mkl\2021.1.1\include\mkl.h"
+#include "mkl.h"
 #include <assert.h>
 #include "vmctype.h"
 
