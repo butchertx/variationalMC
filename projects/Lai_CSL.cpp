@@ -1,14 +1,14 @@
 #include <complex>
-#include "vmctype.h"
-#include "vmc_io.h"
-#include "MemTimeTester.h"
-#include "Lattice.h"
-#include "MeanFieldAnsatz.h"
-#include "RandomEngine.h"
-#include "Wavefunction.h"
-#include "ProjectedState.h"
-#include "SpinModel.h"
-#include "VariationalMonteCarlo.h"
+#include "../src/vmctype.h"
+#include "../src/vmc_io.h"
+#include "../src/MemTimeTester.h"
+#include "../src/Lattice.h"
+#include "../src/MeanFieldAnsatz.h"
+#include "../src/RandomEngine.h"
+#include "../src/Wavefunction.h"
+#include "../src/ProjectedState.h"
+#include "../src/SpinModel.h"
+#include "../src/VariationalMonteCarlo.h"
 //#ifndef MKL_Complex16
 //#define MKL_Complex16 std::complex<double>
 //#endif // !MKL_Complex16
@@ -33,20 +33,31 @@ MemTimeTester timer;
 //read model params
 
 int main(int argc, char* argv[]) {
-    std::cout << "Triangle SU(3) calculation\n";
     timer.flag_start_time("Total Program Time");
-    std::string infile_name = "C:\\Users\\Matthew\\Documents\\Repos\\vmc\\input\\triangle_su3\\csl_pi3.json";
+    std::string infile_name;
+    if(argc == 1){
+        std::cout << "Mandatory command line argument: <input_filename>\n";
+        std::cout << "Exiting...";
+        return 0;
+    }
+    else{
+        infile_name = argv[1];
+        std::cout << "Using input file: " << infile_name << "\n";
+
+    }
     int steps = 10, measures = 10000, throwaway = 100;
 
     lattice_options lat_options = read_json_lattice(infile_name);
     Lattice lattice(Lattice_type_from_string(lat_options.type), vec3<int>(lat_options.L), vec3<int>(lat_options.pbc));
+
+    makePath("./data");
     std::ofstream neighborfile;
-    neighborfile.open("C:\\Users\\Matthew\\Documents\\Repos\\vmc\\output\\neighbors.txt");
+    neighborfile.open("data/neighbors.txt");
     lattice.print_neighbors(&neighborfile);
     neighborfile.close();
 
     std::ofstream ringfile;
-    ringfile.open("C:\\Users\\Matthew\\Documents\\Repos\\vmc\\output\\rings.txt");
+    ringfile.open("data/rings.txt");
     lattice.print_rings(&ringfile);
     ringfile.close();
     lattice.print_timers();
@@ -77,7 +88,6 @@ int main(int argc, char* argv[]) {
     //}
 
     //std::ofstream file;
-    //file.open("C:\\Users\\Matthew\\Dropbox\\Projects\\SU(3) Simplex Solid\\Data\\phase_diagram_3-29-20\\e_vs_t2_flux_equal\\results.dat");
     //file << "K, h, t2, E_real, E_imag, err_real, err_imag\n";
     //for (int i = 0; i < 2*num_t2; ++i) {
     //    file << k_list[i] << ", " << h_list[i] << ", " << t2_list[i] << ", " << e_list[i].real() << ", " << e_list[i].imag() << ", " << err_list[i].real() << ", " << err_list[i].imag() << "\n";
