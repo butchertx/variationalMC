@@ -1,6 +1,7 @@
 #pragma once
 #include <math.h>
 #include <vector>
+#include <map>
 #include <string>
 #include <iostream>
 #include <assert.h>
@@ -22,25 +23,21 @@ public:
 };
 
 class Interaction {
-	//has a coupling and an action on a basis state (multiplied from the left) (Use Ising basis for now)
+	//has an action on a basis state with a multiplier, diagonal, and off-diagonal elements (multiplied from the left) (Use Ising basis)
 protected:
 
-	std::complex<double> coupling;
+	double coefficient; // coefficient for a hamiltonian or group of operators in an order parameter
 
 	FlipList flip_buffer;
 
 public:
-	Interaction(std::complex<double> coupling_in) : coupling(coupling_in) {}
+	Interaction(double coefficient_) : coefficient(coefficient_) {};
 
 	virtual std::complex<double> diag(const std::vector<int>& state) = 0;
 
 	virtual FlipList off_diag(const std::vector<int>& state) = 0;
 
 	virtual void print_info(const std::vector<int>& state) = 0;
-
-	std::complex<double> get_coupling() {
-		return coupling;
-	}
 
 
 };
@@ -51,9 +48,9 @@ class SwapExchange : public Interaction {
 
 public:
 
-	SwapExchange(std::complex<double> coupling_in, int i_in, int j_in)
-		: Interaction(coupling_in), i(i_in), j(j_in) {
-		flip_buffer.multipliers.push_back(coupling);
+	SwapExchange(int i_in, int j_in, double coefficient_)
+		: Interaction(coefficient), i(i_in), j(j_in) {
+		flip_buffer.multipliers.push_back(coefficient_);
 		flip_buffer.flips.push_back({ i,j });
 		flip_buffer.new_sz.push_back({ 0, 0 });
 	};
@@ -86,10 +83,10 @@ class HeisenbergExchange : public Interaction {
 
 public:
 
-	HeisenbergExchange(std::complex<double> coupling_in, int i_in, int j_in, double S_in)
-		: Interaction(coupling_in), i(i_in), j(j_in), S(S_in) {
-		flip_buffer.multipliers.push_back(coupling / 2.0);
-		flip_buffer.multipliers.push_back(coupling / 2.0);
+	HeisenbergExchange(int i_in, int j_in, double S_in, double coefficient_)
+		: Interaction(coefficient_), i(i_in), j(j_in), S(S_in) {
+		flip_buffer.multipliers.push_back(0.5 * coefficient_);
+		flip_buffer.multipliers.push_back(0.5 * coefficient_);
 		flip_buffer.flips.push_back({ i, j });
 		flip_buffer.flips.push_back({ i, j });
 		flip_buffer.new_sz.push_back({ 0, 0 });
@@ -97,19 +94,19 @@ public:
 	};
 
 	std::complex<double> diag(const std::vector<int>& state) {
-		return 0.5 * coupling.real() * S * S * state[i] * state[j];
+		return 0.5 * coefficient * S * S * state[i] * state[j];
 	}
 
 	FlipList off_diag(const std::vector<int>& state) {
 		flip_buffer.multipliers[0] = std::complex<double>{ 0.0, 0.0 };
 		flip_buffer.multipliers[1] = std::complex<double>{ 0.0, 0.0 };
 		if (state[i] != -S && state[j] != S) {
-			flip_buffer.multipliers[0] = coupling / 2.0;
+			flip_buffer.multipliers[0] = 0.5 * coefficient;
 			flip_buffer.new_sz[0][0] = state[i] - 1;
 			flip_buffer.new_sz[0][1] = state[j] + 1;
 		}
 		if (state[i] != S && state[j] != -S) {
-			flip_buffer.multipliers[0] = coupling / 2.0;
+			flip_buffer.multipliers[0] = 0.5 * coefficient;
 			flip_buffer.new_sz[0][0] = state[i] + 1;
 			flip_buffer.new_sz[0][1] = state[j] - 1;
 		}
@@ -138,8 +135,8 @@ class RingExchange : public Interaction {
 
 public:
 
-	RingExchange(std::complex<double> coupling_in, RingList& r, int tri_label_in, bool CC_in) 
-		: Interaction(coupling_in), tri_label(tri_label_in), CC(CC_in){
+	RingExchange( RingList& r, int tri_label_in, bool CC_in, double coefficient_)
+		: Interaction(coefficient_), tri_label(tri_label_in), CC(CC_in){
 		std::vector<int> sites = r.get_ring(tri_label);
 		if (!CC) {
 			i = sites[0];
@@ -151,7 +148,7 @@ public:
 			k = sites[1];
 			j = sites[2];
 		}
-		flip_buffer.multipliers.push_back(coupling);
+		flip_buffer.multipliers.push_back(coefficient_);
 		flip_buffer.flips.push_back({ i,j,k });
 		flip_buffer.new_sz.push_back({ 0, 0, 0 });
 	}
@@ -250,12 +247,16 @@ public:
 //	void print_info(std::vector<int>& state);
 //};
 
-class SpinModel {
+class Observable {
+
+	std::string name;
 	//List of interactions
 	std::vector<Interaction*> interactions;
 
 public:
-	SpinModel() {};
+	Observable(std::string name_) : name(name_) {};
+
+	Observable() {};
 
 	void add_interaction(Interaction * interaction_in) {
 		interactions.push_back(interaction_in);
@@ -267,5 +268,36 @@ public:
 
 	std::vector<Interaction*>& get() {
 		return interactions;
+	}
+};
+
+class SpinModel {
+
+	// map of names to observables that add up to get the energy
+	std::map<std::string, Observable> terms;
+	std::map<std::string, std::complex<double>> couplings;
+
+public:
+	SpinModel() {};
+
+	void add_term(std::string name_in, Observable term_in, std::complex<double> coupling_in) {
+		terms.insert_or_assign(name_in, term_in);
+		couplings.insert_or_assign(name_in, coupling_in);
+	}
+
+	std::vector<std::string> get_terms() {
+		std::vector<std::string> term_names;
+		for (std::map<std::string, Observable>::iterator it = terms.begin(); it != terms.end(); ++it) {
+			term_names.push_back(it->first);
+		}
+		return term_names;
+	}
+
+	std::vector<Interaction*>& get_interactions(std::string name_in) {
+		return terms[name_in].get();
+	}
+
+	std::complex<double> get_coupling(std::string name_in) {
+		return couplings[name_in];
 	}
 };

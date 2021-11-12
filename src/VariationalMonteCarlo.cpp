@@ -1,6 +1,23 @@
 #include "VariationalMonteCarlo.h"
 #include <exception>
 
+std::vector<double> vec_r(std::vector<std::complex<double>> cvec) {
+	std::vector<double> result;
+	for (auto c : cvec) {
+		result.push_back(c.real());
+	}
+	return result;
+}
+
+std::vector<double> vec_i(std::vector<std::complex<double>> cvec) {
+	std::vector<double> result;
+	for (auto c : cvec) {
+		result.push_back(c.imag());
+	}
+	return result;
+}
+
+
 //void MonteCarloEngine::step_su2(std::string step_type) {
 //	
 //	//Propose move
@@ -263,28 +280,30 @@ void MonteCarloEngine::step_su3(int num_site) {
 
 void MonteCarloEngine::measure_energy() {
 
-	std::complex<double> energy = (0.0, 0.0);
+	std::complex<double> energy = (0.0, 0.0), temp_O_val = (0.0, 0.0),  temp_E_val = (0.0, 0.0);
 
 	FlipList f;
-	std::vector<int> affected_rings(4);
-	std::vector<int> affected_sites(12);
 
 	//Run over all interactions in model
-	for (auto interaction = H.get().begin(); interaction != H.get().end(); ++interaction) {
+	for (std::string term_name : H.get_terms()) {
+		temp_O_val = std::complex<double>(0.0, 0.0);
+		for (auto interaction = H.get_interactions(term_name).begin(); interaction != H.get_interactions(term_name).end(); ++interaction) {
 
-		energy += (*interaction)->diag(WF.conf_ref());
+			temp_E_val = (*interaction)->diag(WF.conf_ref());
+			temp_O_val += temp_E_val;
+			energy += H.get_coupling(term_name) * temp_E_val;
 
-		//get flips
-		f = (*interaction)->off_diag(WF.conf_ref());
+			//get flips
+			f = (*interaction)->off_diag(WF.conf_ref());
 
-		//iterate through flips
-		for (int i = 0; i < f.multipliers.size(); ++i) {
-			energy += f.multipliers[i] * WF.psi_over_psi(f.flips[i], f.new_sz[i]);
+			//iterate through flips
+			for (int i = 0; i < f.multipliers.size(); ++i) {
+				temp_E_val = f.multipliers[i] * WF.psi_over_psi(f.flips[i], f.new_sz[i]);
+				temp_O_val += temp_E_val;
+				energy += H.get_coupling(term_name) * temp_E_val;
+			}
 		}
-		//std::cout << "Spot check: Interaction output: \n";
-		//(*interaction)->print_info(conf.ref());
-		//std::cout << "Energy result of first flip = " << f.multipliers[0] * WF.psi_over_psi(conf.ref(), f.flips[0], f.new_sz[0]) << "\n";
-
+		observable_measures[term_name].push_back((1.0 / (lat.get_N())) * temp_O_val);
 	}
 	//if (std::abs(energy.imag()) > 1e-8) {
 	//	std::cout << "Imaginary Energy: " << std::abs(energy.imag()) << "\n";
