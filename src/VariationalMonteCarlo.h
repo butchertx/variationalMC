@@ -12,6 +12,10 @@
 #include <iostream>
 #include "vmctype.h"
 
+std::vector<double> vec_r(std::vector<std::complex<double>> cvec);
+
+std::vector<double> vec_i(std::vector<std::complex<double>> cvec); 
+
 class Lattice;
 
 class MonteCarloEngine {
@@ -33,6 +37,8 @@ class MonteCarloEngine {
 
 	VMCParams params;
 
+	std::map<std::string, std::vector<std::complex<double>>> observable_measures;
+
 	//void step_su2(std::string step_type);
 	void step_su3(int num_swap);
 
@@ -46,6 +52,10 @@ public:
 	
 	MonteCarloEngine(SpinModel& H_in, Wavefunction& WF_in, Lattice& lat_in, RandomEngine& rand_in, VMCParams params_in)
 		: H(H_in), WF(WF_in), lat(lat_in), rand(rand_in), params(params_in) {
+
+		for (std::string term_name : H.get_terms()) {
+			observable_measures.insert(std::pair<std::string, std::vector<std::complex<double>>> (term_name, std::vector<std::complex<double>>({})));
+		}
 	}
 
 	void run() {
@@ -157,12 +167,31 @@ public:
 		return e_avg;
 	}
 
-	std::complex<double> get_err() {
+	std::complex<double> get_observable(std::string term) {
+		std::vector<std::complex<double>> vals = observable_measures[term];
+		std::complex<double> O_avg(0.0, 0.0);
+		for (auto v = vals.begin() + params.throwaway_measures; v != vals.end(); ++v) {
+			O_avg += *v;
+		}
+		return std::complex<double>(O_avg.real() / (vals.size() - params.throwaway_measures), O_avg.imag() / (vals.size() - params.throwaway_measures));
+	}
+
+	std::complex<double> get_energy_err() {
 		double var_r, var_i;
 		std::complex<double> e_avg;
 		e_avg = get_energy();
 		var_r = error(E.begin() + params.throwaway_measures, E.end(), get_energy().real(), 10);
 		var_i = error(E_imag.begin() + params.throwaway_measures, E_imag.end(), get_energy().imag(), 10);
+		return { var_r, var_i };
+	}
+
+	std::complex<double> get_observable_err(std::string term) {
+		double var_r, var_i;
+		std::vector<std::complex<double>> vals = observable_measures[term];
+		std::vector<double> vals_r = vec_r(vals), vals_i = vec_i(vals);
+		std::complex<double> O_avg = get_observable(term);
+		var_r = error(vals_r.begin() + params.throwaway_measures, vals_r.end(), O_avg.real(), 10);
+		var_i = error(vals_i.begin() + params.throwaway_measures, vals_i.end(), O_avg.imag(), 10);
 		return { var_r, var_i };
 	}
 
