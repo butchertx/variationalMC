@@ -311,8 +311,8 @@ void MonteCarloEngine::measure_energy() {
 	//}
 
 	//std::cout << energy.real() / (2 * lat.get_N()) << "\n";
-	E.push_back(energy.real() / (lat.get_N()));
-	E_imag.push_back(energy.imag() / lat.get_N());
+	E.push_back((energy.real() + H.get_E0().real()) / (lat.get_N()));
+	E_imag.push_back((energy.imag() + H.get_E0().imag()) / lat.get_N());
 }
 
 //find the error via the bin technique using a specified number of bins

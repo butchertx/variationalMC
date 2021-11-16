@@ -138,14 +138,17 @@ SpinModel create_Hamiltonian(Lattice l, double J, double K) {
 
     //2-site exchanges
     Observable p12("SU(3) Exchange");
+    std::complex<double> E0 = { 0.0, 0.0 };
     for (int i = 0; i < l.get_N(); ++i) {
         nei = l.get_neighbors(i, 0);
         for (int n = 0; n < nei.size(); ++n) {
             auto* I0 = new SwapExchange(i, nei[n], 0.5);
             p12.add_interaction(I0);
+            E0 += { 0.5*K, 0.0 };
         }
     }
     ham.add_term("SU(3) Exchange", p12, { K, 0.0 });
+    ham.add_constant(E0);
 
     return ham;
 }

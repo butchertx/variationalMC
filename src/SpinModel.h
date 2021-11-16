@@ -84,8 +84,8 @@ public:
 
 	HeisenbergExchange(int i_in, int j_in, double S_in, double coefficient_)
 		: Interaction(coefficient_), i(i_in), j(j_in), S(S_in) {
-		flip_buffer.multipliers.push_back(0.5 * coefficient_);
-		flip_buffer.multipliers.push_back(0.5 * coefficient_);
+		flip_buffer.multipliers.push_back(coefficient_);
+		flip_buffer.multipliers.push_back(coefficient_);
 		flip_buffer.flips.push_back({ i, j });
 		flip_buffer.flips.push_back({ i, j });
 		flip_buffer.new_sz.push_back({ 0, 0 });
@@ -93,19 +93,19 @@ public:
 	};
 
 	std::complex<double> diag(const std::vector<int>& state) {
-		return 0.5 * coefficient * S * S * state[i] * state[j];
+		return coefficient * S * S * state[i] * state[j];
 	}
 
 	FlipList off_diag(const std::vector<int>& state) {
 		flip_buffer.multipliers[0] = std::complex<double>{ 0.0, 0.0 };
 		flip_buffer.multipliers[1] = std::complex<double>{ 0.0, 0.0 };
 		if (state[i] != -S && state[j] != S) {
-			flip_buffer.multipliers[0] = 0.5 * coefficient;
+			flip_buffer.multipliers[0] = coefficient;
 			flip_buffer.new_sz[0][0] = state[i] - 1;
 			flip_buffer.new_sz[0][1] = state[j] + 1;
 		}
 		if (state[i] != S && state[j] != -S) {
-			flip_buffer.multipliers[1] = 0.5 * coefficient;
+			flip_buffer.multipliers[1] = coefficient;
 			flip_buffer.new_sz[1][0] = state[i] + 1;
 			flip_buffer.new_sz[1][1] = state[j] - 1;
 		}
@@ -275,6 +275,7 @@ class SpinModel {
 	// map of names to observables that add up to get the energy
 	std::map<std::string, Observable> terms;
 	std::map<std::string, std::complex<double>> couplings;
+	std::complex<double> E0;
 
 public:
 	SpinModel() {};
@@ -282,6 +283,14 @@ public:
 	void add_term(std::string name_in, Observable term_in, std::complex<double> coupling_in) {
 		terms.insert_or_assign(name_in, term_in);
 		couplings.insert_or_assign(name_in, coupling_in);
+	}
+
+	void add_constant(std::complex<double> E0) {
+		this->E0 = E0;
+	}
+
+	std::complex<double> get_E0() {
+		return E0;
 	}
 
 	std::vector<std::string> get_terms() {
