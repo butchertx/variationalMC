@@ -134,6 +134,7 @@ public:
 
 class MeanFieldAnsatz {
 
+	bool su3_symmetry;
 	int N, info, n0_F, fermi_surface_start, fermi_surface_end;
 	double field;
 	lapack_complex_double *HMF, *Phi; // , * Pair_Eig, * PhiR;
@@ -210,6 +211,7 @@ public:
 
 	void print_levels();
 	void print_fermi_level();
+	void print_directors(std::ofstream* f);
 	void set_fermi_surface();
 
 	void shuffle_FS(int n0, int n1, RandomEngine* rand);
@@ -223,7 +225,13 @@ public:
 	}
 
 	int get_N0F() {
-		return n0_F;
+		if (su3_symmetry) {
+			assert(3 * (N / 3) == N);
+			return N/3;
+		}
+		else {
+			return n0_F;
+		}
 	}
 
 	int get_fermi_surface_start() {

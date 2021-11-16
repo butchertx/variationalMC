@@ -1,0 +1,67 @@
+{
+  "lattice": {
+    "type": "square",
+    "L": [ 6, 6, 1 ],
+    "dimension": 2,
+    "pbc": [ 1, 1, 1 ]
+  },
+  "wavefunction": {
+    "wavefunction type": "meanfield",
+    "lattice type": "square",
+    "inequivalent sites": 1,
+    "basis": [
+      [ 0, 0, 0 ]
+    ],
+    "spin": 1,
+    "match lattice pbc": true,
+    "su3_symmetry": false,
+    "num hop": 1,
+    "field": 1.0,
+    "num spin-orbit": 0,
+    "hopping terms": [
+      {
+        "spin row": 0,
+        "strength": -0.0,
+        "distance": 0,
+        "origins": [ 0, 0],
+        "neighbor index": [ 0, 1],
+        "phases": [ 0, 0]
+      },
+      {
+        "spin row": 1,
+        "strength": -0.0,
+        "distance": 0,
+        "origins": [ 0, 0 ],
+        "neighbor index": [ 0, 1 ],
+        "phases": [ 0, 0 ]
+      }
+    ],
+    "directors": {
+      "u_r_theta_phi": [
+        [ 1.0, 0, 0 ]
+      ],
+      "v_r_theta_phi": [
+        [ 1.0, 90, 0 ]
+      ],
+      "Qthetau": [ 0, 0, 0 ],
+      "Qphiu": [ 3.14159265359, 0, 0 ],
+      "Qthetav": [ 0, 0, 0 ],
+      "Qphiv": [ 3.14159265359, 0, 0 ]
+    }
+  },
+  "model": {
+    "interactions": {
+      "H1": {
+        "type": "su3 ring exchange",
+        "coupling": 1.0,
+        "theta": 0.0
+      }
+    },
+    "match lattice pbc": true
+  },
+  "vmc": {
+    "steps": 10,
+    "measures": 10000,
+    "throwaway": 100
+  }
+}

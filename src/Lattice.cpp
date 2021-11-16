@@ -43,6 +43,9 @@ Lattice_type_t Lattice_type_from_string(std::string str) {
 	else if (str.compare("kagome") == 0) {
 		return KAGOME;
 	}
+	else if (str.compare("square") == 0) {
+		return SQUARE;
+	}
 	else if (str.compare("diamond conventional cell") == 0) {
 		return DIAMONDCC;
 	}
@@ -105,6 +108,11 @@ Lattice::Lattice(Lattice_type_t lat_type_in, vec3<int> L_in, vec3<int> pbc_in)
 		basis.push_back(vec3<double>(a_const/2, 0.0, 0.0));
 		basis.push_back(vec3<double>(a_const/4, a_const*sqrt(3)/4, 0.0));
 		a = vec3<vec3<double>>(vec3<double>(a_const, 0.0, 0.0), vec3<double>(a_const/2, a_const*sqrt(3)/2, 0.0), vec3<double>(0.0, 0.0, a_const));
+		break;
+	case SQUARE:
+		basis.push_back(vec3<double>(0.0, 0.0, 0.0));
+		a_const = 1.0;
+		a = vec3<vec3<double>>(vec3<double>(a_const, 0.0, 0.0), vec3<double>(0.0, a_const, 0.0), vec3<double>(0.0, 0.0, a_const));
 		break;
 	case CUBIC:
 		basis.push_back(vec3<double>(0.0, 0.0, 0.0));

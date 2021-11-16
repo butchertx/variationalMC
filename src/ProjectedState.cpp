@@ -135,7 +135,9 @@ void ProjectedState::update(int site1, int site2, std::complex<double> psioverps
 }
 
 bool ProjectedState::try_configuration() {
-	set_configuration(rand.get_rand_spin_state(std::vector<int>{ N / 3, N / 3, N / 3 }, N));
+	int N0 = ansatz.get_N0F();
+	assert(2 * (N - N0) / 2 == N - N0);
+	set_configuration(rand.get_rand_spin_state(std::vector<int>{ (N - N0) / 2, N0, (N - N0) / 2 }, N));
 	
 	CBLAS_INDEX low = 0;
 	low = cblas_izamin(N, LU, N+1);

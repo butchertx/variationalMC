@@ -77,7 +77,6 @@ public:
 };
 
 class HeisenbergExchange : public Interaction {
-	//have to add both sites, only implemented Si+Sj-
 	int i, j;
 	double S;
 
@@ -106,9 +105,9 @@ public:
 			flip_buffer.new_sz[0][1] = state[j] + 1;
 		}
 		if (state[i] != S && state[j] != -S) {
-			flip_buffer.multipliers[0] = 0.5 * coefficient;
-			flip_buffer.new_sz[0][0] = state[i] + 1;
-			flip_buffer.new_sz[0][1] = state[j] - 1;
+			flip_buffer.multipliers[1] = 0.5 * coefficient;
+			flip_buffer.new_sz[1][0] = state[i] + 1;
+			flip_buffer.new_sz[1][1] = state[j] - 1;
 		}
 
 		return flip_buffer;

@@ -171,6 +171,9 @@ namespace vmctype {
 			theta_v = M_PI / 180.0 * (unit_cell_v_polar[uc_idx].y) + Q_t_v * position;
 			phi_v = M_PI / 180.0 * (unit_cell_v_polar[uc_idx].z) + Q_p_v * position;
 
+			double norm = r_u * r_u + r_v * r_v;
+			r_u = r_u / sqrt(norm);
+			r_v = r_v / sqrt(norm);
 			return vec3<std::complex<double>>({ r_u * cos(phi_u) * sin(theta_u), r_v * cos(phi_v) * sin(theta_v) },
 				{ r_u * sin(phi_u) * sin(theta_u), r_v * sin(phi_v) * sin(theta_v) },
 				{ r_u * cos(theta_u), r_v * cos(theta_v) });

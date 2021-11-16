@@ -44,7 +44,7 @@ void TightBindingSitePair::get_couplings(double * tzr, double * tzi, double * tx
 //	}
 //}
 
-MeanFieldAnsatz::MeanFieldAnsatz(mean_field_options& mf_in, Lattice& lat_in, bool unit_cell_construction) : N(lat_in.get_N()) {
+MeanFieldAnsatz::MeanFieldAnsatz(mean_field_options& mf_in, Lattice& lat_in, bool unit_cell_construction) : N(lat_in.get_N()), su3_symmetry(mf_in.su3_symmetry) {
 
 	//compatibility conditions:
 	//1.  Lattice types are the same
@@ -357,5 +357,14 @@ void MeanFieldAnsatz::shuffle_FS(int n0, int n1, RandomEngine* rand) {
 
 
 		mkl_free(fs_temp_matrix);
+	}
+}
+
+
+void MeanFieldAnsatz::print_directors(std::ofstream* f) {
+	*f << "site, ux, uy, uz, vx, vy, vz\n";
+	for (auto site = 0; site < directors.size(); ++site) {
+		*f << site << ", " << directors[site].x.real() << ", " << directors[site].y.real() << ", " << directors[site].z.real() << ", ";
+		*f << directors[site].x.imag() << ", " << directors[site].y.imag() << ", " << directors[site].z.imag() << "\n";
 	}
 }
