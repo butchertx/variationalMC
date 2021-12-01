@@ -3,13 +3,15 @@
     "type": "triangle",
     "L": [ 12, 12, 1 ],
     "dimension": 2,
-    "pbc": [ 1, 1, 1 ]
+    "pbc": [ -1, 1, 1 ]
   },
   "wavefunction": {
     "wavefunction type": "meanfield",
     "lattice type": "triangle",
-    "inequivalent sites": 3,
-    "basis": [ [ 0, 0, 0 ], [ 0, 1, 0 ], [ 0, 2, 0 ] ],
+    "inequivalent sites": 1,
+    "basis": [
+      [ 0, 0, 0 ]
+    ],
     "spin": 1,
     "match lattice pbc": true,
     "su3_symmetry":  true,
@@ -21,28 +23,24 @@
         "spin row": 0,
         "strength": -1.0,
         "distance": 0,
-        "origins": [ 0, 0, 0, 1, 1, 1, 2, 2, 2 ],
-        "neighbor index": [ 0, 1, 2, 0, 1, 2, 0, 1, 2 ],
-        "phases": [ 120, 0, 180, -120, 0, 60, 0, 0, -60 ]
+        "origins": [ 0, 0, 0],
+        "neighbor index": [ 0, 1, 2],
+        "phases": [ 0, 0, 0 ]
       },
       {
         "spin row": 1,
         "strength": -1.0,
         "distance": 0,
-        "origins": [ 0, 0, 0, 1, 1, 1, 2, 2, 2 ],
-        "neighbor index": [ 0, 1, 2, 0, 1, 2, 0, 1, 2 ],
-        "phases": [ 120, 0, 180, -120, 0, 60, 0, 0, -60 ]
+        "origins": [ 0, 0, 0 ],
+        "neighbor index": [ 0, 1, 2 ],
+        "phases": [ 0, 0, 0 ]
       }
     ],
     "directors": {
       "u_r_theta_phi": [
-        [ 1.0, 54.7356103, 0 ],
-        [ 1.0, 54.7356103, 120 ],
-        [ 1.0, 54.7356103, 240 ]
+        [ 1.0, 54.7356103, 0 ]
       ],
       "v_r_theta_phi": [
-        [ 0, 0, 0 ],
-        [ 0, 0, 0 ],
         [ 0, 0, 0 ]
       ],
       "Qthetau": [ 0, 0, 0 ],

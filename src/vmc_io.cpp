@@ -98,15 +98,28 @@ mean_field_options read_json_wavefunction(json j) {
 	mean_field_options wf_opt;
 	wf_opt.lattice_type = j["wavefunction"]["lattice type"].get<std::string>();
 	wf_opt.wf_type = j["wavefunction"]["wavefunction type"].get<std::string>();
-	wf_opt.basis = j["wavefunction"]["basis"].get<std::vector<vec3<int>>>();
-	wf_opt.inequivalent_sites = j["wavefunction"]["inequivalent sites"];
-	wf_opt.spin = j["wavefunction"]["spin"];
-	wf_opt.field = j["wavefunction"]["field"];
-	wf_opt.num_spin_orbit = j["wavefunction"]["num spin-orbit"];
-	wf_opt.match_lattice_pbc = j["wavefunction"]["match lattice pbc"];
-	wf_opt.su3_symmetry = j["wavefunction"]["su3_symmetry"];
-	wf_opt.hopping_list = j["wavefunction"]["hopping terms"].get<std::vector<HoppingTerm>>();
-	wf_opt.directors = j["wavefunction"]["directors"].get<QuadrupoleOrder>();
+
+	if (wf_opt.wf_type == "meanfield") {
+		wf_opt.basis = j["wavefunction"]["basis"].get<std::vector<vec3<int>>>();
+		wf_opt.inequivalent_sites = j["wavefunction"]["inequivalent sites"];
+		wf_opt.spin = j["wavefunction"]["spin"];
+		wf_opt.field = j["wavefunction"]["field"];
+		wf_opt.num_spin_orbit = j["wavefunction"]["num spin-orbit"];
+		wf_opt.match_lattice_pbc = j["wavefunction"]["match lattice pbc"];
+		wf_opt.su3_symmetry = j["wavefunction"]["su3_symmetry"];
+		wf_opt.hopping_list = j["wavefunction"]["hopping terms"].get<std::vector<HoppingTerm>>();
+		if (j["wavefunction"].contains("directors")) {
+			wf_opt.directors = j["wavefunction"]["directors"].get<QuadrupoleOrder>();
+		}
+		if (j["wavefunction"].contains("jastrow")) {
+			if (j["wavefunction"]["jastrow"].contains("sz")) {
+				wf_opt.jastrow.sz = j["wavefunction"]["jastrow"]["sz"].get<JastrowFactorOptions>();
+			}
+		}
+	}
+	else {
+		throw;
+	}
 	return wf_opt;
 }
 
@@ -117,12 +130,45 @@ mean_field_options read_json_wavefunction(std::string infile_name) {
 	return read_json_wavefunction(j);
 }
 
+model_options read_json_model(json j) {
+	model_options model_opt;
+	model_opt.bilinear_terms = j["model"]["bilinear"].get<std::vector<BilinearOptions>>();
+	return model_opt;
+}
+
+model_options read_json_model(std::string infile_name) {
+	std::ifstream i(infile_name);
+	json j;
+	i >> j;
+	return read_json_model(j);
+}
+
+vmc_options read_json_vmc(json j) {
+	vmc_options vmc_opt;
+	vmc_opt.optimization = j["vmc"]["optimization"].get<bool>();
+	if (!vmc_opt.optimization) {
+		vmc_opt.num_measures = j["vmc"]["measures"].get<int>();
+		vmc_opt.steps_per_measure = j["vmc"]["steps"].get<int>();
+		vmc_opt.throwaway_measures = j["vmc"]["throwaway"].get<int>();
+	}
+	return vmc_opt;
+}
+
+vmc_options read_json_vmc(std::string infile_name) {
+	std::ifstream i(infile_name);
+	json j;
+	i >> j;
+	return read_json_vmc(j);
+}
+
 void read_json_full_input(lattice_options* lat, mean_field_options* wf, model_options* H, vmc_options* vmc, std::string infile_name) {
 	std::ifstream i(infile_name);
 	json j;
 	i >> j;
 	*lat = read_json_lattice(j);
 	*wf = read_json_wavefunction(j);
+	*H = read_json_model(j);
+	*vmc = read_json_vmc(j);
 }
 
 

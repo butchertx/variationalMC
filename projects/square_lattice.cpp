@@ -49,9 +49,15 @@ int main(int argc, char* argv[]) {
         std::cout << "Using input file: " << infile_name << "\n";
         std::cout << "Using output file: " << outfile_name << "\n";
     }
-    int steps = 10, measures = 1000, throwaway = 100;
 
-    lattice_options lat_options = read_json_lattice(infile_name);
+    lattice_options lat_options;
+    mean_field_options wf_options;
+    model_options mdl_options;
+    vmc_options mc_options;
+
+    read_json_full_input(&lat_options, &wf_options, &mdl_options, &mc_options, infile_name);
+
+    //lattice_options lat_options = read_json_lattice(infile_name);
     Lattice lattice(Lattice_type_from_string(lat_options.type), vec3<int>(lat_options.L), vec3<int>(lat_options.pbc));
 
     makePath("./data");
@@ -66,10 +72,10 @@ int main(int argc, char* argv[]) {
     ringfile.close();
     lattice.print_timers();
 
-    mean_field_options wf_options = read_json_wavefunction(infile_name);
+    //mean_field_options wf_options = read_json_wavefunction(infile_name);
 
     results_struct results;
-    results = run_mc(lattice, wf_options, 0.0, 1.0);
+    results = run_mc(lattice, wf_options, mdl_options.bilinear_terms[0].coupling, mdl_options.bilinear_terms[1].coupling);
     makePath("./results");
     std::ofstream results_file;
     results_file.open(outfile_name);

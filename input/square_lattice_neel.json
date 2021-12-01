@@ -47,21 +47,34 @@
       "Qphiu": [ 3.14159265359, 3.14159265359, 0 ],
       "Qthetav": [ 0, 0, 0 ],
       "Qphiv": [ 3.14159265359, 3.14159265359, 0 ]
+    },
+    "jastrow": {
+      "sz": {
+        "isotropic": true,
+        "distance_max": 2,
+        "values": []
+      }
     }
   },
   "model": {
-    "interactions": {
-      "H1": {
-        "type": "su3 ring exchange",
+    "bilinear": [
+      {
+        "type": "su2 exchange",
         "coupling": 1.0,
-        "theta": 0.0
+        "neighbor_index": 0
+      },
+      {
+        "type": "su2 biquadratic",
+        "coupling": 1.0,
+        "neighbor_index":  0
       }
-    },
+    ],
     "match lattice pbc": true
   },
   "vmc": {
     "steps": 10,
     "measures": 10000,
-    "throwaway": 100
+    "throwaway": 100,
+    "optimization":  false
   }
 }

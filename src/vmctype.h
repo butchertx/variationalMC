@@ -140,21 +140,6 @@ namespace vmctype {
 		p.z = vec[2];
 	}
 
-	struct lattice_options {
-		std::string type;
-		int dimension;
-		std::vector<int> L;
-		std::vector<int> pbc;
-		int Lx;
-		int Ly;
-		int Lz;
-
-		std::string to_string();
-		bool is_valid();
-	};
-
-
-
 	class QuadrupoleOrder {
 		//As defined here, polar coordinates are in degrees and Q momenta are in full units (including factors of 2pi)
 	public:
@@ -180,6 +165,49 @@ namespace vmctype {
 		}
 	};
 
+	struct JastrowFactorOptions {
+
+		bool isotropic = true;
+		int distance_max = -1;
+		std::vector<double> values = {};
+
+	};
+
+	struct JastrowTableOptionsSU3 {
+
+		JastrowFactorOptions sz;
+
+	};
+
+	struct BilinearOptions {
+
+		std::string interaction_type = "su2 exchange";
+		double coupling = 0.0;
+		int neighbor_index = 0;
+
+	};
+
+	struct TrlinearOptions {
+
+		std::string interaction_type = "su3 ring exchange";
+		double strength = 0.0;
+		double theta = 0.0;
+
+	};
+
+	struct lattice_options {
+		std::string type;
+		int dimension;
+		std::vector<int> L;
+		std::vector<int> pbc;
+		int Lx;
+		int Ly;
+		int Lz;
+
+		std::string to_string();
+		bool is_valid();
+	};
+
 	struct mean_field_options {
 		std::string lattice_type;
 		std::string wf_type;
@@ -189,18 +217,19 @@ namespace vmctype {
 		std::vector<vec3<int>> basis;
 		std::vector<vmctype::HoppingTerm> hopping_list;
 		QuadrupoleOrder directors;
+		JastrowTableOptionsSU3 jastrow;
 
 		std::string to_string();
 	};
 
 	struct model_options {
-		std::vector<double> couplings;
+		std::vector<BilinearOptions> bilinear_terms;
+		std::vector<TrlinearOptions> ring3_terms;
 	};
 
 	struct vmc_options {
-		std::vector<double> J, K;
-		double D;
 		int steps_per_measure, num_measures, throwaway_measures;
+		bool optimization;
 	};
 
 	void to_json(json& j, const HoppingTerm& p);
@@ -210,5 +239,13 @@ namespace vmctype {
 	void to_json(json& j, const QuadrupoleOrder& p);
 
 	void from_json(const json& j, QuadrupoleOrder& p);
+
+	void to_json(json& j, const JastrowFactorOptions& p);
+
+	void from_json(const json& j, JastrowFactorOptions& p);
+
+	void to_json(json& j, const BilinearOptions& p);
+
+	void from_json(const json& j, BilinearOptions& p);
 
 }
