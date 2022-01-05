@@ -51,7 +51,7 @@
     "jastrow": {
       "sz": {
         "isotropic": true,
-        "distance_max": 2,
+        "distance_max": 3,
         "values": []
       }
     }
@@ -65,7 +65,7 @@
       },
       {
         "type": "su2 biquadratic",
-        "coupling": 1.0,
+        "coupling": 0.0,
         "neighbor_index":  0
       }
     ],

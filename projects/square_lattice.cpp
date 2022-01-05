@@ -14,6 +14,8 @@ using namespace vmctype;
 
 SpinModel create_Hamiltonian(Lattice, double J, double K);
 
+JastrowTable create_Jastrow(Lattice, JastrowTableOptions);
+
 struct results_struct {
     std::complex<double> E;
     std::complex<double> E_err;
@@ -101,7 +103,7 @@ results_struct run_mc(Lattice lattice, mean_field_options mf_options, double J, 
     director_file.close();
 
     RandomEngine r(-1, lattice.get_N(), lattice.get_neighbor_counts()[0]);
-    ProjectedState wf(mf, r);
+    ProjectedState wf(mf, r, create_Jastrow(lattice, mf_options.jastrow));
     results_struct results;
 
     if (std::abs(wf.get_det()) == 0) {
@@ -110,7 +112,7 @@ results_struct run_mc(Lattice lattice, mean_field_options mf_options, double J, 
     else {
 
         SpinModel Ham = create_Hamiltonian(lattice, J, K);
-        MonteCarloEngine sampler(Ham, wf, lattice, r, VMCParams(10, 1000, 0));
+        MonteCarloEngine sampler(Ham, wf, lattice, r, VMCParams(10, 10000, 0));
         sampler.run();
 
         results.E = sampler.get_energy();
@@ -122,6 +124,7 @@ results_struct run_mc(Lattice lattice, mean_field_options mf_options, double J, 
         sampler.print_timers();
         std::cout << "Results: E = " << results.E << " +- " << results.E_err << "\n";
     }
+    wf.print_timers();
     return results;
 }
 
@@ -157,4 +160,28 @@ SpinModel create_Hamiltonian(Lattice l, double J, double K) {
     ham.add_constant(E0);
 
     return ham;
+}
+
+JastrowTable create_Jastrow(Lattice lattice, JastrowTableOptions jopt) {
+    JastrowFactorOptions j(jopt.sz);
+
+    //assume isotropic=true
+    
+    std::vector<double> params;
+    if (j.distance_max == j.values.size()) {
+        params = j.values;
+    } 
+    else{
+        std::cout << "Initializing Jastrow with all zeros\n";
+        params = std::vector<double>(j.distance_max, 0.0);
+    }
+
+    std::vector<JastrowFactor> jlist;
+    std::vector<std::vector<int>> neighbors;
+    for (int i = 0; i < params.size(); ++i) {
+        neighbors = lattice.get_neighbors(i);
+        jlist.push_back(JastrowFactor(params[i], neighbors));
+    }
+
+    return JastrowTable(jlist);
 }

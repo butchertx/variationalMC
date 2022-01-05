@@ -205,6 +205,15 @@ public:
         return neighbor_list;
     }
 
+	std::vector<std::vector<int>> get_neighbors(int distance) {
+		assert(distance >= 0 && distance < neighbors[0].size());
+		std::vector<std::vector<int>> neighbor_list;
+		for (int j = 0; j < neighbors.size(); ++j) {
+			neighbor_list.push_back(neighbors[j][distance]);
+		}
+		return neighbor_list;
+	}
+
 	std::vector<int> get_neighbor_pbcs(int base_site, int distance) {
         assert(base_site < N && base_site >= 0);
         assert(distance >= 0 && distance < neighbors[0].size());

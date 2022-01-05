@@ -1,8 +1,12 @@
 #pragma once
 #include <complex>
 #include <vector>
+#include <set>
+#include <unordered_set>
 #include <assert.h>
 #include <numeric>
+#include <algorithm>
+#include "MemTimeTester.h"
 
 
 //template <class T>//param class: double or complex
@@ -56,11 +60,21 @@
 class JastrowFactor {
 	//note: only couples to Sz for now
 	double strength = 0.0;
-	std::vector<std::vector<int>> neighbor_table = { {} };
+	std::vector<std::vector<int>> neighbor_table;
+	std::vector<std::set<int>> neighbor_set;
 	std::vector<double> exp_table = {};
 	double conf_sum = 0.0;
+	MemTimeTester timer;
 
 public:
+
+	void print_timers() {
+		timer.print_timers();
+	}
+
+	std::vector<std::vector<int>> get_neighbor_table() {
+		return neighbor_table;
+	}
 
 	JastrowFactor() {};
 
@@ -73,6 +87,8 @@ public:
 	double greedy_eval(std::vector<int>&);
 
 	double lazy_eval(std::vector<int>&, std::vector<int>&, std::vector<int>&);
+
+	double lazy_eval(std::vector<int>&, std::vector<int>&, std::vector<int>&, bool);
 
 	void update_tables(std::vector<int>&, std::vector<int>&, std::vector<int>&);
 
@@ -92,16 +108,36 @@ public:
 class JastrowTable {
 
 	std::vector<JastrowFactor> jastrows;
+	std::vector<std::vector<int>> factor_lookup;
+	MemTimeTester timer;
 
 public:
+
+	void print_timers() {
+		timer.print_timers();
+		//for (int j = 0; j < jastrows.size(); ++j) {
+		//	jastrows[j].print_timers();
+		//}
+	}
 
 	JastrowTable() {};
 	
 	JastrowTable(std::vector<JastrowFactor> jastrows_) : jastrows(jastrows_) {};
 
 	void initialize_tables(std::vector<int>& configuration) {
+		for (int i = 0; i < configuration.size(); ++i) {
+			factor_lookup.push_back(std::vector<int>(configuration.size()));
+		}
+		std::vector<std::vector<int>> neighbor_table;
 		for (int i = 0; i < jastrows.size(); ++i) {
 			jastrows[i].initialize_table(configuration);
+			neighbor_table = jastrows[i].get_neighbor_table();
+			for (int x = 0; x < neighbor_table.size(); ++x) {
+				for (int yidx = 0; yidx < neighbor_table[x].size(); ++yidx) {
+					factor_lookup[x][neighbor_table[x][yidx]] = i; //i is the jastrow factor index for the pairs of sites x and its neighbors
+					//assumes there is only a single factor coupling each pair of sites - will need to update to include a list of factors when adding quad. terms
+				}
+			}
 		}
 	}
 
@@ -111,38 +147,42 @@ public:
 
 	double greedy_eval(std::vector<int>& configuration_) {
 		double result = 1.0;
-		for (auto jast : jastrows) {
-			result *= jast.greedy_eval(configuration_);
+		for (int j = 0; j < jastrows.size(); ++j) {
+			result *= jastrows[j].greedy_eval(configuration_);
 		}
 		return result;
 	}
 
 	double lazy_eval(std::vector<int>& a, std::vector<int>& b, std::vector<int>& c) {
+		timer.flag_start_time("lazy eval");
 		double result = 1.0;
-		for (auto jast : jastrows) {
-			result *= jast.lazy_eval(a, b, c);
+		for (int j = 0; j < jastrows.size(); ++j) {
+			result *= jastrows[j].lazy_eval(a, b, c, j == factor_lookup[a[0]][a[1]]);
 		}
+		timer.flag_end_time("lazy eval");
 		return result;
 	}
 
 	void update_tables(std::vector<int>& a, std::vector<int>& b, std::vector<int>& c) {
-		for (auto jast : jastrows) {
-			jast.update_tables(a, b, c);
+		timer.flag_start_time("update tables");
+		for (int j = 0; j < jastrows.size(); ++j) {
+			jastrows[j].update_tables(a, b, c);
 		}
+		timer.flag_end_time("update tables");
 	}
 
 	std::vector<double> log_derivative() {
 		std::vector<double> result;
-		for (auto jast : jastrows) {
-			result.push_back(jast.log_derivative());
+		for (int j = 0; j < jastrows.size(); ++j) {
+			result.push_back(jastrows[j].log_derivative());
 		}
 		return result;
 	}
 
 	std::vector<double> get_params() {
 		std::vector<double> result;
-		for (auto jast : jastrows) {
-			result.push_back(jast.get_param());
+		for (int j = 0; j < jastrows.size(); ++j) {
+			result.push_back(jastrows[j].get_param());
 		}
 		return result;
 	}

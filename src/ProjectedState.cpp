@@ -13,7 +13,6 @@ ProjectedState::ProjectedState(MeanFieldAnsatz& M, RandomEngine& rand_in, Jastro
 	: ansatz(M), rand(rand_in), jastrow(jastrow_) {
 	initialize_matrices();
 	jastrow.initialize_tables(configuration);
-	assert(jastrow.exist());
 }
 
 void ProjectedState::initialize_matrices(){

@@ -160,6 +160,12 @@ class ProjectedState : public Wavefunction {
 
 public:
 
+	void print_timers() {
+		if (jastrow.exist()) {
+			jastrow.print_timers();
+		}
+	}
+
 	~ProjectedState() {
 		mkl_free(Slater);
 		mkl_free(LU);
@@ -208,7 +214,6 @@ public:
 	std::complex<double> basis_element(const std::vector<int>&) { return { 0.0, 0.0 }; }
 
 	std::complex<double> psi_over_psi(std::vector<int>& ring_swap) {
-		assert(!jastrow.exist()); //jastrow not implemented for ring exchanges
 		std::vector<int> sz(ring_swap.size());
 		for (int i = 0; i < ring_swap.size(); ++i) {
 			if (i == ring_swap.size() - 1) {
@@ -226,7 +231,6 @@ public:
 	void update(std::vector<int>& flips, std::vector<int>& new_sz);
 
 	void update(std::vector<int>& ring_swap) {
-		assert(!jastrow.exist()); //jastrow not implemented for ring exchanges
 		std::vector<int> sz(ring_swap.size());
 		for (int i = 0; i < ring_swap.size(); ++i) {
 			if (i == ring_swap.size() - 1) {

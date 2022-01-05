@@ -114,6 +114,7 @@ mean_field_options read_json_wavefunction(json j) {
 			wf_opt.directors = j["wavefunction"]["directors"].get<QuadrupoleOrder>();
 		}
 		if (j["wavefunction"].contains("jastrow")) {
+			wf_opt.jastrow_flag = true;
 			if (j["wavefunction"]["jastrow"].contains("sz")) {
 				wf_opt.jastrow.sz = j["wavefunction"]["jastrow"]["sz"].get<JastrowFactorOptions>();
 			}

@@ -173,7 +173,7 @@ namespace vmctype {
 
 	};
 
-	struct JastrowTableOptionsSU3 {
+	struct JastrowTableOptions {
 
 		JastrowFactorOptions sz;
 
@@ -217,7 +217,8 @@ namespace vmctype {
 		std::vector<vec3<int>> basis;
 		std::vector<vmctype::HoppingTerm> hopping_list;
 		QuadrupoleOrder directors;
-		JastrowTableOptionsSU3 jastrow;
+		bool jastrow_flag = false;
+		JastrowTableOptions jastrow;
 
 		std::string to_string();
 	};
