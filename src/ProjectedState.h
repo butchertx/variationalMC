@@ -140,7 +140,7 @@ class ProjectedState : public Wavefunction {
 
 	MeanFieldAnsatz& ansatz;
 	RandomEngine& rand;
-	//SU3RingJastrow jastrow;
+	JastrowTable jastrow;
 	int N;
 	std::vector<int> parton_labels;
 	//std::vector<int> configuration;
@@ -149,6 +149,7 @@ class ProjectedState : public Wavefunction {
 	std::complex<double> det;
 	std::vector<int> conf_copy;
 
+	void initialize_matrices();
 	std::complex<double> calc_det();
 	void upinvhop2(int, int, int, int);
 	void set_configuration(std::vector<int> conf);
@@ -169,40 +170,9 @@ public:
 		mkl_free(ipiv);
 	}
 
-	ProjectedState(MeanFieldAnsatz& M, RandomEngine& rand_in)//, SU3RingJastrow& jastrow_in)
-		: ansatz(M), rand(rand_in){//, jastrow(jastrow_in) {
-		//construct Slater Matrix and set up matrix element calculation
-		N = ansatz.get_dim() / 3;
-		Slater = (lapack_complex_double *)mkl_malloc(N * N * sizeof(lapack_complex_double), 64);
-		LU = (lapack_complex_double *)mkl_malloc(N * N * sizeof(lapack_complex_double), 64);
-		Winv = (lapack_complex_double *)mkl_malloc(3 * N * N * sizeof(lapack_complex_double), 64);
-		UP1 = (lapack_complex_double *)mkl_malloc(3 * N * 2 * sizeof(lapack_complex_double), 64);
-		UP2 = (lapack_complex_double *)mkl_malloc(N * 2 * sizeof(lapack_complex_double), 64);
-		UP3 = (lapack_complex_double *)mkl_malloc(N * 2 * sizeof(lapack_complex_double), 64);
-		ipiv = (lapack_int *)mkl_malloc(N * N * sizeof(lapack_int), 64);
-		for (int i = 0; i < N*N; ++i) {
-			Slater[i] = { 0,0 };
-			LU[i] = { 0,0 };
-			ipiv[i] = 0;
-			for (int j = 0; j < 3; ++j) {
-				Winv[i + j * N * N] = { 0,0 };
-			}
-			if (i < 3 * N * 2) {
-				UP1[i] = { 0.0, 0.0 };
-				if (i < N * 2) {
-					UP2[i] = { 0.0, 0.0 };
-					UP3[i] = { 0.0, 0.0 };
-				}
-			}
-		}
-		int config_attempt = 0;
-		while(!try_configuration() && config_attempt < 50) {
-			det = { 0, 0 };
-			++config_attempt;
-		}
-		//assert(config_attempt < 50);
-		std::cout << "Starting with psi = " << det << "\n";
-	};
+	ProjectedState(MeanFieldAnsatz& M, RandomEngine& rand_in);
+
+	ProjectedState(MeanFieldAnsatz& M, RandomEngine& rand_in, JastrowTable jastrow_in);
 
 	void reset_configuration() {
 		for (int i = 0; i < N * N; ++i) {
@@ -226,6 +196,9 @@ public:
 			++config_attempt;
 		}
 		assert(config_attempt < 50);
+		if (jastrow.exist()) {
+			jastrow.initialize_tables(configuration);
+		}
 	}
 
 	//Overload Parent Virtual Functions
@@ -235,6 +208,7 @@ public:
 	std::complex<double> basis_element(const std::vector<int>&) { return { 0.0, 0.0 }; }
 
 	std::complex<double> psi_over_psi(std::vector<int>& ring_swap) {
+		assert(!jastrow.exist()); //jastrow not implemented for ring exchanges
 		std::vector<int> sz(ring_swap.size());
 		for (int i = 0; i < ring_swap.size(); ++i) {
 			if (i == ring_swap.size() - 1) {
@@ -252,6 +226,7 @@ public:
 	void update(std::vector<int>& flips, std::vector<int>& new_sz);
 
 	void update(std::vector<int>& ring_swap) {
+		assert(!jastrow.exist()); //jastrow not implemented for ring exchanges
 		std::vector<int> sz(ring_swap.size());
 		for (int i = 0; i < ring_swap.size(); ++i) {
 			if (i == ring_swap.size() - 1) {
@@ -263,6 +238,14 @@ public:
 		}
 		update(ring_swap, sz);
 	}
+
+	std::vector<double> log_derivative() { 
+		return jastrow.log_derivative(); 
+	}
+
+	void update_parameters(std::vector<double> new_params) {
+		jastrow.set_params(new_params);
+	};
 
 	//Additional Functions
 

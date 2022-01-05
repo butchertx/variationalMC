@@ -5,64 +5,167 @@
 #include <numeric>
 
 
-template <class T>//param class: double or complex
-class Jastrow {
+//template <class T>//param class: double or complex
+//class Jastrow {
+//
+//protected:
+//
+//	std::vector<std::vector<T>> param_list; //each param type has its own vector (ex. sz.sz is first list, sz^2.sz^2 is second list, etc.)
+//	int num_params;
+//
+//public:
+//
+//	virtual T logpsi(const std::vector<int>&) = 0;
+//	virtual T logpsi_over_psi(std::vector<int>, std::vector<int>, const std::vector<int>&) = 0;
+//	virtual std::vector<T> dlogpsi(const std::vector<int>&) = 0;
+//
+//	std::vector<T> unroll_params() {
+//		std::vector<T> result;
+//		for (auto ptype : param_list) {
+//			for (auto param : ptype) {
+//				result.push_back(param);
+//			}
+//		}
+//		return result;
+//	}
+//
+//	void set_params(std::vector<T> p_in) {
+//		assert(p_in.size() == num_params);
+//		int p_idx = 0;
+//		std::vector<std::vector<T>> new_p_in;
+//		for (int i = 0; i < param_list.size(); ++i) {
+//			new_p_in.push_back({});
+//			for (int j = 0; j < param_list[i].size(); ++j) {
+//				new_p_in[i].push_back(p_in[p_idx]);
+//				++p_idx;
+//			}
+//		}
+//		set_params(new_p_in);
+//	}
+//
+//	void set_params(std::vector<std::vector<T>> p_in) {
+//		assert(p_in.size() == param_list.size());
+//		for (int i = 0; i < p_in.size(); ++i) {
+//			assert(p_in[i].size() == param_list[i].size());
+//		}
+//		param_list = p_in;
+//	}
+//
+//};
 
-protected:
-
-	std::vector<std::vector<T>> param_list; //each param type has its own vector (ex. sz.sz is first list, sz^2.sz^2 is second list, etc.)
-	int num_params;
+class JastrowFactor {
+	//note: only couples to Sz for now
+	double strength = 0.0;
+	std::vector<std::vector<int>> neighbor_table = { {} };
+	std::vector<double> exp_table = {};
+	double conf_sum = 0.0;
 
 public:
 
-	virtual T logpsi(const std::vector<int>&) = 0;
-	virtual T logpsi_over_psi(std::vector<int>, std::vector<int>, const std::vector<int>&) = 0;
-	virtual std::vector<T> dlogpsi(const std::vector<int>&) = 0;
+	JastrowFactor() {};
 
-	std::vector<T> unroll_params() {
-		std::vector<T> result;
-		for (auto ptype : param_list) {
-			for (auto param : ptype) {
-				result.push_back(param);
-			}
+	JastrowFactor(double strength_, std::vector<std::vector<int>> neighbor_table_);
+	
+	JastrowFactor(double strength_, std::vector<std::vector<int>> neighbor_table_, std::vector<int>& configuration_);
+
+	void initialize_table(std::vector<int>&);
+
+	double greedy_eval(std::vector<int>&);
+
+	double lazy_eval(std::vector<int>&, std::vector<int>&, std::vector<int>&);
+
+	void update_tables(std::vector<int>&, std::vector<int>&, std::vector<int>&);
+
+	double log_derivative() {
+		return conf_sum;
+	}
+
+	double get_param() {
+		return strength;
+	}
+
+	void set_param(double strength_) {
+		strength = strength_;
+	}
+};
+
+class JastrowTable {
+
+	std::vector<JastrowFactor> jastrows;
+
+public:
+
+	JastrowTable() {};
+	
+	JastrowTable(std::vector<JastrowFactor> jastrows_) : jastrows(jastrows_) {};
+
+	void initialize_tables(std::vector<int>& configuration) {
+		for (int i = 0; i < jastrows.size(); ++i) {
+			jastrows[i].initialize_table(configuration);
+		}
+	}
+
+	bool exist() {
+		return jastrows.size() > 0;
+	}
+
+	double greedy_eval(std::vector<int>& configuration_) {
+		double result = 1.0;
+		for (auto jast : jastrows) {
+			result *= jast.greedy_eval(configuration_);
 		}
 		return result;
 	}
 
-	void set_params(std::vector<T> p_in) {
-		assert(p_in.size() == num_params);
-		int p_idx = 0;
-		std::vector<std::vector<T>> new_p_in;
-		for (int i = 0; i < param_list.size(); ++i) {
-			new_p_in.push_back({});
-			for (int j = 0; j < param_list[i].size(); ++j) {
-				new_p_in[i].push_back(p_in[p_idx]);
-				++p_idx;
-			}
+	double lazy_eval(std::vector<int>& a, std::vector<int>& b, std::vector<int>& c) {
+		double result = 1.0;
+		for (auto jast : jastrows) {
+			result *= jast.lazy_eval(a, b, c);
 		}
-		set_params(new_p_in);
+		return result;
 	}
 
-	void set_params(std::vector<std::vector<T>> p_in) {
-		assert(p_in.size() == param_list.size());
-		for (int i = 0; i < p_in.size(); ++i) {
-			assert(p_in[i].size() == param_list[i].size());
+	void update_tables(std::vector<int>& a, std::vector<int>& b, std::vector<int>& c) {
+		for (auto jast : jastrows) {
+			jast.update_tables(a, b, c);
 		}
-		param_list = p_in;
+	}
+
+	std::vector<double> log_derivative() {
+		std::vector<double> result;
+		for (auto jast : jastrows) {
+			result.push_back(jast.log_derivative());
+		}
+		return result;
+	}
+
+	std::vector<double> get_params() {
+		std::vector<double> result;
+		for (auto jast : jastrows) {
+			result.push_back(jast.get_param());
+		}
+		return result;
+	}
+
+	void set_params(std::vector<double> params_) {
+		assert(params_.size() == jastrows.size());
+		for (int i = 0; i < jastrows.size(); ++i) {
+			jastrows[i].set_param(params_[i]);
+		}
 	}
 
 };
 
-template <class T>
-class GreedyJastrow : public Jastrow<T> {
-
-public:
-
-	GreedyJastrow() {}
-
-	void f() {}
-
-};
+//template <class T>
+//class GreedyJastrow : public Jastrow<T> {
+//
+//public:
+//
+//	GreedyJastrow() {}
+//
+//	void f() {}
+//
+//};
 
 
 
@@ -86,15 +189,9 @@ public:
 
 	const std::vector<int>& conf_ref() { return configuration; }
 
-	//virtual void update(int, int, std::complex<double>) = 0;
-	
+	virtual std::vector<double> log_derivative() { return { 0.0 }; }
 
-	//virtual std::complex<double> psi_over_psi(int, int, int, int) = 0;
-
-	//virtual std::complex<double> psi_over_psi_full_calculation(int, int, int, int) = 0;
-	
-	/*virtual void update(int, int, std::complex<double>) = 0;
-	virtual void update(int, bool, std::complex<double>) = 0;*/
+	virtual void update_parameters(std::vector<double>) {};
 
 	
 

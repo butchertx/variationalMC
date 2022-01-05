@@ -211,7 +211,7 @@ namespace vmctype {
 	struct mean_field_options {
 		std::string lattice_type;
 		std::string wf_type;
-		int inequivalent_sites, spin, num_spin_orbit;
+		int inequivalent_sites = 1, spin, num_spin_orbit;
 		bool match_lattice_pbc, su3_symmetry;
 		double field = 0.0;
 		std::vector<vec3<int>> basis;

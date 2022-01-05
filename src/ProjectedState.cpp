@@ -2,6 +2,54 @@
 
 void print_matrix(const char* desc, MKL_INT m, MKL_INT n, MKL_Complex16* a, MKL_INT lda);
 
+ProjectedState::ProjectedState(MeanFieldAnsatz& M_, RandomEngine& rand_)
+	: ansatz(M_), rand(rand_) {
+	initialize_matrices();
+	jastrow = {};
+	assert(!jastrow.exist());
+}
+
+ProjectedState::ProjectedState(MeanFieldAnsatz& M, RandomEngine& rand_in, JastrowTable jastrow_)
+	: ansatz(M), rand(rand_in), jastrow(jastrow_) {
+	initialize_matrices();
+	jastrow.initialize_tables(configuration);
+	assert(jastrow.exist());
+}
+
+void ProjectedState::initialize_matrices(){
+	//construct Slater Matrix and set up matrix element calculation
+	N = ansatz.get_dim() / 3;
+	Slater = (lapack_complex_double*)mkl_malloc(N * N * sizeof(lapack_complex_double), 64);
+	LU = (lapack_complex_double*)mkl_malloc(N * N * sizeof(lapack_complex_double), 64);
+	Winv = (lapack_complex_double*)mkl_malloc(3 * N * N * sizeof(lapack_complex_double), 64);
+	UP1 = (lapack_complex_double*)mkl_malloc(3 * N * 2 * sizeof(lapack_complex_double), 64);
+	UP2 = (lapack_complex_double*)mkl_malloc(N * 2 * sizeof(lapack_complex_double), 64);
+	UP3 = (lapack_complex_double*)mkl_malloc(N * 2 * sizeof(lapack_complex_double), 64);
+	ipiv = (lapack_int*)mkl_malloc(N * N * sizeof(lapack_int), 64);
+	for (int i = 0; i < N * N; ++i) {
+		Slater[i] = { 0,0 };
+		LU[i] = { 0,0 };
+		ipiv[i] = 0;
+		for (int j = 0; j < 3; ++j) {
+			Winv[i + j * N * N] = { 0,0 };
+		}
+		if (i < 3 * N * 2) {
+			UP1[i] = { 0.0, 0.0 };
+			if (i < N * 2) {
+				UP2[i] = { 0.0, 0.0 };
+				UP3[i] = { 0.0, 0.0 };
+			}
+		}
+	}
+	int config_attempt = 0;
+	while (!try_configuration() && config_attempt < 50) {
+		det = { 0, 0 };
+		++config_attempt;
+	}
+	//assert(config_attempt < 50);
+	std::cout << "Starting with psi = " << det << "\n";
+}
+
 std::complex<double> ProjectedState::psi_over_psi2(int site1, int site2, int new_sz1, int new_sz2) {
 	MKL_Complex16 result;
 	//new_sz1 = configuration[site2], new_sz2 = configuration[site1];
@@ -9,10 +57,12 @@ std::complex<double> ProjectedState::psi_over_psi2(int site1, int site2, int new
 	result = Winv[(site1 + (1 - new_sz1) * N) * N + parton_labels[site1]] * Winv[(site2 + (1 - new_sz2) * N) * N + parton_labels[site2]]
 		- Winv[(site1 + (1 - new_sz1) * N) * N + parton_labels[site2]] * Winv[(site2 + (1 - new_sz2) * N) * N + parton_labels[site1]];
 
-	return result;
+	std::vector<int> flip_sites = { site1, site2 }, new_sz = { new_sz1, new_sz2 };
+	return result * jastrow.lazy_eval(flip_sites, new_sz, configuration);
 }
 
 std::complex<double> ProjectedState::psi_over_psi_swap(int site1, int site2, int site3) {
+	assert(!jastrow.exist()); //jastrow not implemented for ring exchanges
 	MKL_Complex16 result;
 	int new_sz1 = configuration[site2], new_sz2 = configuration[site3], new_sz3 = configuration[site1];
 
@@ -31,6 +81,7 @@ std::complex<double> ProjectedState::psi_over_psi_swap(int site1, int site2, int
 }
 
 std::complex<double> ProjectedState::psi_over_psi(int site1, int site2, int site3) {
+	assert(!jastrow.exist()); //jastrow not implemented for ring exchanges
 
 	//swap sites 1 and 2, with labels 1 and 2, newsz 1 and 3
 	std::complex<double> detswap1 = psi_over_psi2(site1, site2, configuration[site2], configuration[site1]);
@@ -69,6 +120,7 @@ std::complex<double> ProjectedState::psi_over_psi(std::vector<int>& flips, std::
 		result *= psi_over_psi2(flips[0], flips[1], new_sz[0], new_sz[1]);
 	}
 	else if (flips.size() == 3) {
+		assert(!jastrow.exist()); //jastrow not implemented for ring exchanges
 		//std::cout << flips[0] << " " << flips[1] << " " << flips[2] << "\n";
 		result *= psi_over_psi_swap(flips[0], flips[1], flips[2]);
 	}
@@ -93,8 +145,10 @@ void ProjectedState::update(std::vector<int>& flips, std::vector<int>& new_sz) {
 	if (flips.size() == 2) {
 		pop = psi_over_psi(flips, new_sz);
 		update(flips[0], flips[1], pop);
+		jastrow.update_tables(flips, new_sz, configuration);
 	}
 	else if (flips.size() == 3) {
+		assert(!jastrow.exist()); //jastrow not implemented for ring exchanges
 		std::vector<int> fliplist(2), spinlist(2);
 		fliplist = { flips[0], flips[1] };
 		spinlist = { new_sz[0], new_sz[2] };
@@ -227,6 +281,7 @@ void ProjectedState::upinvhop2(int rowk, int colk, int rowl, int coll) {
 //Tests
 
 bool ProjectedState::test_2_spin_swap_pop(bool output) {
+	assert(!jastrow.exist()); //test jastrow separately
 	bool success = false;
 
 	//Choose two random sites
@@ -259,6 +314,7 @@ bool ProjectedState::test_2_spin_swap_pop(bool output) {
 }
 
 bool ProjectedState::test_3_spin_swap_pop(bool output) {
+	assert(!jastrow.exist()); //test jastrow separately
 	int config_attempt = 0;
 	while (!try_configuration() && config_attempt < 50) {
 		det = { 0, 0 };

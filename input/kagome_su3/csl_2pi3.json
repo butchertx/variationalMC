@@ -1,0 +1,64 @@
+{
+  "lattice": {
+    "type": "kagome",
+    "L": [ 6, 6, 1 ],
+    "dimension": 2,
+    "pbc": [ 1, 1, 1 ]
+  },
+  "wavefunction": {
+    "wavefunction type": "meanfield",
+    "lattice type": "kagome",
+    "inequivalent sites": 2,
+    "basis": [
+      [ 0, 0, 0 ],
+      [ 0, 1, 0 ]
+    ],
+    "spin": 1,
+    "match lattice pbc": true,
+    "su3_symmetry":  true,
+    "num hop": 1,
+    "field": 0.0,
+    "num spin-orbit": 0,
+    "hopping terms": [
+      {
+        "spin row": 0,
+        "strength": -1.0,
+        "distance": 0,
+        "origins": [ 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5 ],
+        "neighbor index": [ 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1 ],
+        "phases": [ 60, 120, 0, 180, 180, 0, 0, 60, 60, 180, -120, 120 ]
+      },
+      {
+        "spin row": 1,
+        "strength": -1.0,
+        "distance": 0,
+        "origins": [ 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5 ],
+        "neighbor index": [ 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1 ],
+        "phases": [ 60, 120, 0, 180, 180, 0, 0, 60, 60, 180, -120, 120 ]
+      }
+    ]
+  },
+  "model": {
+    "bilinear": [
+      {
+        "type": "su3 exchange",
+        "coupling": 1.0,
+        "neighbor_index": 0
+      }
+    ],
+    "trilinear": [
+      {
+        "type": "su3 ring exchange",
+        "coupling": 1.0,
+        "theta": 0.0
+      }
+    ],
+    "match lattice pbc": true
+  },
+  "vmc": {
+    "optimization": false,
+    "steps": 10,
+    "measures": 10000,
+    "throwaway": 100
+  }
+}

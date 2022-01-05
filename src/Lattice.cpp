@@ -477,32 +477,45 @@ std::vector<std::vector<int>> Lattice::basis_partition(std::vector<vec3<int>> ba
 	std::vector<std::vector<int>> partition;
 	std::vector<int> unit_cell;
 
-	if (basis.size() == 1) {
-		for (int i = 0; i < N; ++i) {
-			partition.push_back({ i });
+	if (basis.size() == 0 || basis.size() == 1) {
+		// return the partition of this lattice's basis
+		int num_lattice_basis = this->basis.size();
+		int site = 0;
+		for (int uc = 0; uc < (this->N) / num_lattice_basis; ++uc) {
+			partition.push_back({});
+			for (int b = 0; b < num_lattice_basis; ++b) {
+				partition[uc].push_back(site);
+				++site;
+			}
 		}
 	}
 	else {
 		//create list of all possible enlarged unit cells
 		for (int i = 0; i < N; ++i) {
 			unit_cell.clear();
-			unit_cell.push_back(i);
-			for (int b = 1; b < basis.size(); ++b) {
-				unit_cell.push_back(get_neighbor_label_with_pbc(i, basis[b] * a));
+			for (int b = 0; b < basis.size(); ++b) {
+				for (int b0 = 0; b0 < this->basis.size(); ++b0) {
+					if (b == 0 && b0 == 0) {
+						unit_cell.push_back(i);
+					}
+					else if ( this->basis.size() * (i / this->basis.size() ) == i){
+						unit_cell.push_back(get_neighbor_label_with_pbc(i, basis[b] * a + this->basis[b0]));
+					}
+				}
 			}
 			partition.push_back(unit_cell);
 		}
 
 		if (basis.size() > 1) {
 			//remove unit cells that duplicate existing cells
-			for (int i = 0; i < N; ++i) {
+			for (int i = 0; i < partition.size(); ++i) {
 				if (partition[i][0] != N) {
 					for (int b = 1; b < partition[i].size(); ++b) {
 						partition[partition[i][b]][0] = N;//mark the unit cell that is already accounted in another unit cell
 					}
 				}
 			}
-			for (int i = N - 1; i >= 0; --i) {
+			for (int i = partition.size() - 1; i >= 0; --i) {
 				if (partition[i][0] == N) {
 					partition.erase(partition.begin() + i);
 				}

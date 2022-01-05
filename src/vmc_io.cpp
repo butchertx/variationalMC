@@ -100,8 +100,10 @@ mean_field_options read_json_wavefunction(json j) {
 	wf_opt.wf_type = j["wavefunction"]["wavefunction type"].get<std::string>();
 
 	if (wf_opt.wf_type == "meanfield") {
-		wf_opt.basis = j["wavefunction"]["basis"].get<std::vector<vec3<int>>>();
-		wf_opt.inequivalent_sites = j["wavefunction"]["inequivalent sites"];
+		if (j["wavefunction"].contains("basis")) {
+			wf_opt.basis = j["wavefunction"]["basis"].get<std::vector<vec3<int>>>();
+			wf_opt.inequivalent_sites = j["wavefunction"]["inequivalent sites"];
+		}
 		wf_opt.spin = j["wavefunction"]["spin"];
 		wf_opt.field = j["wavefunction"]["field"];
 		wf_opt.num_spin_orbit = j["wavefunction"]["num spin-orbit"];

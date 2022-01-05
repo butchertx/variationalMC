@@ -82,10 +82,13 @@ MeanFieldAnsatz::MeanFieldAnsatz(mean_field_options& mf_in, Lattice& lat_in, boo
 
 	}
 
-	field = mf_in.field;
-	for (auto uc: basis_partition) {
-		for (int site = 0; site < uc.size(); ++site) {
-			directors.push_back(mf_in.directors.eval_at(site, lat_in.get_coordinate(uc[site])));
+
+	if (mf_in.directors.unit_cell_u_polar.size() > 0) {
+		field = mf_in.field;
+		for (auto uc : basis_partition) {
+			for (int site = 0; site < uc.size(); ++site) {
+				directors.push_back(mf_in.directors.eval_at(site, lat_in.get_coordinate(uc[site])));
+			}
 		}
 	}
 
