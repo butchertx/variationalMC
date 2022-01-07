@@ -1,7 +1,7 @@
 {
   "lattice": {
     "type": "triangle",
-    "L": [ 12, 12, 1 ],
+    "L": [ 6, 6, 1 ],
     "dimension": 2,
     "pbc": [ -1, 1, 1 ]
   },
@@ -50,16 +50,25 @@
     }
   },
   "model": {
-    "interactions": {
-      "H1": {
-        "type": "su3 ring exchange",
+    "bilinear": [
+      {
+        "type": "swap exchange",
         "coupling": 1.0,
-        "theta": 0.0
+        "neighbor_index": 0
       }
-    },
+    ],
+    "trilinear": [
+      {
+        "type": "su3 ring exchange",
+        "hermitian": false,
+        "coupling_real": 1.0,
+        "coupling_imag":  0.0
+      }
+    ],
     "match lattice pbc": true
   },
   "vmc": {
+    "optimization":  false,
     "steps": 10,
     "measures": 10000,
     "throwaway": 100

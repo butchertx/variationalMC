@@ -136,6 +136,7 @@ mean_field_options read_json_wavefunction(std::string infile_name) {
 model_options read_json_model(json j) {
 	model_options model_opt;
 	model_opt.bilinear_terms = j["model"]["bilinear"].get<std::vector<BilinearOptions>>();
+	model_opt.ring3_terms = j["model"]["trilinear"].get<std::vector<TrilinearOptions>>();
 	return model_opt;
 }
 
@@ -148,7 +149,13 @@ model_options read_json_model(std::string infile_name) {
 
 vmc_options read_json_vmc(json j) {
 	vmc_options vmc_opt;
-	vmc_opt.optimization = j["vmc"]["optimization"].get<bool>();
+	if (j["vmc"].contains("optimization")) {
+		vmc_opt.optimization = j["vmc"]["optimization"].get<bool>();
+	}
+	else {
+		vmc_opt.optimization = false;
+	}
+	
 	if (!vmc_opt.optimization) {
 		vmc_opt.num_measures = j["vmc"]["measures"].get<int>();
 		vmc_opt.steps_per_measure = j["vmc"]["steps"].get<int>();

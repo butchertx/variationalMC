@@ -25,7 +25,7 @@ struct results_struct {
     std::complex<double> h_err;
 };
 
-results_struct run_mc(Lattice, mean_field_options, double, double, double);
+results_struct run_mc(lattice_options, mean_field_options, model_options, vmc_options);
 
 MemTimeTester timer;
 
@@ -40,6 +40,7 @@ int main(int argc, char* argv[]) {
     if(argc == 1){
         std::cout << "Mandatory command line argument: <input_filename>\n";
         std::cout << "Optional command line argument: <results label> to get output file results/<results label>.csv\n";
+        std::cout << "Default output file is results/observables.csv\n";
         std::cout << "Exiting...";
         return 0;
     }
@@ -56,9 +57,33 @@ int main(int argc, char* argv[]) {
         std::cout << "Using input file: " << infile_name << "\n";
         std::cout << "Using output file: " << outfile_name << "\n";
     }
-    int steps = 10, measures = 10000, throwaway = 100;
 
-    lattice_options lat_options = read_json_lattice(infile_name);
+    lattice_options lat_options;
+    mean_field_options wf_options;
+    model_options mdl_options;
+    vmc_options mc_options;
+
+    read_json_full_input(&lat_options, &wf_options, &mdl_options, &mc_options, infile_name);
+
+    results_struct results = run_mc(lat_options, wf_options, mdl_options, mc_options);
+
+    makePath("./results");
+    std::ofstream results_file;
+    results_file.open(outfile_name);
+    results_file << ", E, E_err, <P_12>, <P_12>_err, <P_sym>, <P_sym>_err, <chi>, <chi>_err\n";
+    results_file << "real, " << results.E.real() << ", " << results.E_err.real() << ", " << results.J.real() << ", " << results.J_err.real()
+        << ", " << results.K.real() << ", " << results.K_err.real() << ", " << results.h.real() << ", " << results.h_err.real() << "\n";
+    results_file << "imag, " << results.E.imag() << ", " << results.E_err.imag() << ", " << results.J.imag() << ", " << results.J_err.imag()
+        << ", " << results.K.imag() << ", " << results.K_err.imag() << ", " << results.h.imag() << ", " << results.h_err.imag() << "\n";
+
+    timer.flag_end_time("Total Program Time");
+    timer.print_timers();
+    return 1;
+
+}
+
+results_struct run_mc(lattice_options lat_options, mean_field_options mf_options, model_options mdl_options, vmc_options v_options){
+
     Lattice lattice(Lattice_type_from_string(lat_options.type), vec3<int>(lat_options.L), vec3<int>(lat_options.pbc));
 
     makePath("./data");
@@ -73,52 +98,6 @@ int main(int argc, char* argv[]) {
     ringfile.close();
     lattice.print_timers();
 
-    mean_field_options wf_options = read_json_wavefunction(infile_name);
-
-    results_struct results;
-    results = run_mc(lattice, wf_options, 1.0, 0.0, 0.0);
-    makePath("./results");
-    std::ofstream results_file;
-    results_file.open(outfile_name);
-    results_file << ", E, E_err, <P_12>, <P_12>_err, <P_sym>, <P_sym>_err, <chi>, <chi>_err\n";
-    results_file << "real, " << results.E.real() << ", " << results.E_err.real() << ", " << results.J.real() << ", " << results.J_err.real()
-        << ", " << results.K.real() << ", " << results.K_err.real() << ", " << results.h.real() << ", " << results.h_err.real() << "\n";
-    results_file << "imag, " << results.E.imag() << ", " << results.E_err.imag() << ", " << results.J.imag() << ", " << results.J_err.imag()
-        << ", " << results.K.imag() << ", " << results.K_err.imag() << ", " << results.h.imag() << ", " << results.h_err.imag() << "\n";
-    //std::cout << "E = " << results.E << " +- " << results.err << "\n";
-
-    //for (int sim = 0; sim < num_t2; ++sim) {
-    //    t2 = t2min + sim * t2change;
-    //    wf_options.hopping_list[2].strength = t2;
-    //    wf_options.hopping_list[3].strength = t2;
-    //    results = run_mc(lattice, wf_options, p, 1.0, 0.0);
-    //    t2_list.push_back(t2);
-    //    k_list.push_back(1.0);
-    //    h_list.push_back(0.0);
-    //    e_list.push_back(results.E);
-    //    err_list.push_back(results.err);
-
-    //    results = run_mc(lattice, wf_options, p, 0.0, 1.0);
-    //    t2_list.push_back(t2);
-    //    k_list.push_back(0.0);
-    //    h_list.push_back(1.0);
-    //    e_list.push_back(results.E);
-    //    err_list.push_back(results.err);
-    //}
-
-    //std::ofstream file;
-    //file << "K, h, t2, E_real, E_imag, err_real, err_imag\n";
-    //for (int i = 0; i < 2*num_t2; ++i) {
-    //    file << k_list[i] << ", " << h_list[i] << ", " << t2_list[i] << ", " << e_list[i].real() << ", " << e_list[i].imag() << ", " << err_list[i].real() << ", " << err_list[i].imag() << "\n";
-    //}
-    //file.close();
-    timer.flag_end_time("Total Program Time");
-    timer.print_timers();
-    return 1;
-
-}
-
-results_struct run_mc(Lattice lattice, mean_field_options mf_options, double J, double K, double h) {
     MeanFieldAnsatz mf(mf_options, lattice, true);
     mf.print_levels();
     mf.print_fermi_level();
@@ -132,8 +111,8 @@ results_struct run_mc(Lattice lattice, mean_field_options mf_options, double J, 
     }
     else {
 
-        SpinModel Ham = create_Hamiltonian(lattice, J, K, h);
-        MonteCarloEngine sampler(Ham, wf, lattice, r, VMCParams(10, 1000, 0));
+        SpinModel Ham = create_Hamiltonian(lattice, mdl_options.bilinear_terms[0].coupling, mdl_options.ring3_terms[0].coupling_real, mdl_options.ring3_terms[0].coupling_imag);
+        MonteCarloEngine sampler(Ham, wf, lattice, r, v_options);
         sampler.run();
 
         results.E = sampler.get_energy();

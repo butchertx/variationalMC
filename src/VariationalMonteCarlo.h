@@ -35,7 +35,7 @@ class MonteCarloEngine {
 
 	RandomEngine& rand;
 
-	VMCParams params;
+	vmc_options params;
 
 	std::map<std::string, std::vector<std::complex<double>>> observable_measures;
 
@@ -50,7 +50,7 @@ class MonteCarloEngine {
 
 public:
 	
-	MonteCarloEngine(SpinModel& H_in, Wavefunction& WF_in, Lattice& lat_in, RandomEngine& rand_in, VMCParams params_in)
+	MonteCarloEngine(SpinModel& H_in, Wavefunction& WF_in, Lattice& lat_in, RandomEngine& rand_in, vmc_options params_in)
 		: H(H_in), WF(WF_in), lat(lat_in), rand(rand_in), params(params_in) {
 
 		for (std::string term_name : H.get_terms()) {
@@ -59,7 +59,7 @@ public:
 	}
 
 	void run() {
-		for (int m = 0; m < params.total_measures; ++m) {
+		for (int m = 0; m < params.num_measures; ++m) {
 			timer.flag_start_time("Steps");
 			for (int s = 0; s < params.steps_per_measure; ++s) {
 				//if (step_outputs && stepnum < 100) {
@@ -82,7 +82,7 @@ public:
 			measure_energy();
 			timer.flag_end_time("Energy Calculation");
 			if (m % 1000 == 0) {
-				std::cout << "measurement " << m << " of " << params.total_measures << "\n";
+				std::cout << "measurement " << m << " of " << params.num_measures << "\n";
 			}
 		}
 	}

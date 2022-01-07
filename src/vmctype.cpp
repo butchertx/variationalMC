@@ -67,3 +67,19 @@ void vmctype::from_json(const json& j, vmctype::BilinearOptions& p) {
 	j.at("coupling").get_to(p.coupling);
 	j.at("neighbor_index").get_to(p.neighbor_index);
 }
+
+void vmctype::to_json(json& j, const vmctype::TrilinearOptions& p) {
+	j = json{
+		{"type", p.interaction_type},
+		{"hermitian", p.hermitian},
+		{"coupling_real", p.coupling_real},
+		{"coupling_imag", p.coupling_imag},
+	};
+}
+
+void vmctype::from_json(const json& j, vmctype::TrilinearOptions& p) {
+	j.at("type").get_to(p.interaction_type);
+	j.at("hermitian").get_to(p.hermitian);
+	j.at("coupling_real").get_to(p.coupling_real);
+	j.at("coupling_imag").get_to(p.coupling_imag);
+}

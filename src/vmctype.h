@@ -12,15 +12,6 @@ using json = nlohmann::json;
 
 namespace vmctype {
 
-	class VMCParams {
-	public:
-
-		int steps_per_measure;
-		int throwaway_measures;
-		int total_measures;
-
-		VMCParams(int s, int m, int t) : steps_per_measure(s), total_measures(m), throwaway_measures(t) {}
-	};
 
 	/*! \brief Small value for double comparisons
 		*/
@@ -187,11 +178,12 @@ namespace vmctype {
 
 	};
 
-	struct TrlinearOptions {
+	struct TrilinearOptions {
 
 		std::string interaction_type = "su3 ring exchange";
-		double strength = 0.0;
-		double theta = 0.0;
+		bool hermitian = true;
+		double coupling_real;
+		double coupling_imag;
 
 	};
 
@@ -225,12 +217,12 @@ namespace vmctype {
 
 	struct model_options {
 		std::vector<BilinearOptions> bilinear_terms;
-		std::vector<TrlinearOptions> ring3_terms;
+		std::vector<TrilinearOptions> ring3_terms;
 	};
 
 	struct vmc_options {
 		int steps_per_measure, num_measures, throwaway_measures;
-		bool optimization;
+		bool optimization = false;
 	};
 
 	void to_json(json& j, const HoppingTerm& p);
@@ -248,5 +240,9 @@ namespace vmctype {
 	void to_json(json& j, const BilinearOptions& p);
 
 	void from_json(const json& j, BilinearOptions& p);
+
+	void to_json(json& j, const TrilinearOptions& p);
+
+	void from_json(const json& j, TrilinearOptions& p);
 
 }
