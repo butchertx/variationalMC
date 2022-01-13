@@ -51,8 +51,8 @@
     "jastrow": {
       "sz": {
         "isotropic": true,
-        "distance_max": 3,
-        "values": []
+        "distance_max": 1,
+        "values": [0.0]
       }
     }
   },
@@ -73,7 +73,7 @@
   },
   "vmc": {
     "steps": 10,
-    "measures": 10000,
+    "measures": 1000,
     "throwaway": 100,
     "optimization":  false
   }

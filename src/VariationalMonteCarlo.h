@@ -23,6 +23,10 @@ class MonteCarloEngine {
 	MemTimeTester timer;
 
 	SpinModel& H;
+	std::map<std::string, Observable> observables;
+	std::vector<std::string> observable_names;
+	std::map<std::string, std::vector<Observable>> observable_functions;
+	std::vector<std::string> observable_function_names;
 
 	Wavefunction& WF;
 
@@ -38,6 +42,7 @@ class MonteCarloEngine {
 	vmc_options params;
 
 	std::map<std::string, std::vector<std::complex<double>>> observable_measures;
+	std::map<std::string, std::vector<std::vector<std::complex<double>>>> observable_function_measures;
 
 	//void step_su2(std::string step_type);
 	void step_su3(int num_swap);
@@ -47,6 +52,7 @@ class MonteCarloEngine {
 	//void measure_energy_su2();
 	//void measure_energy_su3();
 	void measure_energy();
+	void measure_obs();
 
 public:
 	
@@ -56,6 +62,16 @@ public:
 		for (std::string term_name : H.get_terms()) {
 			observable_measures.insert(std::pair<std::string, std::vector<std::complex<double>>> (term_name, std::vector<std::complex<double>>({})));
 		}
+	}
+
+	void add_observable(Observable obs_) {
+
+	}
+
+	void add_observable_function(std::vector<Observable> obs_, std::string name_) {
+		observable_function_measures.insert(std::pair<std::string, std::vector<std::vector<std::complex<double>>>>(name_, std::vector<std::vector<std::complex<double>>>()));
+		observable_functions.insert(std::pair<std::string, std::vector<Observable>>(name_, obs_));
+		observable_function_names.push_back(name_);
 	}
 
 	void run() {
@@ -81,6 +97,9 @@ public:
 			timer.flag_start_time("Energy Calculation");
 			measure_energy();
 			timer.flag_end_time("Energy Calculation");
+			timer.flag_start_time("Obs Calculation");
+			measure_obs();
+			timer.flag_end_time("Obs Calculation");
 			if (m % 1000 == 0) {
 				std::cout << "measurement " << m << " of " << params.num_measures << "\n";
 			}

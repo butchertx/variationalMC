@@ -135,8 +135,12 @@ mean_field_options read_json_wavefunction(std::string infile_name) {
 
 model_options read_json_model(json j) {
 	model_options model_opt;
-	model_opt.bilinear_terms = j["model"]["bilinear"].get<std::vector<BilinearOptions>>();
-	model_opt.ring3_terms = j["model"]["trilinear"].get<std::vector<TrilinearOptions>>();
+	if (j["model"].contains("bilinear")) {
+		model_opt.bilinear_terms = j["model"]["bilinear"].get<std::vector<BilinearOptions>>();
+	}
+	if (j["model"].contains("trilinear")) {
+		model_opt.ring3_terms = j["model"]["trilinear"].get<std::vector<TrilinearOptions>>();
+	}
 	return model_opt;
 }
 

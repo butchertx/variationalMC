@@ -287,21 +287,26 @@ void MonteCarloEngine::measure_energy() {
 	//Run over all interactions in model
 	for (std::string term_name : H.get_terms()) {
 		temp_O_val = std::complex<double>(0.0, 0.0);
-		for (auto interaction = H.get_interactions(term_name).begin(); interaction != H.get_interactions(term_name).end(); ++interaction) {
+		auto interaction_list = H.get_interactions(term_name);
+		for (auto interaction = interaction_list.begin(); interaction != interaction_list.end(); ++interaction) {
 
+			timer.flag_start_time("Energy diag");
 			temp_E_val = (*interaction)->diag(WF.conf_ref());
 			temp_O_val += temp_E_val;
 			energy += H.get_coupling(term_name) * temp_E_val;
+			timer.flag_end_time("Energy diag");
 
 			//get flips
 			f = (*interaction)->off_diag(WF.conf_ref());
 
+			timer.flag_start_time("Energy fliplist iteration");
 			//iterate through flips
 			for (int i = 0; i < f.multipliers.size(); ++i) {
 				temp_E_val = f.multipliers[i] * WF.psi_over_psi(f.flips[i], f.new_sz[i]);
 				temp_O_val += temp_E_val;
 				energy += H.get_coupling(term_name) * temp_E_val;
 			}
+			timer.flag_end_time("Energy fliplist iteration");
 		}
 		observable_measures[term_name].push_back((1.0 / (lat.get_N())) * temp_O_val);
 	}
@@ -313,6 +318,41 @@ void MonteCarloEngine::measure_energy() {
 	//std::cout << energy.real() / (2 * lat.get_N()) << "\n";
 	E.push_back((energy.real() + H.get_E0().real()) / (lat.get_N()));
 	E_imag.push_back((energy.imag() + H.get_E0().imag()) / lat.get_N());
+}
+
+void MonteCarloEngine::measure_obs() {
+
+	std::complex<double> energy = (0.0, 0.0), temp_O_val = (0.0, 0.0), temp_E_val = (0.0, 0.0);
+
+	FlipList f;
+
+	//Run over all observables
+	for (std::string term_name : observable_function_names) {
+		temp_O_val = std::complex<double>(0.0, 0.0);
+		auto interaction_list = H.get_interactions(term_name);
+		for (auto interaction = interaction_list.begin(); interaction != interaction_list.end(); ++interaction) {
+
+			timer.flag_start_time("Energy diag");
+			temp_E_val = (*interaction)->diag(WF.conf_ref());
+			temp_O_val += temp_E_val;
+			energy += H.get_coupling(term_name) * temp_E_val;
+			timer.flag_end_time("Energy diag");
+
+			//get flips
+			f = (*interaction)->off_diag(WF.conf_ref());
+
+			timer.flag_start_time("Energy fliplist iteration");
+			//iterate through flips
+			for (int i = 0; i < f.multipliers.size(); ++i) {
+				temp_E_val = f.multipliers[i] * WF.psi_over_psi(f.flips[i], f.new_sz[i]);
+				temp_O_val += temp_E_val;
+				energy += H.get_coupling(term_name) * temp_E_val;
+			}
+			timer.flag_end_time("Energy fliplist iteration");
+		}
+		observable_measures[term_name].push_back((1.0 / (lat.get_N())) * temp_O_val);
+	}
+
 }
 
 //find the error via the bin technique using a specified number of bins

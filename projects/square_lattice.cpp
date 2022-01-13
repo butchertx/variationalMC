@@ -14,6 +14,10 @@ using namespace vmctype;
 
 SpinModel create_Hamiltonian(Lattice, double J, double K);
 
+std::vector<Observable> create_Correlation_SZ(Lattice);
+
+std::vector<Observable> create_Correlation_ladder(Lattice);
+
 JastrowTable create_Jastrow(Lattice, JastrowTableOptions);
 
 struct results_struct {
@@ -25,7 +29,7 @@ struct results_struct {
     std::complex<double> K_err;
 };
 
-results_struct run_mc(Lattice, mean_field_options, double, double);
+results_struct run_mc(lattice_options, mean_field_options, model_options, vmc_options);
 
 MemTimeTester timer;
 
@@ -59,25 +63,7 @@ int main(int argc, char* argv[]) {
 
     read_json_full_input(&lat_options, &wf_options, &mdl_options, &mc_options, infile_name);
 
-    //lattice_options lat_options = read_json_lattice(infile_name);
-    Lattice lattice(Lattice_type_from_string(lat_options.type), vec3<int>(lat_options.L), vec3<int>(lat_options.pbc));
-
-    makePath("./data");
-    std::ofstream neighborfile;
-    neighborfile.open("data/neighbors.txt");
-    lattice.print_neighbors(&neighborfile);
-    neighborfile.close();
-
-    std::ofstream ringfile;
-    ringfile.open("data/rings.txt");
-    lattice.print_rings(&ringfile);
-    ringfile.close();
-    lattice.print_timers();
-
-    //mean_field_options wf_options = read_json_wavefunction(infile_name);
-
-    results_struct results;
-    results = run_mc(lattice, wf_options, mdl_options.bilinear_terms[0].coupling, mdl_options.bilinear_terms[1].coupling);
+    results_struct results = run_mc(lat_options, wf_options, mdl_options, mc_options);
     makePath("./results");
     std::ofstream results_file;
     results_file.open(outfile_name);
@@ -93,10 +79,20 @@ int main(int argc, char* argv[]) {
 
 }
 
-results_struct run_mc(Lattice lattice, mean_field_options mf_options, double J, double K) {
+results_struct run_mc(lattice_options lat_options, mean_field_options mf_options, model_options mdl_options, vmc_options v_options) {
+
+    Lattice lattice(Lattice_type_from_string(lat_options.type), vec3<int>(lat_options.L), vec3<int>(lat_options.pbc));
+
+    makePath("./data");
+    std::ofstream neighborfile;
+    neighborfile.open("data/neighbors.txt");
+    lattice.print_neighbors(&neighborfile);
+    neighborfile.close();
+
     MeanFieldAnsatz mf(mf_options, lattice, true);
     mf.print_levels();
     mf.print_fermi_level();
+
     std::ofstream director_file;
     director_file.open("data/directors.csv");
     mf.print_directors(&director_file);
@@ -111,8 +107,8 @@ results_struct run_mc(Lattice lattice, mean_field_options mf_options, double J, 
     }
     else {
 
-        SpinModel Ham = create_Hamiltonian(lattice, J, K);
-        MonteCarloEngine sampler(Ham, wf, lattice, r, VMCParams(10, 10000, 0));
+        SpinModel Ham = create_Hamiltonian(lattice, mdl_options.bilinear_terms[0].coupling, mdl_options.bilinear_terms[1].coupling);
+        MonteCarloEngine sampler(Ham, wf, lattice, r, v_options);
         sampler.run();
 
         results.E = sampler.get_energy();
@@ -160,6 +156,32 @@ SpinModel create_Hamiltonian(Lattice l, double J, double K) {
     ham.add_constant(E0);
 
     return ham;
+}
+
+std::vector<Observable> create_Correlation_SZ(Lattice l) {
+    std::vector<Observable> correlation;
+
+    for (int i = 0; i < l.get_N(); ++i) {
+        auto* s12 = new Observable("Szi Szj");
+        auto* I0 = new IsingExchange(0, i, 1.0);
+        s12->add_interaction(I0);
+        correlation.push_back(*s12);
+    }
+    
+    return correlation;
+}
+
+std::vector<Observable> create_Correlation_ladder(Lattice l) {
+    std::vector<Observable> correlation;
+
+    for (int i = 0; i < l.get_N(); ++i) {
+        auto* s12 = new Observable("Si+- Sj-+");
+        auto* I0 = new LadderExchange(0, i, 1.0);
+        s12->add_interaction(I0);
+        correlation.push_back(*s12);
+    }
+
+    return correlation;
 }
 
 JastrowTable create_Jastrow(Lattice lattice, JastrowTableOptions jopt) {

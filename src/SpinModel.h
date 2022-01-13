@@ -22,6 +22,12 @@ public:
 
 };
 
+static class FlipListDiag : public FlipList {
+
+	//dummy FlipList object that doesn't have off-diagonal terms
+
+};
+
 class Interaction {
 	//has an action on a basis state with a multiplier, diagonal, and off-diagonal elements (multiplied from the left) (Use Ising basis)
 protected:
@@ -35,7 +41,7 @@ public:
 
 	virtual std::complex<double> diag(const std::vector<int>& state) = 0;
 
-	virtual FlipList off_diag(const std::vector<int>& state) = 0;
+	virtual FlipList& off_diag(const std::vector<int>& state) = 0;
 
 	virtual void print_info(const std::vector<int>& state) = 0;
 
@@ -59,7 +65,7 @@ public:
 		return { 0.0, 0.0 }; // coupling;
 	}
 
-	FlipList off_diag(const std::vector<int>& state) {		
+	FlipList& off_diag(const std::vector<int>& state) {		
 		flip_buffer.new_sz[0][0] = state[j];
 		flip_buffer.new_sz[0][1] = state[i];
 		return flip_buffer;
@@ -96,7 +102,82 @@ public:
 		return coefficient * S * S * state[i] * state[j];
 	}
 
-	FlipList off_diag(const std::vector<int>& state) {
+	FlipList& off_diag(const std::vector<int>& state) {
+		flip_buffer.multipliers[0] = std::complex<double>{ 0.0, 0.0 };
+		flip_buffer.multipliers[1] = std::complex<double>{ 0.0, 0.0 };
+		if (state[i] != -S && state[j] != S) {
+			flip_buffer.multipliers[0] = coefficient;
+			flip_buffer.new_sz[0][0] = state[i] - 1;
+			flip_buffer.new_sz[0][1] = state[j] + 1;
+		}
+		if (state[i] != S && state[j] != -S) {
+			flip_buffer.multipliers[1] = coefficient;
+			flip_buffer.new_sz[1][0] = state[i] + 1;
+			flip_buffer.new_sz[1][1] = state[j] - 1;
+		}
+
+		return flip_buffer;
+	}
+
+	void print_info(const std::vector<int>& state) {
+		std::cout << "Sites (i,j) = (" << i << "," << j << ")\n";
+		std::cout << "Spins (szi, szj) = (" << state[i] << "," << state[j] << ")\n";
+		std::cout << "Flips:\n";
+		for (int i = 0; i < flip_buffer.flips.size(); ++i) {
+			std::cout << "Mult = " << flip_buffer.multipliers[i] << "\n";
+			std::cout << "Flip sites = (" << flip_buffer.flips[i][0] << "," << flip_buffer.flips[i][1] << ")\n";
+		}
+	}
+};
+
+class IsingExchange : public Interaction {
+
+	int i, j;
+	double S;
+
+	FlipList flip_off_diag = FlipListDiag();
+
+public:
+
+	IsingExchange(int i_in, int j_in, double S_in)
+		: Interaction(1.0), i(i_in), j(j_in), S(S_in) {};
+
+	std::complex<double> diag(const std::vector<int>& state) {
+		return S * S * state[i] * state[j];
+	}
+
+	FlipList& off_diag(const std::vector<int>& state) {
+		return flip_off_diag;
+	}
+
+	void print_info(const std::vector<int>& state) {
+		std::cout << "Sites (i,j) = (" << i << "," << j << ")\n";
+		std::cout << "Spins (szi, szj) = (" << state[i] << "," << state[j] << ")\n";
+	}
+};
+
+class LadderExchange : public Interaction {
+	int i, j;
+	double S;
+
+public:
+
+	LadderExchange(int i_in, int j_in, double S_in)
+		//only implemented for spin=1
+		: Interaction(1.0), i(i_in), j(j_in), S(S_in) {
+		flip_buffer.multipliers.push_back(1.0);
+		flip_buffer.multipliers.push_back(1.0);
+		flip_buffer.flips.push_back({ i, j });
+		flip_buffer.flips.push_back({ i, j });
+		flip_buffer.new_sz.push_back({ 0, 0 });
+		flip_buffer.new_sz.push_back({ 0, 0 });
+	};
+
+	std::complex<double> diag(const std::vector<int>& state) {
+		return 0.0;
+	}
+
+	FlipList& off_diag(const std::vector<int>& state) {
 		flip_buffer.multipliers[0] = std::complex<double>{ 0.0, 0.0 };
 		flip_buffer.multipliers[1] = std::complex<double>{ 0.0, 0.0 };
 		if (state[i] != -S && state[j] != S) {
@@ -154,7 +235,7 @@ public:
 
 	std::complex<double> diag(const std::vector<int>& state) { return { 0.0, 0.0 }; }
 
-	FlipList off_diag(const std::vector<int>& state) {
+	FlipList& off_diag(const std::vector<int>& state) {
 		//flip_buffer.empty();
 		//flip_buffer.multipliers.push_back(coupling);
 		//flip_buffer.flips.push_back({ i,j,k });
