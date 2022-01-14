@@ -52,7 +52,7 @@ class MonteCarloEngine {
 	//void measure_energy_su2();
 	//void measure_energy_su3();
 	void measure_energy();
-	void measure_obs();
+	void measure_obs_functions();
 
 public:
 	
@@ -98,7 +98,7 @@ public:
 			measure_energy();
 			timer.flag_end_time("Energy Calculation");
 			timer.flag_start_time("Obs Calculation");
-			measure_obs();
+			measure_obs_functions();
 			timer.flag_end_time("Obs Calculation");
 			if (m % 1000 == 0) {
 				std::cout << "measurement " << m << " of " << params.num_measures << "\n";
@@ -193,6 +193,17 @@ public:
 			O_avg += *v;
 		}
 		return std::complex<double>(O_avg.real() / (vals.size() - params.throwaway_measures), O_avg.imag() / (vals.size() - params.throwaway_measures));
+	}
+
+	void write_observable_functions(std::ofstream* f_r, std::ofstream* f_i, std::string function_name) {
+		for (int i = 0; i < observable_function_measures[function_name].size(); ++i) {
+			for (int j = 0; j < observable_function_measures[function_name][i].size()-1; ++j) {
+				*f_r << observable_function_measures[function_name][i][j].real() << ",";
+				*f_i << observable_function_measures[function_name][i][j].imag() << ",";
+			}
+			*f_r << observable_function_measures[function_name][i][observable_function_measures[function_name][i].size() - 1].real() << "\n";
+			*f_i << observable_function_measures[function_name][i][observable_function_measures[function_name][i].size() - 1].imag() << "\n";
+		}
 	}
 
 	std::complex<double> get_energy_err() {

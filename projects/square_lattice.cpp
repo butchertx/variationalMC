@@ -109,7 +109,23 @@ results_struct run_mc(lattice_options lat_options, mean_field_options mf_options
 
         SpinModel Ham = create_Hamiltonian(lattice, mdl_options.bilinear_terms[0].coupling, mdl_options.bilinear_terms[1].coupling);
         MonteCarloEngine sampler(Ham, wf, lattice, r, v_options);
+        sampler.add_observable_function(create_Correlation_SZ(lattice), "SzSz_correlation");
+        sampler.add_observable_function(create_Correlation_ladder(lattice), "Spm_correlation");
         sampler.run();
+
+        std::ofstream obs_file_r, obs_file_i;
+        obs_file_r.open("results/SzSz_correlation_real.csv");
+        obs_file_i.open("results/SzSz_correlation_imag.csv");
+        sampler.write_observable_functions(&obs_file_r, &obs_file_i, "SzSz_correlation");
+        obs_file_r.close();
+        obs_file_i.close();
+
+        obs_file_r.open("results/Spm_correlation_real.csv");
+        obs_file_i.open("results/Spm_correlation_imag.csv");
+        sampler.write_observable_functions(&obs_file_r, &obs_file_i, "Spm_correlation");
+        obs_file_r.close();
+        obs_file_i.close();
+        
 
         results.E = sampler.get_energy();
         results.E_err = sampler.get_energy_err();
@@ -117,8 +133,10 @@ results_struct run_mc(lattice_options lat_options, mean_field_options mf_options
         results.J_err = sampler.get_observable_err("Bilinear");
         results.K = 1.0 + sampler.get_observable("SU(3) Exchange") - sampler.get_observable("Bilinear");
         results.K_err = sampler.get_observable_err("SU(3) Exchange") + sampler.get_observable_err("Bilinear");
-        sampler.print_timers();
         std::cout << "Results: E = " << results.E << " +- " << results.E_err << "\n";
+        std::cout << "\n\n";
+        sampler.print_timers();
+        
     }
     wf.print_timers();
     return results;

@@ -320,38 +320,50 @@ void MonteCarloEngine::measure_energy() {
 	E_imag.push_back((energy.imag() + H.get_E0().imag()) / lat.get_N());
 }
 
-void MonteCarloEngine::measure_obs() {
+void MonteCarloEngine::measure_obs_functions() {
 
-	std::complex<double> energy = (0.0, 0.0), temp_O_val = (0.0, 0.0), temp_E_val = (0.0, 0.0);
+	std::complex<double> temp_O_val = (0.0, 0.0);
+	std::vector<Observable> temp_function;
+	std::vector<std::complex<double>> temp_function_eval;
 
 	FlipList f;
 
-	//Run over all observables
+	//Run over all observable functions
+	timer.flag_start_time("Obs function calculation");
 	for (std::string term_name : observable_function_names) {
-		temp_O_val = std::complex<double>(0.0, 0.0);
-		auto interaction_list = H.get_interactions(term_name);
-		for (auto interaction = interaction_list.begin(); interaction != interaction_list.end(); ++interaction) {
 
-			timer.flag_start_time("Energy diag");
-			temp_E_val = (*interaction)->diag(WF.conf_ref());
-			temp_O_val += temp_E_val;
-			energy += H.get_coupling(term_name) * temp_E_val;
-			timer.flag_end_time("Energy diag");
+		//Each observable function is a vector of Observables
+		temp_function = observable_functions[term_name];
+		temp_function_eval = std::vector<std::complex<double>>();
 
-			//get flips
-			f = (*interaction)->off_diag(WF.conf_ref());
+		for (int i = 0; i < temp_function.size(); ++i) {
 
-			timer.flag_start_time("Energy fliplist iteration");
-			//iterate through flips
-			for (int i = 0; i < f.multipliers.size(); ++i) {
-				temp_E_val = f.multipliers[i] * WF.psi_over_psi(f.flips[i], f.new_sz[i]);
-				temp_O_val += temp_E_val;
-				energy += H.get_coupling(term_name) * temp_E_val;
+			//Each Observable is itself a sum of Interactions
+			temp_O_val = std::complex<double>(0.0, 0.0);
+			auto interaction_list = temp_function[i].get();
+
+			for (auto interaction = interaction_list.begin(); interaction != interaction_list.end(); ++interaction) {
+
+				temp_O_val += (*interaction)->diag(WF.conf_ref());
+
+				//get flips
+				f = (*interaction)->off_diag(WF.conf_ref());
+
+				//iterate through flips
+				for (int i = 0; i < f.multipliers.size(); ++i) {
+					temp_O_val += f.multipliers[i] * WF.psi_over_psi(f.flips[i], f.new_sz[i]);
+				}
+
 			}
-			timer.flag_end_time("Energy fliplist iteration");
+
+			temp_function_eval.push_back(temp_O_val);
+			
 		}
-		observable_measures[term_name].push_back((1.0 / (lat.get_N())) * temp_O_val);
+
+		observable_function_measures[term_name].push_back(temp_function_eval);
+
 	}
+	timer.flag_end_time("Obs function calculation");
 
 }
 
