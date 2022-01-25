@@ -152,6 +152,7 @@ class ProjectedState : public Wavefunction {
 	void initialize_matrices();
 	std::complex<double> calc_det();
 	void upinvhop2(int, int, int, int);
+	void upinvhop2_flip(int, int, int, int);
 	void set_configuration(std::vector<int> conf);
 	bool try_configuration();
 	std::complex<double> psi_over_psi2(int site1, int site2, int new_sz1, int new_sz2);
@@ -229,6 +230,7 @@ public:
 	std::complex<double> psi_over_psi(std::vector<int>& flips, std::vector<int>& new_sz);
 
 	void update(std::vector<int>& flips, std::vector<int>& new_sz);
+	void update(std::vector<int>& flips, std::vector<int>& new_sz, std::complex<double> pop);
 
 	void update(std::vector<int>& ring_swap) {
 		std::vector<int> sz(ring_swap.size());
@@ -270,6 +272,8 @@ public:
 	//Tests
 
 	bool test_2_spin_swap_pop(bool);
+
+	bool test_2_spin_flip_pop(std::vector<int>& flips, std::vector<int>& new_sz);
 
 	bool test_3_spin_swap_pop(bool);
 	

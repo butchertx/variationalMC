@@ -27,6 +27,8 @@ struct results_struct {
     std::complex<double> J_err;
     std::complex<double> K;
     std::complex<double> K_err;
+    std::complex<double> D;
+    std::complex<double> D_err;
 };
 
 results_struct run_mc(lattice_options, mean_field_options, model_options, vmc_options);
@@ -67,11 +69,11 @@ int main(int argc, char* argv[]) {
     makePath("./results");
     std::ofstream results_file;
     results_file.open(outfile_name);
-    results_file << ", E, E_err, <S_i * S_j>, <S_i * S_j>_err, <(S_i * S_j)^2>, <(S_i * S_j)^2>_err\n";
+    results_file << ", E, E_err, <S_i * S_j>, <S_i * S_j>_err, <(S_i * S_j)^2>, <(S_i * S_j)^2>_err, <(S_i^z)^2>, <(S_i^z)^2>_err\n";
     results_file << "real, " << results.E.real() << ", " << results.E_err.real() << ", " << results.J.real() << ", " << results.J_err.real()
-        << ", " << results.K.real() << ", " << results.K_err.real() << "\n";
+        << ", " << results.K.real() << ", " << results.K_err.real() << results.D.real() << ", " << results.D_err.real() << "\n";
     results_file << "imag, " << results.E.imag() << ", " << results.E_err.imag() << ", " << results.J.imag() << ", " << results.J_err.imag()
-        << ", " << results.K.imag() << ", " << results.K_err.imag() << "\n";
+        << ", " << results.K.imag() << ", " << results.K_err.imag() << results.D.imag() << ", " << results.D_err.imag() << "\n";
 
     timer.flag_end_time("Total Program Time");
     timer.print_timers();
@@ -133,7 +135,10 @@ results_struct run_mc(lattice_options lat_options, mean_field_options mf_options
         results.J_err = sampler.get_observable_err("Bilinear");
         results.K = 1.0 + sampler.get_observable("SU(3) Exchange") - sampler.get_observable("Bilinear");
         results.K_err = sampler.get_observable_err("SU(3) Exchange") + sampler.get_observable_err("Bilinear");
+        results.D = sampler.get_observable("Single Ion");
+        results.D_err = sampler.get_observable_err("Single Ion");
         std::cout << "Results: E = " << results.E << " +- " << results.E_err << "\n";
+        std::cout << "Results: <Sz^2> = " << results.D << " +- " << results.D_err << "\n";
         std::cout << "\n\n";
         sampler.print_timers();
         
@@ -172,6 +177,13 @@ SpinModel create_Hamiltonian(Lattice l, double J, double K) {
     }
     ham.add_term("SU(3) Exchange", p12, { K, 0.0 });
     ham.add_constant(E0);
+
+    Observable ds2("Single Ion");
+    for (int i = 0; i < l.get_N(); ++i) {
+        auto* I0 = new SingleIonAnisotropy(i, 1.0);
+        ds2.add_interaction(I0);
+    }
+    ham.add_term("Single Ion", ds2, { 0.0, 0.0 });
 
     return ham;
 }

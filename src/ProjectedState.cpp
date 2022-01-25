@@ -1,6 +1,14 @@
 #include "ProjectedState.h"
 
-void print_matrix(const char* desc, MKL_INT m, MKL_INT n, MKL_Complex16* a, MKL_INT lda);
+void print_matrix(const char* desc, MKL_INT m, MKL_INT n, MKL_Complex16* a, MKL_INT lda) {
+	std::cout << desc << ":\n";
+	for (int i = 0; i < m; ++i) {
+		for (int j = 0; j < n-1; ++j) {
+			std::cout << a[i * lda + j] << ",";
+		}
+		std::cout << a[i * lda + n - 1] << "\n";
+	}
+}
 
 ProjectedState::ProjectedState(MeanFieldAnsatz& M_, RandomEngine& rand_)
 	: ansatz(M_), rand(rand_) {
@@ -143,8 +151,14 @@ void ProjectedState::update(std::vector<int>& flips, std::vector<int>& new_sz) {
 
 	if (flips.size() == 2) {
 		pop = psi_over_psi(flips, new_sz);
-		update(flips[0], flips[1], pop);
 		jastrow.update_tables(flips, new_sz, configuration);
+		if (configuration[flips[0]] == new_sz[1] && configuration[flips[1]] == new_sz[0]) {
+			update(flips[0], flips[1], pop);
+		}
+		else {
+			//test_2_spin_flip_pop(flips, new_sz);
+			update(flips, new_sz, pop);
+		}
 	}
 	else if (flips.size() == 3) {
 		assert(!jastrow.exist()); //jastrow not implemented for ring exchanges
@@ -184,6 +198,23 @@ void ProjectedState::update(int site1, int site2, std::complex<double> psioverps
 	templabel = configuration[site1];
 	configuration[site1] = configuration[site2];
 	configuration[site2] = templabel;
+	det *= psioverpsi;
+}
+
+void ProjectedState::update(std::vector<int>& sites, std::vector<int>& new_sz, std::complex<double> psioverpsi) {
+
+	assert(sites.size() == 2);
+	assert(new_sz.size() == 2);
+
+	if (configuration[sites[0]] < configuration[sites[1]]) {
+		upinvhop2_flip((sites[0] + (1 - new_sz[0]) * N), parton_labels[sites[0]], (sites[1] + (1 - new_sz[1]) * N), parton_labels[sites[1]]);
+	}
+	else {
+		upinvhop2_flip((sites[1] + (1 - new_sz[1]) * N), parton_labels[sites[1]], (sites[0] + (1 - new_sz[0]) * N), parton_labels[sites[0]]);
+	}
+
+	configuration[sites[0]] = new_sz[0];
+	configuration[sites[1]] = new_sz[1];
 	det *= psioverpsi;
 }
 
@@ -277,6 +308,41 @@ void ProjectedState::upinvhop2(int rowk, int colk, int rowl, int coll) {
 	cblas_zgemm3m(CblasRowMajor, CblasNoTrans, CblasNoTrans, N3, N, 2, &g, UP1, 2, UP3, N, &beta, Winv, N);
 }
 
+void ProjectedState::upinvhop2_flip(int rowk, int colk, int rowl, int coll) {
+	//perform the update of Winv according to the Woodbury Matrix identity
+	//Winv' = Winv - Winv * U (I_k + V A^-1 U)^-1 V A^-1
+	//where U and V are defined so A' = A + UV (A is the Slater matrix)
+	//UP1 is Winv * U; the i and j columns of Winv where i and j are the sites to update
+	//UP2 is V A^-1 (which can be computed easily from rows of Winv)
+	//UP3 is (I_k + V A^-1 U)^-1 (2x2) times UP2 (2xN)
+
+	int N3 = 3 * N;
+
+	std::complex<double>
+		c11 = Winv[rowl * N + coll],
+		c22 = Winv[rowk * N + colk],
+		c12 = -Winv[rowk * N + coll],
+		c21 = -Winv[rowl * N + colk];
+
+	std::complex<double> g = c11 * c22 - c12 * c21, beta = { 1.0, 0.0 };
+
+	cblas_zcopy(N3, &(Winv[colk]), N, UP1, 2);
+	cblas_zcopy(N3, &(Winv[coll]), N, &(UP1[1]), 2);
+	cblas_zcopy(N, &(Winv[rowk * N]), 1, UP2, 1);
+	UP2[colk] -= std::complex<double>(1.0, 0.0);
+	cblas_zcopy(N, &(Winv[rowl * N]), 1, &(UP2[N]), 1);
+	UP2[N + coll] -= std::complex<double>(1.0, 0.0);
+
+	g = std::complex<double>({ -1.0, 0.0 }) / g;
+
+	for (int i = 0; i < N; ++i) {
+		UP3[i] = c11 * UP2[i] + c12 * UP2[N + i];
+		UP3[N + i] = c21 * UP2[i] + c22 * UP2[N + i];
+	}
+
+	cblas_zgemm3m(CblasRowMajor, CblasNoTrans, CblasNoTrans, N3, N, 2, &g, UP1, 2, UP3, N, &beta, Winv, N);
+}
+
 //Tests
 
 bool ProjectedState::test_2_spin_swap_pop(bool output) {
@@ -308,6 +374,36 @@ bool ProjectedState::test_2_spin_swap_pop(bool output) {
 	}
 
 	
+
+	return success;
+}
+
+bool ProjectedState::test_2_spin_flip_pop(std::vector<int>& flips, std::vector<int>& new_sz) {
+	//std::cout << "Warning: set all Jastrow factors = 0 for accurate results\n";
+	bool success = false;
+	std::vector<int> old_sz = { configuration[flips[0]], configuration[flips[1]] };
+
+	//Calculate psi fast and slow
+	std::complex<double> pfast, pslow, oldpsi = calc_det();
+	//fast
+	pfast = psi_over_psi(flips, new_sz);
+	//slow
+	if (std::abs(pfast) > 1e-10) {
+		update(flips, new_sz, pfast);
+		set_configuration(configuration);
+		pslow = calc_det() / oldpsi;
+
+		if (std::abs(std::abs(pslow) - std::abs(pfast)) > 1e-8 && std::abs(pfast) > 1e-16) {
+			std::cout << "Test 2 spin flip psi over psi\n";
+			std::cout << "Swap sites " << flips[0] << ", " << flips[1] << "\n";
+			std::cout << "With sz = " << old_sz[0] << ", " << old_sz[1] << "\n";
+			std::cout << "And new_sz = " << new_sz[0] << ", " << new_sz[1] << "\n";
+			std::cout << "psi fast = " << pfast.real() << " + " << pfast.imag() << "i\n";
+			std::cout << "psi slow = " << pslow.real() << " + " << pslow.imag() << "i\n";
+		}
+	}
+
+
 
 	return success;
 }

@@ -268,6 +268,32 @@ public:
 
 };
 
+class SingleIonAnisotropy : public Interaction {
+
+	int i;
+	double S;
+
+	FlipList flip_off_diag = FlipListDiag();
+
+public:
+
+	SingleIonAnisotropy(int i_in, double S_in)
+		: Interaction(1.0), i(i_in), S(S_in) {};
+
+	std::complex<double> diag(const std::vector<int>& state) {
+		return S * S * state[i] * state[i];
+	}
+
+	FlipList& off_diag(const std::vector<int>& state) {
+		return flip_off_diag;
+	}
+
+	void print_info(const std::vector<int>& state) {
+		std::cout << "Site (i) = (" << i << ")\n";
+		std::cout << "Spin (szi) = (" << state[i]  << ")\n";
+	}
+};
+
 //class BilinearSpinInteraction : public Interaction {
 //protected:
 //	double S; //spin

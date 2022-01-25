@@ -222,7 +222,7 @@ namespace vmctype {
 
 	struct vmc_options {
 		int steps_per_measure, num_measures, throwaway_measures;
-		bool optimization = false;
+		bool su3 = true, optimization = false;
 	};
 
 	void to_json(json& j, const HoppingTerm& p);

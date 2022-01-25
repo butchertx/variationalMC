@@ -159,6 +159,12 @@ vmc_options read_json_vmc(json j) {
 	else {
 		vmc_opt.optimization = false;
 	}
+	if (j["vmc"].contains("su3")) {
+		vmc_opt.su3 = j["vmc"]["su3"].get<bool>();
+	}
+	else {
+		vmc_opt.su3 = true;
+	}
 	
 	if (!vmc_opt.optimization) {
 		vmc_opt.num_measures = j["vmc"]["measures"].get<int>();

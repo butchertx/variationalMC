@@ -44,7 +44,7 @@ class MonteCarloEngine {
 	std::map<std::string, std::vector<std::complex<double>>> observable_measures;
 	std::map<std::string, std::vector<std::vector<std::complex<double>>>> observable_function_measures;
 
-	//void step_su2(std::string step_type);
+	void step_su2();
 	void step_su3(int num_swap);
 
 	//void propose_ring_exchange(int, bool, std::vector<int>& sites, std::vector<int>& tris);
@@ -91,7 +91,12 @@ public:
 				//	WF.write_amplitudes(&outfile);
 				//	outfile.close();
 				//}
-				step_su3(2);
+				if (params.su3) {
+					step_su3(2);
+				}
+				else {
+					step_su2();
+				}
 			}
 			timer.flag_end_time("Steps");
 			timer.flag_start_time("Energy Calculation");

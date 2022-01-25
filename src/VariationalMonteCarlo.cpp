@@ -18,87 +18,64 @@ std::vector<double> vec_i(std::vector<std::complex<double>> cvec) {
 }
 
 
-//void MonteCarloEngine::step_su2(std::string step_type) {
-//	
-//	//Propose move
-//	std::vector<int> sites(2, 0), spins(2, 0);
-//	int tempspin = 0;
-//	if (strcmp(step_type.c_str(), "NZ_ADAPT") == 0) {
-//		//swap spins at two sites or change Nz-sector according to Bieri(2012) app. C
-//		while (sites[0] == sites[1]) {
-//			sites[0] = rand.get_rand_site();
-//			sites[1] = rand.get_rand_site();
-//		}
-//		std::cout << "Remember to change so that spins[i] holds the NEW spin at site [i]\n";
-//		spins[0] = conf.read_spin(sites[0]);
-//		spins[1] = conf.read_spin(sites[1]);
-//		std::cout << "Spins are : (" << spins[0] << "," << spins[1] << ")\n";
-//
-//		if (spins[0] != spins[1] || spins[0] == 0) {
-//			if (spins[0] == spins[1]) {
-//				spins[0] = 1;
-//				spins[1] = -1;
-//				std::cout << "Flip up and down\n";
-//			}
-//			else if (spins[0] != 0 && spins[1] != 0 && rand.get_rand_prob() < 0.5) {
-//				spins[0] = 0;
-//				spins[1] = 0;
-//				std::cout << "Flip to 0\n";
-//			}
-//			else {
-//				tempspin = spins[0];
-//				spins[0] = spins[1];
-//				spins[1] = tempspin;
-//				std::cout << "Swap\n";
-//			}
-//		}
-//		else {
-//			//pick two different-spin sites and swap
-//			sites[1] = sites[0];
-//			spins[1] = spins[0];
-//			while (sites[0] == sites[1] || spins[0] == spins[1]) {
-//				sites[0] = rand.get_rand_site();
-//				spins[1] = conf.read_spin(sites[0]);
-//				sites[1] = rand.get_rand_site();
-//				spins[0] = conf.read_spin(sites[1]);
-//			}
-//			std::cout << "Swapping two different sites\n";
-//		}
-//
-//		double sqrt_p = std::abs(WF.psi_over_psi(conf.ref(), sites));//, spins));
-//		//std::cout << "sqrt_p = " << sqrt_p << "\n";
-//		if (rand.get_rand_prob() < sqrt_p * sqrt_p) {
-//			conf.set(sites[0], sites[1], spins[0], spins[1]);
-//			//std::cout << "Move Accepted, Nz = " << conf.get_Nz() << "\n";
-//		}
-//		
-//	}
-//	else if (strcmp(step_type.c_str(), "NZ_CONST") == 0) {
-//		while (sites[0] == sites[1] || spins[0] == spins[1]) {
-//			sites[0] = rand.get_rand_site();
-//			sites[1] = lat.get_neighbor(sites[0], rand.get_rand_neighbor());
-//			spins[0] = conf.read_spin(sites[1]);
-//			spins[1] = conf.read_spin(sites[0]);
-//		}
-//		
-//		//std::cout << "Spins are : (" << spins[0] << "," << spins[1] << ")\n";
-//		//Check probability and accept/reject move
-//		std::complex<double> sqrt_p = WF.psi_over_psi(sites, spins);
-//		//if ((double)std::abs(std::abs(sqrt_p) - std::abs(WF.psi_over_psi_full_calculation(sites[0], sites[1], spins[0], spins[1]))) > 1e-10) {
-//			//std::cout << "Sqrt_p and Full Det: " << sqrt_p << "; " << WF.psi_over_psi_full_calculation(sites[0], sites[1], spins[0], spins[1]) << "\n";
-//		//}
-//		//std::cout << "sqrt_p = " << sqrt_p << "\n";
-//		//std::cout << "psi/psi full calculation = " << WF.psi_over_psi_full_calculation(sites[0], sites[1], spins[0], spins[1]) << "\n";
-//		if (rand.get_rand_prob() < std::abs(sqrt_p) * std::abs(sqrt_p)) {
-//			WF.update(sites[0], sites[1], sqrt_p);
-//			//std::cout << "Move Accepted, Nz = " << conf.get_Nz() << "\n";
-//		}
-//	}
-//
-//
-//
-//	
-//}
+void MonteCarloEngine::step_su2() {
+
+	//Propose move
+	std::vector<int> sites(2, 0), spins(2, 0);
+	auto wf_conf = WF.conf_ref();
+	int tempspin = 0;
+
+	//swap spins at two sites or change Nz-sector according to Bieri(2012) app. C
+	while (sites[0] == sites[1]) {
+		sites[0] = rand.get_rand_site();
+		sites[1] = rand.get_rand_site();
+	}
+	spins[0] = wf_conf[sites[0]];
+	spins[1] = wf_conf[sites[1]];
+
+	if (spins[0] != spins[1]) {
+		if (spins[0] != 0 && spins[1] != 0 && rand.get_rand_prob() < 0.5) {
+			// |1>|-1> and coin flip
+			//	flip to |0>|0>
+			spins[0] = 0;
+			spins[1] = 0;
+		}
+		else {
+			// |0>|1>, |1>|0>, or (|1>|-1> and coin flip)
+			// swap spins
+			tempspin = spins[0];
+			spins[0] = spins[1];
+			spins[1] = tempspin;
+		}
+	}
+	else if (spins[0] == 0){
+		// |0>|0>
+		// switch to |1>|-1>
+		spins[0] = 1;
+		spins[1] = -1;
+	}
+	else {
+		// |1>|1> or |-1>|-1>
+		//pick two different-spin sites and swap
+		sites[1] = sites[0];
+		spins[1] = spins[0];
+		while (spins[0] == spins[1]) {
+			sites[0] = rand.get_rand_site();
+			spins[1] = wf_conf[sites[0]];
+			sites[1] = rand.get_rand_site();
+			spins[0] = wf_conf[sites[1]];
+		}
+	}
+
+	double sqrt_p = std::abs(WF.psi_over_psi(sites, spins));
+	if (rand.get_rand_prob() < sqrt_p * sqrt_p) {
+		WF.update(sites, spins);
+	}
+
+
+
+	
+}
 
 //void MonteCarloEngine::propose_ring_exchange(int tri_label, bool CC, std::vector<int>& affected_sites, std::vector<int>& affected_rings) {
 //
@@ -318,6 +295,15 @@ void MonteCarloEngine::measure_energy() {
 	//std::cout << energy.real() / (2 * lat.get_N()) << "\n";
 	E.push_back((energy.real() + H.get_E0().real()) / (lat.get_N()));
 	E_imag.push_back((energy.imag() + H.get_E0().imag()) / lat.get_N());
+
+	//if (!params.su3) {
+	//	double nz_val = 0.0;
+	//	auto conf = WF.conf_ref();
+	//	for (int i = 0; i < conf.size(); ++i) {
+	//		nz_val += (1 - conf[i]*conf[i]);
+	//	}
+	//	Nz.push_back(nz_val);
+	//}
 }
 
 void MonteCarloEngine::measure_obs_functions() {

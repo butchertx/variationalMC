@@ -74,7 +74,8 @@
   "vmc": {
     "steps": 10,
     "measures": 1000,
-    "throwaway": 100,
+    "throwaway": 200,
+    "su3":  false,
     "optimization":  false
   }
 }
