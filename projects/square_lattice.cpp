@@ -215,6 +215,9 @@ std::vector<Observable> create_Correlation_ladder(Lattice l) {
 }
 
 JastrowTable create_Jastrow(Lattice lattice, JastrowTableOptions jopt) {
+    //
+    //  Sz options
+    //
     JastrowFactorOptions j(jopt.sz);
 
     //assume isotropic=true
@@ -224,7 +227,7 @@ JastrowTable create_Jastrow(Lattice lattice, JastrowTableOptions jopt) {
         params = j.values;
     } 
     else{
-        std::cout << "Initializing Jastrow with all zeros\n";
+        std::cout << "Initializing Jastrow Sz with all zeros\n";
         params = std::vector<double>(j.distance_max, 0.0);
     }
 
@@ -233,6 +236,26 @@ JastrowTable create_Jastrow(Lattice lattice, JastrowTableOptions jopt) {
     for (int i = 0; i < params.size(); ++i) {
         neighbors = lattice.get_neighbors(i);
         jlist.push_back(JastrowFactor(params[i], neighbors));
+    }
+
+    //
+    //  Sz2 options
+    //
+    JastrowFactorOptions j2(jopt.sz2);
+
+    //assume isotropic=true
+
+    if (j2.distance_max == j2.values.size()) {
+        params = j2.values;
+    }
+    else {
+        std::cout << "Initializing Jastrow Sz2 with all zeros\n";
+        params = std::vector<double>(j2.distance_max, 0.0);
+    }
+
+    for (int i = 0; i < params.size(); ++i) {
+        neighbors = lattice.get_neighbors(i);
+        jlist.push_back(JastrowFactor(params[i], neighbors, true));
     }
 
     return JastrowTable(jlist);

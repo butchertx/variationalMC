@@ -118,6 +118,9 @@ mean_field_options read_json_wavefunction(json j) {
 			if (j["wavefunction"]["jastrow"].contains("sz")) {
 				wf_opt.jastrow.sz = j["wavefunction"]["jastrow"]["sz"].get<JastrowFactorOptions>();
 			}
+			if (j["wavefunction"]["jastrow"].contains("sz2")) {
+				wf_opt.jastrow.sz2 = j["wavefunction"]["jastrow"]["sz2"].get<JastrowFactorOptions>();
+			}
 		}
 	}
 	else {

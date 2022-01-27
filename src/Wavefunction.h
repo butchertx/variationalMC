@@ -58,9 +58,10 @@
 //};
 
 class JastrowFactor {
-	//note: only couples to Sz for now
+	bool sz2 = false; // true if the jastrow factor couples to (S^z)^2
 	double strength = 0.0;
 	std::vector<std::vector<int>> neighbor_table;
+	std::vector<std::vector<bool>> neighbor_bool;
 	std::vector<std::set<int>> neighbor_set;
 	std::vector<double> exp_table = {};
 	double conf_sum = 0.0;
@@ -76,11 +77,19 @@ public:
 		return neighbor_table;
 	}
 
+	bool check_neighbors(int site1, int site2) {
+		return neighbor_bool[site1][site2];
+	}
+
 	JastrowFactor() {};
 
 	JastrowFactor(double strength_, std::vector<std::vector<int>> neighbor_table_);
 	
 	JastrowFactor(double strength_, std::vector<std::vector<int>> neighbor_table_, std::vector<int>& configuration_);
+
+	JastrowFactor(double strength_, std::vector<std::vector<int>> neighbor_table_, bool sz2_flag);
+
+	JastrowFactor(double strength_, std::vector<std::vector<int>> neighbor_table_, std::vector<int>& configuration_, bool sz2_flag);
 
 	void initialize_table(std::vector<int>&);
 
@@ -108,7 +117,7 @@ public:
 class JastrowTable {
 
 	std::vector<JastrowFactor> jastrows;
-	std::vector<std::vector<int>> factor_lookup;
+	//std::vector<std::vector<std::vector<int>>> factor_lookup;
 	MemTimeTester timer;
 
 public:
@@ -125,19 +134,25 @@ public:
 	JastrowTable(std::vector<JastrowFactor> jastrows_) : jastrows(jastrows_) {};
 
 	void initialize_tables(std::vector<int>& configuration) {
-		for (int i = 0; i < configuration.size(); ++i) {
-			factor_lookup.push_back(std::vector<int>(configuration.size()));
-		}
+		//for (int i = 0; i < configuration.size(); ++i) {
+		//	factor_lookup.push_back({});
+		//	factor_lookup[i].push_back(std::vector<int>(configuration.size(), {}));
+		//}
+
 		std::vector<std::vector<int>> neighbor_table;
+
 		for (int i = 0; i < jastrows.size(); ++i) {
+
 			jastrows[i].initialize_table(configuration);
 			neighbor_table = jastrows[i].get_neighbor_table();
-			for (int x = 0; x < neighbor_table.size(); ++x) {
-				for (int yidx = 0; yidx < neighbor_table[x].size(); ++yidx) {
-					factor_lookup[x][neighbor_table[x][yidx]] = i; //i is the jastrow factor index for the pairs of sites x and its neighbors
-					//assumes there is only a single factor coupling each pair of sites - will need to update to include a list of factors when adding quad. terms
-				}
-			}
+
+			//for (int x = 0; x < neighbor_table.size(); ++x) {
+			//	for (int yidx = 0; yidx < neighbor_table[x].size(); ++yidx) {
+
+			//		factor_lookup[x][neighbor_table[x][yidx]].push_back(i); //i is the jastrow factor index for the pairs of sites x and its neighbors
+			//		//Each pair of sites x and neighbor_table[x][yidx] has a list of jastrow factors that couple them (and this list can be empty)
+			//	}
+			//}
 		}
 	}
 
@@ -157,7 +172,7 @@ public:
 		timer.flag_start_time("lazy eval");
 		double result = 1.0;
 		for (int j = 0; j < jastrows.size(); ++j) {
-			result *= jastrows[j].lazy_eval(a, b, c, j == factor_lookup[a[0]][a[1]]);
+			result *= jastrows[j].lazy_eval(a, b, c);
 		}
 		timer.flag_end_time("lazy eval");
 		return result;

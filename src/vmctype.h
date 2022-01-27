@@ -167,6 +167,7 @@ namespace vmctype {
 	struct JastrowTableOptions {
 
 		JastrowFactorOptions sz;
+		JastrowFactorOptions sz2;
 
 	};
 
