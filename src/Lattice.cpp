@@ -46,6 +46,9 @@ Lattice_type_t Lattice_type_from_string(std::string str) {
 	else if (str.compare("square") == 0) {
 		return SQUARE;
 	}
+    else if (str.compare("diamond") == 0){
+        return DIAMOND;
+    }
 	else if (str.compare("diamond conventional cell") == 0) {
 		return DIAMONDCC;
 	}
