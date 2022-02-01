@@ -115,6 +115,10 @@ mean_field_options read_json_wavefunction(json j) {
 		}
 		if (j["wavefunction"].contains("jastrow")) {
 			wf_opt.jastrow_flag = true;
+			if (j["wavefunction"]["jastrow"].contains("density")) {
+				wf_opt.jastrow.density_flag = true;
+				wf_opt.jastrow.density_coupling = j["wavefunction"]["jastrow"]["density"]["strength"];
+			}
 			if (j["wavefunction"]["jastrow"].contains("sz")) {
 				wf_opt.jastrow.sz = j["wavefunction"]["jastrow"]["sz"].get<JastrowFactorOptions>();
 			}
@@ -158,6 +162,10 @@ vmc_options read_json_vmc(json j) {
 	vmc_options vmc_opt;
 	if (j["vmc"].contains("optimization")) {
 		vmc_opt.optimization = j["vmc"]["optimization"].get<bool>();
+		if (vmc_opt.optimization) {
+			vmc_opt.sr.bins = j["vmc"]["SR"]["bins"].get<int>();
+			vmc_opt.sr.timestep = j["vmc"]["SR"]["timestep"].get<double>();
+		}
 	}
 	else {
 		vmc_opt.optimization = false;
@@ -169,11 +177,10 @@ vmc_options read_json_vmc(json j) {
 		vmc_opt.su3 = true;
 	}
 	
-	if (!vmc_opt.optimization) {
-		vmc_opt.num_measures = j["vmc"]["measures"].get<int>();
-		vmc_opt.steps_per_measure = j["vmc"]["steps"].get<int>();
-		vmc_opt.throwaway_measures = j["vmc"]["throwaway"].get<int>();
-	}
+	vmc_opt.num_measures = j["vmc"]["measures"].get<int>();
+	vmc_opt.steps_per_measure = j["vmc"]["steps"].get<int>();
+	vmc_opt.throwaway_measures = j["vmc"]["throwaway"].get<int>();
+
 	return vmc_opt;
 }
 

@@ -1,5 +1,11 @@
+#ifndef _USE_MATH_DEFINES
+#define _USE_MATH_DEFINES
+#endif // !_USE_MATH_DEFINES
+#include "mkl.h"
 #include "VariationalMonteCarlo.h"
 #include <exception>
+#include "vmc_numerical.h"
+#include "vmc_io.h"
 
 std::vector<double> vec_r(std::vector<std::complex<double>> cvec) {
 	std::vector<double> result;
@@ -285,7 +291,7 @@ void MonteCarloEngine::measure_energy() {
 			}
 			timer.flag_end_time("Energy fliplist iteration");
 		}
-		observable_measures[term_name].push_back((1.0 / (lat.get_N())) * temp_O_val);
+		observable_measures[term_name].push_back(temp_O_val);
 	}
 	//if (std::abs(energy.imag()) > 1e-8) {
 	//	std::cout << "Imaginary Energy: " << std::abs(energy.imag()) << "\n";
@@ -293,8 +299,8 @@ void MonteCarloEngine::measure_energy() {
 	//}
 
 	//std::cout << energy.real() / (2 * lat.get_N()) << "\n";
-	E.push_back((energy.real() + H.get_E0().real()) / (lat.get_N()));
-	E_imag.push_back((energy.imag() + H.get_E0().imag()) / lat.get_N());
+	E.push_back((energy.real() + H.get_E0().real()));
+	E_imag.push_back((energy.imag() + H.get_E0().imag()));
 
 	//if (!params.su3) {
 	//	double nz_val = 0.0;
@@ -376,6 +382,95 @@ double MonteCarloEngine::error(std::vector<double>::iterator vals_begin, std::ve
 		}
 		std_dev = sqrt(std_dev / NMC / (NMC - 1));
 		return std_dev;
+	}
+}
+
+void MonteCarloEngine::run() {
+	if (!params.optimization) {
+		run_bin(false);
+	}
+	else {
+		// run SR iterations
+		// this would be much clearer with some simple linear algebra implementation (MKL?)
+		std::vector<std::vector<double>> ok_measures;
+		std::vector<double> E_bin;
+
+		std::vector<std::vector<double>> sjk; // vparam covariation
+		double e_mean;
+		std::vector<double> ok_mean, E_ok_mean;
+		std::vector<double> fk; // cross correlation with H
+
+		std::vector<double> alpha;
+
+		for (int SR_bin = 0; SR_bin < params.sr.bins; ++SR_bin) {
+
+			ok_measures.clear();
+			E_bin.clear();
+
+			// run bin and collect O_k measurements
+			ok_measures = run_bin(true);
+			for (int m = 0; m < ok_measures.size(); ++m) {
+				ok_measures[m].insert(ok_measures[m].begin(), 1.0);
+			}
+			std::copy(E.end() - ok_measures.size(), E.end(), std::back_inserter(E_bin));
+			ok_mean = std::vector<double>(ok_measures[0].size(), 0.0);
+			E_ok_mean = ok_mean;
+			e_mean = 0.0;
+			for (int v = 0; v < ok_measures[0].size(); ++v) {
+				E_ok_mean[v] = 0.0;
+				for (int m = 0; m < ok_measures.size(); ++m) {
+					if (v == 0) {
+						e_mean += E_bin[m] / E_bin.size();
+					}
+					ok_mean[v] += ok_measures[m][v] / E_bin.size();
+					E_ok_mean[v] += E_bin[m] * ok_measures[m][v] / E_bin.size();
+				}
+			}
+
+
+			// calculate forces and cross-correlations
+			// this is a naive implementation of the cross-correlation.  It is hopefully not too slow unless there are many variational parameters
+			sjk = std::vector<std::vector<double>>(ok_measures[0].size(), std::vector<double>(ok_measures[0].size()));
+			fk = std::vector<double>(ok_measures[0].size(), 0.0);
+			for (int j = 0; j < sjk.size(); ++j) {
+				for (int k = 0; k < sjk.size(); ++k) {
+					sjk[j][k] = 0.0;
+					for (int m = 0; m < ok_measures.size(); ++m) {
+						sjk[j][k] += ok_measures[m][j] * ok_measures[m][k];
+					}
+					sjk[j][k] /= ok_measures.size();
+				}
+			}
+			for (int j = 0; j < sjk.size(); ++j) {
+				for (int k = 0; k < sjk.size(); ++k) {
+					sjk[j][k] -= sjk[j][0] * sjk[k][0];
+				}
+			}
+
+			for (int k = 0; k < fk.size(); ++k) {
+				fk[k] = ok_mean[k] * e_mean - E_ok_mean[k];
+			}
+
+
+
+
+			// invert and solve for d\alpha
+			std::vector<double> d_alpha = solve_linear_system(sjk, fk);
+
+			// save values of old params and energy bins
+			alpha = WF.get_parameters();
+			v_params_record.push_back(alpha);
+			E_bins_record.push_back(e_mean);
+
+			// send new params to WF
+			for (int k = 0; k < alpha.size(); ++k) {
+				alpha[k] += params.sr.timestep * d_alpha[k+1];
+			}
+			WF.update_parameters(alpha);
+
+			std::cout << "SR iteration " << SR_bin + 1 << " of " << params.sr.bins << "\n";
+			std::cout << "Bin energy = " << e_mean << "; New params: " << vec2str(alpha) << "\n";
+		}
 	}
 }
 

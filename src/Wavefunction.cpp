@@ -1,6 +1,50 @@
 #include "Wavefunction.h"
 #include "vmc_io.h"
 
+JastrowDensity::JastrowDensity(double strength_) : strength(strength_){}
+
+void JastrowDensity::initialize_Sz0(std::vector<int>& configuration_) {
+	sz0_density = 0.0;
+	for (int i = 0; i < configuration_.size(); ++i) {
+		sz0_density += (1 - configuration_[i] * configuration_[i]);
+	}
+	//sz0_density /= configuration_.size();
+}
+
+double JastrowDensity::greedy_eval(std::vector<int>& configuration_) {
+	int num_Sz0_greedy = 0;
+	for (int i = 0; i < configuration_.size(); ++i) {
+		num_Sz0_greedy += (1 - configuration_[i] * configuration_[i]);
+	}
+	return exp(strength * num_Sz0_greedy);// / configuration_.size());
+}
+
+double JastrowDensity::greedy_log_derivative(std::vector<int>& configuration_) {
+	int num_Sz0_greedy = 0;
+	for (int i = 0; i < configuration_.size(); ++i) {
+		num_Sz0_greedy += (1 - configuration_[i] * configuration_[i]);
+	}
+	return num_Sz0_greedy;
+}
+
+double JastrowDensity::conf_sum_difference(std::vector<int>& flips, std::vector<int>& new_sz, std::vector<int>& configuration_) {
+	
+	double new_sum = 0.0;
+	for (int s = 0; s < flips.size(); ++s) {
+		new_sum += configuration_[flips[s]] * configuration_[flips[s]] - new_sz[s] * new_sz[s];
+	}
+	
+	return new_sum; // / configuration_.size();
+}
+
+double JastrowDensity::lazy_eval(std::vector<int>& flips, std::vector<int>& new_sz, std::vector<int>& configuration_) {
+	return exp(strength * (sz0_density + conf_sum_difference(flips, new_sz, configuration_)));
+}
+
+void JastrowDensity::update_Sz0(std::vector<int>& flips, std::vector<int>& new_sz, std::vector<int>& configuration_) {
+	sz0_density += conf_sum_difference(flips, new_sz, configuration_);
+}
+
 JastrowFactor::JastrowFactor(double strength_, std::vector<std::vector<int>> neighbor_table_)
 	: strength(strength_), neighbor_table(neighbor_table_) {
 
@@ -71,6 +115,8 @@ void JastrowFactor::initialize_table(std::vector<int>& configuration_) {
 		for (auto neigh : site_neighbors) {
 			exp_table[site] += sz2 ? configuration_[neigh]*configuration_[neigh] : configuration_[neigh];
 		}
+	}
+	for (int site = 0; site < configuration_.size(); ++site) {
 		conf_sum += 0.5 * exp_table[site] * (sz2 ? configuration_[site] * configuration_[site] : configuration_[site]);
 	}
 }
@@ -82,10 +128,28 @@ double JastrowFactor::greedy_eval(std::vector<int>& configuration_) {
 	for (int site = 0; site < configuration_.size(); ++site) {
 		result += 0.5 * strength * (sz2 ? configuration_[site] * configuration_[site] : configuration_[site]) * exp_table[site];
 	}
-	return result;
+	return exp(result);
 }
 
-double JastrowFactor::lazy_eval(std::vector<int>& flip_sites, std::vector<int>& new_val, std::vector<int>& configuration_, bool are_neighbors) {
+double JastrowFactor::greedy_log_derivative(std::vector<int>& configuration_) {
+	assert(neighbor_table.size() == configuration_.size());
+	std::vector<int> site_neighbors;
+	double conf_sum_greedy = 0.0;
+	std::vector<double> exp_table_greedy;
+	for (int site = 0; site < configuration_.size(); ++site) {
+		exp_table_greedy.push_back(0.0);
+		site_neighbors = neighbor_table[site];
+		for (auto neigh : site_neighbors) {
+			exp_table_greedy[site] += sz2 ? configuration_[neigh] * configuration_[neigh] : configuration_[neigh];
+		}
+	}
+	for (int site = 0; site < configuration_.size(); ++site) {
+		conf_sum_greedy += 0.5 * exp_table_greedy[site] * (sz2 ? configuration_[site] * configuration_[site] : configuration_[site]);
+	}
+	return conf_sum_greedy;
+}
+
+double JastrowFactor::conf_sum_difference(std::vector<int>& flip_sites, std::vector<int>& new_val, std::vector<int>& configuration_, bool are_neighbors) {
 	//Note: this assumes only two sites have been changed - see M.W.Butcher thesis to generalize to any # of sites
 	assert(flip_sites.size() == 2);
 
@@ -106,29 +170,61 @@ double JastrowFactor::lazy_eval(std::vector<int>& flip_sites, std::vector<int>& 
 	double flip_sum = 0.0;
 	double neighbor_sum = 0.0;
 	int del_s = 0;
-
-	timer.flag_start_time("are neighbors");
 	if (are_neighbors) {
-		flip_sum = strength * (new_confs[0] * new_confs[1] - old_confs[0] * old_confs[1]
+		flip_sum = (new_confs[0] * new_confs[1] - old_confs[0] * old_confs[1]
 			- 0.5 * new_confs[0] * old_confs[1] - 0.5 * new_confs[1] * old_confs[0]);
 	}
-	timer.flag_end_time("are neighbors");
-	timer.flag_start_time("neighbor sum");
 	for (int flip_idx = 0; flip_idx < flip_sites.size(); ++flip_idx) {
 		del_s = (new_confs[flip_idx] - old_confs[flip_idx]);
-		neighbor_sum += 0.5 * strength * exp_table[flip_sites[flip_idx]] * del_s;
+		neighbor_sum += 0.5 * exp_table[flip_sites[flip_idx]] * del_s;
 	}
-	timer.flag_end_time("neighbor sum");
-	//timer.flag_start_time("exp calc");
-	return exp(flip_sum + neighbor_sum);
+	return flip_sum + neighbor_sum;
 }
+
+//double JastrowFactor::lazy_eval(std::vector<int>& flip_sites, std::vector<int>& new_val, std::vector<int>& configuration_, bool are_neighbors) {
+//	//Note: this assumes only two sites have been changed - see M.W.Butcher thesis to generalize to any # of sites
+//	assert(flip_sites.size() == 2);
+//
+//	//compute Sz or Sz^2
+//	std::vector<int> new_confs(new_val.size()), old_confs(flip_sites.size());
+//	for (int s = 0; s < flip_sites.size(); ++s) {
+//		if (sz2) {
+//			new_confs[s] = new_val[s] * new_val[s];
+//			old_confs[s] = configuration_[flip_sites[s]] * configuration_[flip_sites[s]];
+//		}
+//		else {
+//			new_confs[s] = new_val[s];
+//			old_confs[s] = configuration_[flip_sites[s]];
+//		}
+//	}
+//
+//	//compute tables
+//	double flip_sum = 0.0;
+//	double neighbor_sum = 0.0;
+//	int del_s = 0;
+//
+//	timer.flag_start_time("are neighbors");
+//	if (are_neighbors) {
+//		flip_sum = strength * (new_confs[0] * new_confs[1] - old_confs[0] * old_confs[1]
+//			- 0.5 * new_confs[0] * old_confs[1] - 0.5 * new_confs[1] * old_confs[0]);
+//	}
+//	timer.flag_end_time("are neighbors");
+//	timer.flag_start_time("neighbor sum");
+//	for (int flip_idx = 0; flip_idx < flip_sites.size(); ++flip_idx) {
+//		del_s = (new_confs[flip_idx] - old_confs[flip_idx]);
+//		neighbor_sum += 0.5 * strength * exp_table[flip_sites[flip_idx]] * del_s;
+//	}
+//	timer.flag_end_time("neighbor sum");
+//	//timer.flag_start_time("exp calc");
+//	return exp(flip_sum + neighbor_sum);
+//}
 
 double JastrowFactor::lazy_eval(std::vector<int>& flip_sites, std::vector<int>& new_val, std::vector<int>& configuration_) {
 	assert(flip_sites.size() == 2);
 	bool are_neighbors = neighbor_bool[flip_sites[0]][flip_sites[1]]; // neighbor_set[flip_sites[0]].find(flip_sites[1]) != neighbor_set[flip_sites[0]].end();
-	double result = lazy_eval(flip_sites, new_val, configuration_, are_neighbors);
+	double result = conf_sum_difference(flip_sites, new_val, configuration_, are_neighbors);
 	//timer.flag_end_time("exp calc");
-	return result;
+	return exp(strength * result);
 }
 
 void JastrowFactor::update_tables(std::vector<int>& flip_sites, std::vector<int>& new_val, std::vector<int>& old_configuration_) {
@@ -145,10 +241,15 @@ void JastrowFactor::update_tables(std::vector<int>& flip_sites, std::vector<int>
 		}
 	}
 
+	conf_sum += conf_sum_difference(flip_sites, new_val, old_configuration_, neighbor_bool[flip_sites[0]][flip_sites[1]]);
+
+	//this is super lazy and can probably be done in one loop
+	//subtract old part, update, then add new part to conf_sum
 	for (int flip_idx = 0; flip_idx < flip_sites.size(); ++flip_idx) {
 		for (auto site : neighbor_table[flip_sites[flip_idx]]) {
 			exp_table[site] += new_confs[flip_idx] - old_confs[flip_idx]; // update the spin in exp_table
-			conf_sum += 0.5 * exp_table[site] * (new_confs[flip_idx] - old_confs[flip_idx]); // update conf_sum with the new exp_table value
 		}
 	}
+
+	
 }

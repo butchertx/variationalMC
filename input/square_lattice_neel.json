@@ -49,15 +49,18 @@
       "Qphiv": [ 3.14159265359, 3.14159265359, 0 ]
     },
     "jastrow": {
+      "density": {
+        "strength":  0.0
+      },
       "sz": {
         "isotropic": true,
-        "distance_max": 1,
-        "values": [ 0.0 ]
+        "distance_max": 3,
+        "values": [ 0.0, 0.0, 0.0 ]
       },
       "sz2": {
         "isotropic": true,
-        "distance_max": 1,
-        "values": [ 0.0 ]
+        "distance_max": 3,
+        "values": [ 0.0, 0.0, 0.0 ]
       }
     }
   },
@@ -70,7 +73,7 @@
       },
       {
         "type": "su2 biquadratic",
-        "coupling": 1.0,
+        "coupling": 0.25,
         "neighbor_index":  0
       }
     ],
@@ -79,8 +82,12 @@
   "vmc": {
     "steps": 10,
     "measures": 1000,
-    "throwaway": 200,
+    "throwaway": 50,
     "su3":  false,
-    "optimization":  false
+    "optimization": true,
+    "SR": {
+      "bins": 10,
+      "timestep": 0.05
+    }
   }
 }

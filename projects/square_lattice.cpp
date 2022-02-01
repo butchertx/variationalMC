@@ -244,19 +244,28 @@ JastrowTable create_Jastrow(Lattice lattice, JastrowTableOptions jopt) {
     JastrowFactorOptions j2(jopt.sz2);
 
     //assume isotropic=true
+    if (j2.distance_max > -1) {
 
-    if (j2.distance_max == j2.values.size()) {
-        params = j2.values;
+        if (j2.distance_max == j2.values.size()) {
+            params = j2.values;
+        }
+        else {
+            std::cout << "Initializing Jastrow Sz2 with all zeros\n";
+            params = std::vector<double>(j2.distance_max, 0.0);
+        }
+
+        for (int i = 0; i < params.size(); ++i) {
+            neighbors = lattice.get_neighbors(i);
+            jlist.push_back(JastrowFactor(params[i], neighbors, true));
+        }
+    }
+
+    if (jopt.density_flag) {
+        JastrowDensity jdens(jopt.density_coupling);
+        return JastrowTable(jlist, jdens);
     }
     else {
-        std::cout << "Initializing Jastrow Sz2 with all zeros\n";
-        params = std::vector<double>(j2.distance_max, 0.0);
+        return JastrowTable(jlist);
     }
 
-    for (int i = 0; i < params.size(); ++i) {
-        neighbors = lattice.get_neighbors(i);
-        jlist.push_back(JastrowFactor(params[i], neighbors, true));
-    }
-
-    return JastrowTable(jlist);
 }

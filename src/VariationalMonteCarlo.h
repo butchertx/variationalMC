@@ -3,6 +3,7 @@
 #include <string>
 #include <chrono>
 #include <numeric>
+#include <algorithm>
 #include <map>
 #include "SpinModel.h"
 #include "Wavefunction.h"
@@ -11,6 +12,7 @@
 #include <fstream>
 #include <iostream>
 #include "vmctype.h"
+#include "vmc_io.h"
 
 std::vector<double> vec_r(std::vector<std::complex<double>> cvec);
 
@@ -44,6 +46,9 @@ class MonteCarloEngine {
 	std::map<std::string, std::vector<std::complex<double>>> observable_measures;
 	std::map<std::string, std::vector<std::vector<std::complex<double>>>> observable_function_measures;
 
+	std::vector<std::vector<double>> v_params_record;
+	std::vector<double> E_bins_record;
+
 	void step_su2();
 	void step_su3(int num_swap);
 
@@ -74,7 +79,10 @@ public:
 		observable_function_names.push_back(name_);
 	}
 
-	void run() {
+	std::vector<std::vector<double>> run_bin(bool opt) {
+
+		std::vector<std::vector<double>> v_param_derivatives;
+
 		for (int m = 0; m < params.num_measures; ++m) {
 			timer.flag_start_time("Steps");
 			for (int s = 0; s < params.steps_per_measure; ++s) {
@@ -105,11 +113,23 @@ public:
 			timer.flag_start_time("Obs Calculation");
 			measure_obs_functions();
 			timer.flag_end_time("Obs Calculation");
-			if (m % 1000 == 0) {
-				std::cout << "measurement " << m << " of " << params.num_measures << "\n";
+
+			if (opt) {
+				// measure vparam derivatives
+				v_param_derivatives.push_back(WF.log_derivative());
+				//std::cout << "Lazy and Greedy log derivatives: \n" << vec2str(WF.log_derivative()) << "\n" << vec2str(WF.greedy_log_derivative()) << "\n";
+			}
+			else {
+				if (m % 1000 == 0) {
+					std::cout << "measurement " << m << " of " << params.num_measures << "\n";
+				}
 			}
 		}
+
+		return v_param_derivatives;
 	}
+
+	void run();
 
 	//void run(bool step_outputs = false) {
 	//	std::ofstream outfile;
@@ -176,7 +196,7 @@ public:
 	void output_energy() {
 		double e_avg;
 		e_avg = std::accumulate(E.begin() + params.throwaway_measures, E.end(), 0.0) / (E.size() - params.throwaway_measures);
-		std::cout << "Average Energy: \n" << "E = " << e_avg << " +- " << error(E.begin() + params.throwaway_measures, E.end(), e_avg, 10) << "\n";
+		std::cout << "Average Energy: \n" << "E = " << e_avg / lat.get_N() << " +- " << error(E.begin() + params.throwaway_measures, E.end(), e_avg, 10) / lat.get_N() << "\n";
 	}
 
 	void output_Nz() {
@@ -231,6 +251,7 @@ public:
 	}
 
 	void print_timers() {
+		std::cout << "VMC Simulation timers:\n";
 		timer.print_timers();
 	}
 

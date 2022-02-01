@@ -166,6 +166,9 @@ namespace vmctype {
 
 	struct JastrowTableOptions {
 
+		bool density_flag = false;
+		double density_coupling = 0.0;
+
 		JastrowFactorOptions sz;
 		JastrowFactorOptions sz2;
 
@@ -224,6 +227,12 @@ namespace vmctype {
 	struct vmc_options {
 		int steps_per_measure, num_measures, throwaway_measures;
 		bool su3 = true, optimization = false;
+
+		struct sr_options {
+			int bins;
+			double timestep;
+		};
+		sr_options sr;
 	};
 
 	void to_json(json& j, const HoppingTerm& p);

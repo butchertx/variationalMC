@@ -150,8 +150,10 @@ void ProjectedState::update(std::vector<int>& flips, std::vector<int>& new_sz) {
 	std::complex<double> pop;
 
 	if (flips.size() == 2) {
-		pop = psi_over_psi(flips, new_sz);
+		/*std::cout << "Lazy and Greedy jastrows: \n" << jastrow.lazy_eval(flips, new_sz, configuration); 
+		double greedy_old = jastrow.greedy_eval(configuration);*/
 		jastrow.update_tables(flips, new_sz, configuration);
+		pop = psi_over_psi(flips, new_sz);
 		if (configuration[flips[0]] == new_sz[1] && configuration[flips[1]] == new_sz[0]) {
 			update(flips[0], flips[1], pop);
 		}
@@ -159,6 +161,8 @@ void ProjectedState::update(std::vector<int>& flips, std::vector<int>& new_sz) {
 			//test_2_spin_flip_pop(flips, new_sz);
 			update(flips, new_sz, pop);
 		}
+		/*double greedy_new = jastrow.greedy_eval(configuration);
+		std::cout << ", " << greedy_new / greedy_old << "\n";*/
 	}
 	else if (flips.size() == 3) {
 		assert(!jastrow.exist()); //jastrow not implemented for ring exchanges

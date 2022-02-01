@@ -249,8 +249,16 @@ public:
 		return jastrow.log_derivative(); 
 	}
 
+	std::vector<double> greedy_log_derivative() {
+		return jastrow.greedy_log_derivative(configuration);
+	}
+
 	void update_parameters(std::vector<double> new_params) {
 		jastrow.set_params(new_params);
+	};
+
+	std::vector<double> get_parameters() {
+		return jastrow.get_params();
 	};
 
 	//Additional Functions
