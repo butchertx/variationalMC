@@ -69,7 +69,6 @@ std::complex<double> ProjectedState::psi_over_psi2(int site1, int site2, int new
 }
 
 std::complex<double> ProjectedState::psi_over_psi_swap(int site1, int site2, int site3) {
-	assert(!jastrow.exist()); //jastrow not implemented for ring exchanges
 	MKL_Complex16 result;
 	int new_sz1 = configuration[site2], new_sz2 = configuration[site3], new_sz3 = configuration[site1];
 
@@ -84,7 +83,8 @@ std::complex<double> ProjectedState::psi_over_psi_swap(int site1, int site2, int
 		+ row1_3 * (Winv[(site2 + (1 - new_sz2) * N) * N + parton_labels[site1]] * Winv[(site3 + (1 - new_sz3) * N) * N + parton_labels[site2]]
 			- Winv[(site3 + (1 - new_sz3) * N) * N + parton_labels[site1]] * Winv[(site2 + (1 - new_sz2) * N) * N + parton_labels[site2]]);
 
-	return result;
+	std::vector<int> flip_sites = { site1, site2, site3 }, new_sz = { new_sz1, new_sz2, new_sz3 };
+	return result * jastrow.lazy_eval(flip_sites, new_sz, configuration);
 }
 
 std::complex<double> ProjectedState::psi_over_psi(int site1, int site2, int site3) {
@@ -95,15 +95,11 @@ std::complex<double> ProjectedState::psi_over_psi(int site1, int site2, int site
 
 	if (std::abs(detswap1) > 10e-16) {
 		update(site1, site2, detswap1);
-		//std::cout << "successful update 1, detswap = " << detswap1 << ", 1/detswap = " << 1.0 / detswap1 << "\n";
-		//swap sites 2 and 3, with labels 1 and 3, newsz 2 and 3
 		std::complex<double> detswap2 = psi_over_psi2(site2, site3, configuration[site3], configuration[site2]);
 		update(site2, site1, 1.0 / detswap1);
-		//std::cout << "successful update 2, detswap = " << detswap2 << "\n";
 		return detswap1 * detswap2;
 	}
 	else { 
-		//std::cout << "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n";
 		detswap1 = psi_over_psi2(site2, site3, configuration[site3], configuration[site2]);
 		if (std::abs(detswap1) > 10e-16) {
 			update(site2, site3, detswap1);
@@ -127,8 +123,6 @@ std::complex<double> ProjectedState::psi_over_psi(std::vector<int>& flips, std::
 		result *= psi_over_psi2(flips[0], flips[1], new_sz[0], new_sz[1]);
 	}
 	else if (flips.size() == 3) {
-		assert(!jastrow.exist()); //jastrow not implemented for ring exchanges
-		//std::cout << flips[0] << " " << flips[1] << " " << flips[2] << "\n";
 		result *= psi_over_psi_swap(flips[0], flips[1], flips[2]);
 	}
 	else {

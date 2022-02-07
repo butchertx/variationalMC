@@ -4,8 +4,8 @@
 #include "mkl.h"
 #include "VariationalMonteCarlo.h"
 #include <exception>
-#include "vmc_numerical.h"
 #include "vmc_io.h"
+#include "vmc_numerical.h"
 
 std::vector<double> vec_r(std::vector<std::complex<double>> cvec) {
 	std::vector<double> result;
@@ -24,7 +24,7 @@ std::vector<double> vec_i(std::vector<std::complex<double>> cvec) {
 }
 
 
-void MonteCarloEngine::step_su2() {
+std::pair<std::vector<int>, std::vector<int>> MonteCarloEngine::step_su2() {
 
 	//Propose move
 	std::vector<int> sites(2, 0), spins(2, 0);
@@ -76,6 +76,10 @@ void MonteCarloEngine::step_su2() {
 	double sqrt_p = std::abs(WF.psi_over_psi(sites, spins));
 	if (rand.get_rand_prob() < sqrt_p * sqrt_p) {
 		WF.update(sites, spins);
+		return { sites, spins };
+	}
+	else {
+		return { {}, {} };
 	}
 
 
@@ -83,85 +87,7 @@ void MonteCarloEngine::step_su2() {
 	
 }
 
-//void MonteCarloEngine::propose_ring_exchange(int tri_label, bool CC, std::vector<int>& affected_sites, std::vector<int>& affected_rings) {
-//
-//	std::vector<int> sites = lat.ring_ref().get_ring(tri_label);
-//	//also need the sites and labels of neighboring rings
-//	std::vector<int> ring_labels1 = lat.ring_ref().get_ring_labels(sites[0]),
-//		ring_labels2 = lat.ring_ref().get_ring_labels(sites[1]),
-//		ring_labels3 = lat.ring_ref().get_ring_labels(sites[2]);
-//
-//
-//	affected_rings[0] = tri_label;
-//	affected_sites[0] = sites[0];
-//	if (CC) {
-//		affected_sites[1] = sites[1];
-//		affected_sites[2] = sites[2];
-//	}
-//	else {
-//		affected_sites[2] = sites[1];
-//		affected_sites[1] = sites[2];
-//	}
-//
-//	if (ring_labels1[0] == tri_label) {
-//		affected_rings[1] = ring_labels1[1];
-//	}
-//	else {
-//		affected_rings[1] = ring_labels1[0];
-//	}
-//	sites = lat.ring_ref().get_ring(affected_rings[1]);
-//
-//	for (int i = 0; i < sites.size(); ++i) {
-//		//if site is in original ring, replace with new site after ring exchange
-//		if (sites[i] == affected_sites[0]) {
-//			sites[i] = affected_sites[2];
-//		}
-//	}
-//
-//	affected_sites[3] = sites[0];
-//	affected_sites[4] = sites[1];
-//	affected_sites[5] = sites[2];
-//
-//
-//	if (ring_labels2[0] == tri_label) {
-//		affected_rings[2] = ring_labels2[1];
-//	}
-//	else {
-//		affected_rings[2] = ring_labels2[0];
-//	}
-//	sites = lat.ring_ref().get_ring(affected_rings[2]);
-//	for (int i = 0; i < sites.size(); ++i) {
-//		//if site is in original ring, replace with new site after ring exchange
-//		if (sites[i] == affected_sites[1]) {
-//			sites[i] = affected_sites[0];
-//		}
-//	}
-//
-//	affected_sites[6] = sites[0];
-//	affected_sites[7] = sites[1];
-//	affected_sites[8] = sites[2];
-//
-//	if (ring_labels3[0] == tri_label) {
-//		affected_rings[3] = ring_labels3[1];
-//	}
-//	else {
-//		affected_rings[3] = ring_labels3[0];
-//	}
-//	sites = lat.ring_ref().get_ring(affected_rings[3]);
-//	for (int i = 0; i < sites.size(); ++i) {
-//		//if site is in original ring, replace with new site after ring exchange
-//		if (sites[i] == affected_sites[2]) {
-//			sites[i] = affected_sites[1];
-//		}
-//	}
-//
-//	affected_sites[9] = sites[0];
-//	affected_sites[10] = sites[1];
-//	affected_sites[11] = sites[2];
-//
-//}
-
-void MonteCarloEngine::step_su3(int num_site) {
+std::vector<int> MonteCarloEngine::step_su3(int num_site) {
 
 	std::vector<int> swaplist(num_site);
 	if (num_site == 3) {
@@ -186,80 +112,12 @@ void MonteCarloEngine::step_su3(int num_site) {
 	std::complex<double> sqrt_p = WF.psi_over_psi(swaplist);
 	if (rand.get_rand_prob() < std::abs(sqrt_p) * std::abs(sqrt_p)) {
 		WF.update(swaplist);
+		return swaplist;
+	}
+	else {
+		return {};
 	}
 }
-
-//void MonteCarloEngine::measure_energy_su2() {
-//
-//	std::complex<double> energy = (0.0, 0.0);
-//
-//	FlipList f;
-//
-//	//Run over all interactions in model
-//	for (auto interaction = H.get().begin(); interaction != H.get().end(); ++interaction) {
-//
-//		//get diagonal contribution and add to energy
-//		energy.real(energy.real() + (*interaction)->diag(conf.ref()));
-//
-//		//get flips
-//		f = (*interaction)->off_diag(conf.ref());
-//
-//		//iterate through flips
-//		for (int i = 0; i < f.multipliers.size(); ++i){
-//			energy += f.multipliers[i] * WF.psi_over_psi(f.flips[i], f.new_sz[i]);
-//		}
-//		//std::cout << "Spot check: Interaction output: \n";
-//		//(*interaction)->print_info(conf.ref());
-//		//std::cout << "Energy result of first flip = " << f.multipliers[0] * WF.psi_over_psi(conf.ref(), f.flips[0], f.new_sz[0]) << "\n";
-//
-//	}
-//	if (std::abs(energy.imag()) > 1e-8) {
-//		std::cout << "Imaginary Energy: " << std::abs(energy.imag()) << "\n";
-//		assert(std::abs(energy.imag()) < 1e-8);
-//	}
-//	
-//	//std::cout << energy.real() / (2 * lat.get_N()) << "\n";
-//	E.push_back(energy.real() / (lat.get_N()));
-//}
-
-//void MonteCarloEngine::measure_energy_su3() {
-//
-//	std::complex<double> energy = (0.0, 0.0);
-//
-//	FlipList f;
-//	std::vector<int> affected_rings(4);
-//	std::vector<int> affected_sites(12);
-//
-//	//Run over all interactions in model
-//	for (auto interaction = H.get().begin(); interaction != H.get().end(); ++interaction) {
-//
-//		//set ring labels
-//		//propose_ring_exchange((*interaction)->get_tri_label(), (*interaction)->get_CC(), affected_sites, affected_rings);
-//
-//		//get diagonal contribution and add to energy
-//		energy.real(energy.real() + (*interaction)->diag(conf.ref()));
-//
-//		//get flips
-//		f = (*interaction)->off_diag(conf.ref());
-//
-//		//iterate through flips
-//		for (int i = 0; i < f.multipliers.size(); ++i) {
-//			energy += f.multipliers[i] * WF.psi_over_psi((*interaction)->get_tri_label(), (*interaction)->get_CC());
-//		}
-//		//std::cout << "Spot check: Interaction output: \n";
-//		//(*interaction)->print_info(conf.ref());
-//		//std::cout << "Energy result of first flip = " << f.multipliers[0] * WF.psi_over_psi(conf.ref(), f.flips[0], f.new_sz[0]) << "\n";
-//
-//	}
-//	if (std::abs(energy.imag()) > 1e-8) {
-//		std::cout << "Imaginary Energy: " << std::abs(energy.imag()) << "\n";
-//		assert(std::abs(energy.imag()) < 1e-8);
-//	}
-//
-//	//std::cout << energy.real() / (2 * lat.get_N()) << "\n";
-//	E.push_back(energy.real() / (lat.get_N()));
-//	E_imag.push_back(energy.imag() / lat.get_N());
-//}
 
 void MonteCarloEngine::measure_energy() {
 
@@ -402,6 +260,10 @@ void MonteCarloEngine::run() {
 
 		std::vector<double> alpha;
 
+		std::ofstream optfile;
+		optfile.open("results/optimization.csv");
+		optfile << "SR Bin, Total Energy, V params\n";
+
 		for (int SR_bin = 0; SR_bin < params.sr.bins; ++SR_bin) {
 
 			ok_measures.clear();
@@ -414,7 +276,7 @@ void MonteCarloEngine::run() {
 			}
 			std::copy(E.end() - ok_measures.size(), E.end(), std::back_inserter(E_bin));
 			ok_mean = std::vector<double>(ok_measures[0].size(), 0.0);
-			E_ok_mean = ok_mean;
+			E_ok_mean = std::vector<double>(ok_measures[0].size(), 0.0);
 			e_mean = 0.0;
 			for (int v = 0; v < ok_measures[0].size(); ++v) {
 				E_ok_mean[v] = 0.0;
@@ -468,9 +330,11 @@ void MonteCarloEngine::run() {
 			}
 			WF.update_parameters(alpha);
 
+			optfile << SR_bin+1 << "," << e_mean << "," << vec2str(alpha) << "\n";
 			std::cout << "SR iteration " << SR_bin + 1 << " of " << params.sr.bins << "\n";
 			std::cout << "Bin energy = " << e_mean << "; New params: " << vec2str(alpha) << "\n";
 		}
+		optfile.close();
 	}
 }
 

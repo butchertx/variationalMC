@@ -2,6 +2,7 @@
 #include "Lattice.h"
 #include "RandomEngine.h"
 #include <cstring>
+#include <cstdlib>
 
 //void print_matrix(const char* desc, MKL_INT m, MKL_INT n, MKL_Complex16* a, MKL_INT lda);
 
@@ -87,7 +88,7 @@ MeanFieldAnsatz::MeanFieldAnsatz(mean_field_options& mf_in, Lattice& lat_in, boo
 		field = mf_in.field;
 		for (auto uc : basis_partition) {
 			for (int site = 0; site < uc.size(); ++site) {
-				directors.push_back(mf_in.directors.eval_at(site, lat_in.get_coordinate(uc[site])));
+				directors.push_back(mf_in.directors.eval_at(site, lat_in.get_coordinate(uc[0])));
 			}
 		}
 	}
@@ -363,8 +364,28 @@ void MeanFieldAnsatz::shuffle_FS(int n0, int n1, RandomEngine* rand) {
 	}
 }
 
-
-void MeanFieldAnsatz::print_directors(std::ofstream* f) {
+void MeanFieldAnsatz::write_levels(std::ofstream *f) {
+	MKL_INT i;
+	double E, n1 = 0, n0 = 0, n_1 = 0,
+		n1_tot = 0, n0_tot = 0, n_1_tot = 0;
+	*f << "Band Energy, Total N, cumul. N_-1, cumul. N_0, cumul. N_1, N_-1, N_0, N_1\n";
+	char buf[1024];
+	for (i = 0; i < N + 1; i++) {
+		E = Energy[i];
+		n1 = cblas_dznrm2(N, &(Phi[i]), 3 * N);
+		n0 = cblas_dznrm2(N, &(Phi[i + 3 * N * N]), 3 * N);
+		n_1 = cblas_dznrm2(N, &(Phi[i + 6 * N * N]), 3 * N);
+		n1_tot += n1 * n1;
+		n0_tot += n0 * n0;
+		n_1_tot += n_1 * n_1;
+		if (i == N - 1) {
+			n0_F = std::round(n0_tot);
+		}
+		sprintf(buf, "%6.2f, %6.2f, %6.2f, %6.2f, %6.2f, %6.2f, %6.2f, %6.2f", E, n1_tot + n0_tot + n_1_tot, n1_tot, n0_tot, n_1_tot, n1 * n1, n0 * n0, n_1 * n_1);
+		*f << std::string(buf) << "\n";
+	}
+}
+void MeanFieldAnsatz::write_directors(std::ofstream* f) {
 	*f << "site, ux, uy, uz, vx, vy, vz\n";
 	for (auto site = 0; site < directors.size(); ++site) {
 		*f << site << ", " << directors[site].x.real() << ", " << directors[site].y.real() << ", " << directors[site].z.real() << ", ";

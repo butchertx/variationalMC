@@ -271,7 +271,7 @@ public:
 	
 
 	//virtual void write_amplitudes(std::ofstream*) = 0;
-	//virtual void write_configuration(std::ofstream*) = 0;
+	virtual void write_configuration(std::ofstream*) = 0;
 
 };
 

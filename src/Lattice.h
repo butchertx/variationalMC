@@ -134,7 +134,9 @@ public:
 		return rings1;
 	}
 
-
+	bool has_rings() {
+		return rings1.get_size() > 0;
+	}
 
 	Lattice_type_t get_lattice_type() {
 		return lat_type;
@@ -260,19 +262,15 @@ public:
 		}
 	}
 
-	void print_neighbors(std::ofstream* f) {
-		*f << "Table of Neighbors:\n";
-		std::stringstream ss;
+	void write_neighbors(std::ofstream* f) {
+		*f << "site, distance, neighbor list\n";
 		for (int neighbor = 0; neighbor < neighbors[0].size(); ++neighbor) {
-			*f << "At distance k = " << neighbor + 1 << "\n\n";
 			for (int i = 0; i < N; ++i) {
-				ss.str("");
-				ss << "i = " << i << ";  ";
+				*f << i << "," << neighbor; 
 				for (int j = 0; j < neighbors[i][neighbor].size(); ++j) {
-					ss << neighbors[i][neighbor][j] * pbc[i][neighbor][j] << "  ";
+					*f << "," << neighbors[i][neighbor][j] * pbc[i][neighbor][j];
 				}
-				ss << "\n";
-				*f << ss.str();
+				*f << "\n";
 			}
 		}
 	}
@@ -306,22 +304,6 @@ public:
 		}
 		ss << "\n";
 		std::cout << ss.str();
-	}
-
-	void print_rings(std::ofstream* f) {
-		*f << "Table of Ring Exchanges:\n";
-		std::stringstream ss;
-		std::vector<int> ring_vals;
-		for (int ring = 0; ring < rings1.get_size(); ++ring) {
-			ring_vals = rings1.get_ring(ring);
-			ss.str("");
-			ss << "ring index = " << ring << ";  ";
-			for (int i = 0; i < ring_vals.size(); ++i) {
-				ss << ring_vals[i] << ",  ";				
-			}
-			ss << "\n";
-			*f << ss.str();
-		}
 	}
 
 	void print_coordinates() {

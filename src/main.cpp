@@ -9,29 +9,25 @@
 #include "../src/ProjectedState.h"
 #include "../src/SpinModel.h"
 #include "../src/VariationalMonteCarlo.h"
+#include "../src/model_and_calculation_helper.h"
 
-using namespace vmctype;
+// Contains default behavior for accepting input files and writing/choosing output files
 
-SpinModel create_Hamiltonian(Lattice, double J, double K);
+// lattice and model selection are included in input parameters and offloaded to "model_and_calculation_helper.h"
 
-std::vector<Observable> create_Correlation_SZ(Lattice);
-
-std::vector<Observable> create_Correlation_ladder(Lattice);
-
-JastrowTable create_Jastrow(Lattice, JastrowTableOptions);
-
-struct results_struct {
-    std::complex<double> E;
-    std::complex<double> E_err;
-    std::complex<double> J;
-    std::complex<double> J_err;
-    std::complex<double> K;
-    std::complex<double> K_err;
-    std::complex<double> D;
-    std::complex<double> D_err;
-};
-
-results_struct run_mc(lattice_options, mean_field_options, model_options, vmc_options);
+// Default output files:
+//// data/neighbors.csv: List of sites and neighbors in the lattice
+//// data/rings.csv: List of ring-exchange groupings in the lattice (if ring exchange is implemented for the chosen lattice/model)
+// data/wavefunction.json: Wavefunction parameters that can be read back in for subsequent calculations
+//// data/directors.csv: directors for ordered wavefunctions
+//// data/mean_field_energies.csv: Info about the non-interacting orbitals and Fermi surface
+//// data/conf_init.csv: initial configuration
+//// data/conf_final.csv: final configuration
+// data/markov.csv: list of markov chain updates leading to the final configuration
+//// results/observables.csv: expectation values and errors for observables calculated in the Hamiltonian
+//// results/<output_file>: alternate name for observables.csv that can be specified by command line argument
+//// results/optimization.csv: Energy bins and variational parameter values in an optimization calculation
+//// results/<obs>_correlation_<imag/real>.csv: Correlation function connecting <obs> at sites i and j, real and imaginary part
 
 MemTimeTester timer;
 
@@ -66,14 +62,24 @@ int main(int argc, char* argv[]) {
     read_json_full_input(&lat_options, &wf_options, &mdl_options, &mc_options, infile_name);
 
     results_struct results = run_mc(lat_options, wf_options, mdl_options, mc_options);
+    
     makePath("./results");
     std::ofstream results_file;
     results_file.open(outfile_name);
-    results_file << ", E, E_err, <S_i * S_j>, <S_i * S_j>_err, <(S_i * S_j)^2>, <(S_i * S_j)^2>_err, <(S_i^z)^2>, <(S_i^z)^2>_err\n";
-    results_file << "real, " << results.E.real() << ", " << results.E_err.real() << ", " << results.J.real() << ", " << results.J_err.real()
-        << ", " << results.K.real() << ", " << results.K_err.real() << ", " << results.D.real() << ", " << results.D_err.real() << "\n";
-    results_file << "imag, " << results.E.imag() << ", " << results.E_err.imag() << ", " << results.J.imag() << ", " << results.J_err.imag()
-        << ", " << results.K.imag() << ", " << results.K_err.imag() << ", " << results.D.imag() << ", " << results.D_err.imag() << "\n";
+    std::vector<std::string> obs_names;
+    std::vector<double> obs_real, obs_real_err, obs_imag, obs_imag_err;
+    for (auto item : results.observables) {
+        obs_names.push_back(item.first);
+        obs_real.push_back(item.second.real());
+        obs_real_err.push_back(results.observables_err[item.first].real());
+        obs_imag.push_back(item.second.imag());
+        obs_imag_err.push_back(results.observables_err[item.first].imag());
+    }
+    results_file << ", E, " << vec2str(obs_names) << "\n";
+    results_file << "real, " << results.E.real() << ", " << vec2str(obs_real) << "\n";
+    results_file << "real_err, " << results.E_err.real() << ", " << vec2str(obs_real_err) << "\n";
+    results_file << "imag, " << results.E.imag() << ", " << vec2str(obs_imag) << "\n";
+    results_file << "imag_err, " << results.E_err.imag() << ", " << vec2str(obs_imag_err) << "\n";
 
     timer.flag_end_time("Total Program Time");
     timer.print_timers();
@@ -81,191 +87,3 @@ int main(int argc, char* argv[]) {
 
 }
 
-results_struct run_mc(lattice_options lat_options, mean_field_options mf_options, model_options mdl_options, vmc_options v_options) {
-
-    Lattice lattice(Lattice_type_from_string(lat_options.type), vec3<int>(lat_options.L), vec3<int>(lat_options.pbc));
-
-    makePath("./data");
-    std::ofstream neighborfile;
-    neighborfile.open("data/neighbors.txt");
-    lattice.print_neighbors(&neighborfile);
-    neighborfile.close();
-
-    MeanFieldAnsatz mf(mf_options, lattice, true);
-    mf.print_levels();
-    mf.print_fermi_level();
-
-    std::ofstream director_file;
-    director_file.open("data/directors.csv");
-    mf.print_directors(&director_file);
-    director_file.close();
-
-    RandomEngine r(-1, lattice.get_N(), lattice.get_neighbor_counts()[0]);
-    ProjectedState wf(mf, r, create_Jastrow(lattice, mf_options.jastrow));
-    results_struct results;
-
-    if (std::abs(wf.get_det()) == 0) {
-        std::cout << "No valid initializations\n";
-    }
-    else {
-
-        SpinModel Ham = create_Hamiltonian(lattice, mdl_options.bilinear_terms[0].coupling, mdl_options.bilinear_terms[1].coupling);
-        MonteCarloEngine sampler(Ham, wf, lattice, r, v_options);
-        sampler.add_observable_function(create_Correlation_SZ(lattice), "SzSz_correlation");
-        sampler.add_observable_function(create_Correlation_ladder(lattice), "Spm_correlation");
-        sampler.run();
-
-        std::ofstream obs_file_r, obs_file_i;
-        obs_file_r.open("results/SzSz_correlation_real.csv");
-        obs_file_i.open("results/SzSz_correlation_imag.csv");
-        sampler.write_observable_functions(&obs_file_r, &obs_file_i, "SzSz_correlation");
-        obs_file_r.close();
-        obs_file_i.close();
-
-        obs_file_r.open("results/Spm_correlation_real.csv");
-        obs_file_i.open("results/Spm_correlation_imag.csv");
-        sampler.write_observable_functions(&obs_file_r, &obs_file_i, "Spm_correlation");
-        obs_file_r.close();
-        obs_file_i.close();
-        
-
-        results.E = sampler.get_energy() / lattice.get_N();
-        results.E_err = sampler.get_energy_err() / lattice.get_N();
-        results.J = sampler.get_observable("Bilinear") / lattice.get_N();
-        results.J_err = sampler.get_observable_err("Bilinear") / lattice.get_N();
-        results.K = 1.0 + sampler.get_observable("SU(3) Exchange") / lattice.get_N() - sampler.get_observable("Bilinear") / lattice.get_N();
-        results.K_err = sampler.get_observable_err("SU(3) Exchange") / lattice.get_N() + sampler.get_observable_err("Bilinear") / lattice.get_N();
-        results.D = sampler.get_observable("Single Ion") / lattice.get_N();
-        results.D_err = sampler.get_observable_err("Single Ion") / lattice.get_N();
-        std::cout << "Results: E = " << results.E << " +- " << results.E_err << "\n";
-        std::cout << "Results: <Sz^2> = " << results.D << " +- " << results.D_err << "\n";
-        std::cout << "\n\n";
-        sampler.print_timers();
-        
-    }
-    wf.print_timers();
-    return results;
-}
-
-
-SpinModel create_Hamiltonian(Lattice l, double J, double K) {
-    SpinModel ham;
-    std::cout << "Creating BLBQ Hamiltonian with J = " << J << ", K = " << K << "\n";
-
-    //2-site exchanges
-    std::vector<int> nei;
-    Observable s12("Bilinear");
-    for (int i = 0; i < l.get_N(); ++i) {
-        nei = l.get_neighbors(i, 0);
-        for (int n = 0; n < nei.size(); ++n) {
-            auto* I0 = new HeisenbergExchange(i, nei[n], 1.0, 0.5);
-            s12.add_interaction(I0);
-        }
-    }
-    ham.add_term("Bilinear", s12, { J - K, 0.0 });
-
-    //2-site exchanges
-    Observable p12("SU(3) Exchange");
-    std::complex<double> E0 = { 0.0, 0.0 };
-    for (int i = 0; i < l.get_N(); ++i) {
-        nei = l.get_neighbors(i, 0);
-        for (int n = 0; n < nei.size(); ++n) {
-            auto* I0 = new SwapExchange(i, nei[n], 0.5);
-            p12.add_interaction(I0);
-            E0 += std::complex<double>(0.5*K, 0.0);
-        }
-    }
-    ham.add_term("SU(3) Exchange", p12, { K, 0.0 });
-    ham.add_constant(E0);
-
-    Observable ds2("Single Ion");
-    for (int i = 0; i < l.get_N(); ++i) {
-        auto* I0 = new SingleIonAnisotropy(i, 1.0);
-        ds2.add_interaction(I0);
-    }
-    ham.add_term("Single Ion", ds2, { 0.0, 0.0 });
-
-    return ham;
-}
-
-std::vector<Observable> create_Correlation_SZ(Lattice l) {
-    std::vector<Observable> correlation;
-
-    for (int i = 0; i < l.get_N(); ++i) {
-        auto* s12 = new Observable("Szi Szj");
-        auto* I0 = new IsingExchange(0, i, 1.0);
-        s12->add_interaction(I0);
-        correlation.push_back(*s12);
-    }
-    
-    return correlation;
-}
-
-std::vector<Observable> create_Correlation_ladder(Lattice l) {
-    std::vector<Observable> correlation;
-
-    for (int i = 0; i < l.get_N(); ++i) {
-        auto* s12 = new Observable("Si+- Sj-+");
-        auto* I0 = new LadderExchange(0, i, 1.0);
-        s12->add_interaction(I0);
-        correlation.push_back(*s12);
-    }
-
-    return correlation;
-}
-
-JastrowTable create_Jastrow(Lattice lattice, JastrowTableOptions jopt) {
-    //
-    //  Sz options
-    //
-    JastrowFactorOptions j(jopt.sz);
-
-    //assume isotropic=true
-    
-    std::vector<double> params;
-    if (j.distance_max == j.values.size()) {
-        params = j.values;
-    } 
-    else{
-        std::cout << "Initializing Jastrow Sz with all zeros\n";
-        params = std::vector<double>(j.distance_max, 0.0);
-    }
-
-    std::vector<JastrowFactor> jlist;
-    std::vector<std::vector<int>> neighbors;
-    for (int i = 0; i < params.size(); ++i) {
-        neighbors = lattice.get_neighbors(i);
-        jlist.push_back(JastrowFactor(params[i], neighbors));
-    }
-
-    //
-    //  Sz2 options
-    //
-    JastrowFactorOptions j2(jopt.sz2);
-
-    //assume isotropic=true
-    if (j2.distance_max > -1) {
-
-        if (j2.distance_max == j2.values.size()) {
-            params = j2.values;
-        }
-        else {
-            std::cout << "Initializing Jastrow Sz2 with all zeros\n";
-            params = std::vector<double>(j2.distance_max, 0.0);
-        }
-
-        for (int i = 0; i < params.size(); ++i) {
-            neighbors = lattice.get_neighbors(i);
-            jlist.push_back(JastrowFactor(params[i], neighbors, true));
-        }
-    }
-
-    if (jopt.density_flag) {
-        JastrowDensity jdens(jopt.density_coupling);
-        return JastrowTable(jlist, jdens);
-    }
-    else {
-        return JastrowTable(jlist);
-    }
-
-}

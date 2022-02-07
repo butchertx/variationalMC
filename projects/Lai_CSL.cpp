@@ -89,12 +89,12 @@ results_struct run_mc(lattice_options lat_options, mean_field_options mf_options
     makePath("./data");
     std::ofstream neighborfile;
     neighborfile.open("data/neighbors.txt");
-    lattice.print_neighbors(&neighborfile);
+    lattice.write_neighbors(&neighborfile);
     neighborfile.close();
 
     std::ofstream ringfile;
     ringfile.open("data/rings.txt");
-    lattice.print_rings(&ringfile);
+    lattice.write_rings(&ringfile);
     ringfile.close();
     lattice.print_timers();
 

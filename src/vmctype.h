@@ -220,8 +220,30 @@ namespace vmctype {
 	};
 
 	struct model_options {
+		std::string model_type;
+		double single_ion = 0.0;
 		std::vector<BilinearOptions> bilinear_terms;
 		std::vector<TrilinearOptions> ring3_terms;
+
+		std::vector<double> get_su2_terms(std::string j_or_k) {
+			assert(model_type.compare("blbq") == 0);
+			assert((j_or_k.compare("K") == 0) || (j_or_k.compare("J") == 0));
+			//first find max neighbor index
+			int max_neighbor = 0;
+			for (int i = 0; i < bilinear_terms.size(); ++i) {
+				max_neighbor = bilinear_terms[i].neighbor_index > max_neighbor ? bilinear_terms[i].neighbor_index : max_neighbor;
+			}
+			std::vector<double> couplings(max_neighbor+1, 0.0);
+			for (auto term : bilinear_terms){
+				if ((j_or_k.compare("J") == 0) && (term.interaction_type.compare("su2 exchange") == 0)) {
+					couplings[term.neighbor_index] = term.coupling;
+				}
+				else if ((j_or_k.compare("K") == 0) && (term.interaction_type.compare("su2 biquadratic") == 0)) {
+					couplings[term.neighbor_index] = term.coupling;
+				}
+			}
+			return couplings;
+		}
 	};
 
 	struct vmc_options {

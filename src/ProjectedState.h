@@ -143,7 +143,6 @@ class ProjectedState : public Wavefunction {
 	JastrowTable jastrow;
 	int N;
 	std::vector<int> parton_labels;
-	//std::vector<int> configuration;
 	lapack_complex_double *Slater, *LU, *Winv, *UP1, *UP2, *UP3;
 	lapack_int *ipiv;
 	std::complex<double> det;
@@ -260,6 +259,13 @@ public:
 	std::vector<double> get_parameters() {
 		return jastrow.get_params();
 	};
+	
+	void write_configuration(std::ofstream* f) {
+		*f << configuration[0];
+		for (int i = 1; i < configuration.size(); ++i) {
+			*f << "," << configuration[i];
+		}
+	}
 
 	//Additional Functions
 

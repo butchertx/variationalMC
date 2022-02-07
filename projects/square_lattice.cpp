@@ -88,7 +88,7 @@ results_struct run_mc(lattice_options lat_options, mean_field_options mf_options
     makePath("./data");
     std::ofstream neighborfile;
     neighborfile.open("data/neighbors.txt");
-    lattice.print_neighbors(&neighborfile);
+    lattice.write_neighbors(&neighborfile);
     neighborfile.close();
 
     MeanFieldAnsatz mf(mf_options, lattice, true);
@@ -97,7 +97,7 @@ results_struct run_mc(lattice_options lat_options, mean_field_options mf_options
 
     std::ofstream director_file;
     director_file.open("data/directors.csv");
-    mf.print_directors(&director_file);
+    mf.write_directors(&director_file);
     director_file.close();
 
     RandomEngine r(-1, lattice.get_N(), lattice.get_neighbor_counts()[0]);

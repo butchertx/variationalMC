@@ -211,7 +211,8 @@ public:
 
 	void print_levels();
 	void print_fermi_level();
-	void print_directors(std::ofstream* f);
+	void write_levels(std::ofstream* f);
+	void write_directors(std::ofstream* f);
 	void set_fermi_surface();
 
 	void shuffle_FS(int n0, int n1, RandomEngine* rand);

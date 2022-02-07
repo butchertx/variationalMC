@@ -25,8 +25,8 @@ class MonteCarloEngine {
 	MemTimeTester timer;
 
 	SpinModel& H;
-	std::map<std::string, Observable> observables;
-	std::vector<std::string> observable_names;
+	std::map<std::string, Observable> observables; // separate from Hamiltonian observables
+	std::vector<std::string> observable_names; // separate from Hamiltonian observables
 	std::map<std::string, std::vector<Observable>> observable_functions;
 	std::vector<std::string> observable_function_names;
 
@@ -43,19 +43,14 @@ class MonteCarloEngine {
 
 	vmc_options params;
 
-	std::map<std::string, std::vector<std::complex<double>>> observable_measures;
+	std::map<std::string, std::vector<std::complex<double>>> observable_measures; // Hamiltonian observables are automatically added here
 	std::map<std::string, std::vector<std::vector<std::complex<double>>>> observable_function_measures;
 
 	std::vector<std::vector<double>> v_params_record;
 	std::vector<double> E_bins_record;
 
-	void step_su2();
-	void step_su3(int num_swap);
-
-	//void propose_ring_exchange(int, bool, std::vector<int>& sites, std::vector<int>& tris);
-
-	//void measure_energy_su2();
-	//void measure_energy_su3();
+	std::pair<std::vector<int>, std::vector<int>> step_su2();
+	std::vector<int> step_su3(int num_swap);
 	void measure_energy();
 	void measure_obs_functions();
 
@@ -86,19 +81,6 @@ public:
 		for (int m = 0; m < params.num_measures; ++m) {
 			timer.flag_start_time("Steps");
 			for (int s = 0; s < params.steps_per_measure; ++s) {
-				//if (step_outputs && stepnum < 100) {
-				//	//write configuration
-				//	stepnum = params.steps_per_measure * m + s;
-				//	conffile = outdir + "conf" + std::to_string(stepnum) + ".csv";
-				//	outfile.open(conffile);
-				//	WF.write_configuration(&outfile);
-				//	outfile.close();
-				//	//write amplitudes on trimers
-				//	ampfile = outdir + "amplitude" + std::to_string(stepnum) + ".csv";
-				//	outfile.open(ampfile);
-				//	WF.write_amplitudes(&outfile);
-				//	outfile.close();
-				//}
 				if (params.su3) {
 					step_su3(2);
 				}
@@ -115,9 +97,7 @@ public:
 			timer.flag_end_time("Obs Calculation");
 
 			if (opt) {
-				// measure vparam derivatives
 				v_param_derivatives.push_back(WF.log_derivative());
-				//std::cout << "Lazy and Greedy log derivatives: \n" << vec2str(WF.log_derivative()) << "\n" << vec2str(WF.greedy_log_derivative()) << "\n";
 			}
 			else {
 				if (m % 1000 == 0) {
@@ -130,68 +110,6 @@ public:
 	}
 
 	void run();
-
-	//void run(bool step_outputs = false) {
-	//	std::ofstream outfile;
-	//	std::string outdir = "../../markov_chain/";
-	//	if (step_outputs) {
-	//		if (!isDirExist(outdir)) {
-	//			makePath(outdir);
-	//		}
-	//		std::string latfile = outdir + "lattice.csv";
-	//		outfile.open(latfile);
-	//		lat.write_coordinates(&outfile);
-	//		outfile.close();
-	//		std::string ringfile = outdir + "rings.csv";
-	//		outfile.open(ringfile);
-	//		lat.write_rings(&outfile);
-	//		outfile.close();
-	//	}
-	//	if (typeid(WF) == typeid(ProjectedState)) {
-	//		for (int m = 0; m < params.total_measures; ++m) {
-	//			timer.flag_start_time("Steps");
-	//			for (int s = 0; s < params.steps_per_measure; ++s) {
-	//				step_su2("NZ_CONST");
-	//			}
-	//			timer.flag_end_time("Steps");
-	//			timer.flag_start_time("Energy Calculation");
-	//			measure_energy_su2();
-	//			timer.flag_end_time("Energy Calculation");
-	//			Nz.push_back(conf.get_Nz());
-	//		}
-	//		//std::cout << "Run finished.  Continue?\n";
-	//		//std::string trash;
-	//		//std::getline(std::cin, trash);
-	//	}
-	//	else if (typeid(WF) == typeid(SU3ProductState)) {
-	//		int stepnum = 0;
-	//		std::string conffile;
-	//		std::string ampfile;
-	//		for (int m = 0; m < params.total_measures; ++m) {
-	//			timer.flag_start_time("Steps");
-	//			for (int s = 0; s < params.steps_per_measure; ++s) {
-	//				if (step_outputs && stepnum < 100) {
-	//					//write configuration
-	//					stepnum = params.steps_per_measure * m + s;
-	//					conffile = outdir + "conf" + std::to_string(stepnum) + ".csv";
-	//					outfile.open(conffile);
-	//					WF.write_configuration(&outfile);
-	//					outfile.close();
-	//					//write amplitudes on trimers
-	//					ampfile = outdir + "amplitude" + std::to_string(stepnum) + ".csv";
-	//					outfile.open(ampfile);
-	//					WF.write_amplitudes(&outfile);
-	//					outfile.close();
-	//				}
-	//				step_su3();
-	//			}
-	//			timer.flag_end_time("Steps");
-	//			timer.flag_start_time("Energy Calculation");
-	//			measure_energy_su3();
-	//			timer.flag_end_time("Energy Calculation");
-	//		}
-	//	}
-	//}
 
 	void output_energy() {
 		double e_avg;
@@ -211,6 +129,8 @@ public:
 		return e_avg;
 	}
 
+
+
 	std::complex<double> get_observable(std::string term) {
 		std::vector<std::complex<double>> vals = observable_measures[term];
 		std::complex<double> O_avg(0.0, 0.0);
@@ -218,6 +138,14 @@ public:
 			O_avg += *v;
 		}
 		return std::complex<double>(O_avg.real() / (vals.size() - params.throwaway_measures), O_avg.imag() / (vals.size() - params.throwaway_measures));
+	}
+
+	std::map<std::string, std::complex<double>> get_all_observables() {
+		std::map<std::string, std::complex<double>> result;
+		for (auto item : observable_measures) {
+			result.insert({ item.first, get_observable(item.first) });
+		}
+		return result;
 	}
 
 	void write_observable_functions(std::ofstream* f_r, std::ofstream* f_i, std::string function_name) {
@@ -248,6 +176,14 @@ public:
 		var_r = error(vals_r.begin() + params.throwaway_measures, vals_r.end(), O_avg.real(), 10);
 		var_i = error(vals_i.begin() + params.throwaway_measures, vals_i.end(), O_avg.imag(), 10);
 		return { var_r, var_i };
+	}
+
+	std::map<std::string, std::complex<double>> get_all_observables_err() {
+		std::map<std::string, std::complex<double>> result;
+		for (auto item : observable_measures) {
+			result.insert({ item.first, get_observable_err(item.first) });
+		}
+		return result;
 	}
 
 	void print_timers() {
