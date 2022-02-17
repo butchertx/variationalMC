@@ -91,7 +91,7 @@
     "measures": 2000,
     "throwaway": 100,
     "su3": false,
-    "optimization": true,
+    "optimization": false,
     "SR": {
       "bins": 25,
       "timestep": 0.1
