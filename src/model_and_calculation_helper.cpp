@@ -134,6 +134,7 @@ SpinModel create_su2_Hamiltonian(Lattice l, std::vector<double> J, std::vector<d
     std::vector<int> nei;
     Observable *s12, *p12;
     std::string obs_name;
+    std::complex<double> E0 = { 0.0, 0.0 };
     for (int range = 0; range < J.size(); ++range) {
         //Bilinear terms
         obs_name = "<S_i . S_j>_" + std::to_string(range);
@@ -150,7 +151,7 @@ SpinModel create_su2_Hamiltonian(Lattice l, std::vector<double> J, std::vector<d
         //Biquadratic terms
         obs_name = "<S_i <-> S_j>_" + std::to_string(range);
         p12 = new Observable(obs_name);
-        std::complex<double> E0 = { 0.0, 0.0 };
+        
         for (int i = 0; i < l.get_N(); ++i) {
             nei = l.get_neighbors(i, range);
             for (int n = 0; n < nei.size(); ++n) {
@@ -160,8 +161,8 @@ SpinModel create_su2_Hamiltonian(Lattice l, std::vector<double> J, std::vector<d
             }
         }
         ham.add_term(obs_name, *p12, { K[range], 0.0 });
-        ham.add_constant(E0);
     }
+    ham.add_constant(E0);
 
     
 
