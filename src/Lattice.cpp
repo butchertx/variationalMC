@@ -24,7 +24,7 @@ std::string Lattice_type_to_string(Lattice_type_t lat) {
 	case DIAMOND111:
 		return "diamond 111";
 	case DIAMONDCC:
-		return "diamond conventional cell";
+		return "diamondcc";
 	default:
 		return "INVALID";
 	}
@@ -50,6 +50,9 @@ Lattice_type_t Lattice_type_from_string(std::string str) {
         return DIAMOND;
     }
 	else if (str.compare("diamond conventional cell") == 0) {
+		return DIAMONDCC;
+	}
+	else if (str.compare("diamondcc") == 0) {
 		return DIAMONDCC;
 	}
 	else {

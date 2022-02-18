@@ -1,0 +1,107 @@
+{
+  "lattice": {
+    "type": "diamondcc",
+    "L": [ 3, 3, 3 ],
+    "dimension": 3,
+    "pbc": [ 1, 1, 1 ]
+  },
+  "wavefunction": {
+    "wavefunction type": "meanfield",
+    "lattice type": "diamondcc",
+    "inequivalent sites": 8,
+    "basis": [],
+    "spin": 1,
+    "match lattice pbc": true,
+    "su3_symmetry": false,
+    "num hop": 1,
+    "field": 1.0,
+    "num spin-orbit": 0,
+    "hopping terms": [
+      {
+        "spin row": 0,
+        "strength": -0.0,
+        "distance": 0,
+        "origins": [ 0, 0 ],
+        "neighbor index": [ 0, 1 ],
+        "phases": [ 0, 0 ]
+      },
+      {
+        "spin row": 1,
+        "strength": -0.0,
+        "distance": 0,
+        "origins": [ 0, 0 ],
+        "neighbor index": [ 0, 1 ],
+        "phases": [ 0, 0 ]
+      }
+    ],
+    "directors": {
+      "u_r_theta_phi": [
+        [ 1.0, 0, 0 ],
+        [ 1.0, 0, 0 ],
+        [ 1.0, 0, 0 ],
+        [ 1.0, 0, 0 ],
+        [ 1.0, 0, 0 ],
+        [ 1.0, 0, 0 ],
+        [ 1.0, 0, 0 ],
+        [ 1.0, 0, 0 ]
+      ],
+      "v_r_theta_phi": [
+        [ 1.0, 90, 0 ],
+        [ 1.0, 90, 180 ],
+        [ 1.0, 90, 0 ],
+        [ 1.0, 90, 180 ],
+        [ 1.0, 90, 0 ],
+        [ 1.0, 90, 180 ],
+        [ 1.0, 90, 0 ],
+        [ 1.0, 90, 180 ]
+      ],
+      "Qthetau": [ 0, 0, 0 ],
+      "Qphiu": [ 0, 0, 0 ],
+      "Qthetav": [ 0, 0, 0 ],
+      "Qphiv": [ 0, 0, 0 ]
+    },
+    "jastrow": {
+      "density": {
+        "strength": 0.0
+      },
+      "sz": {
+        "isotropic": true,
+        "distance_max": 3,
+        "values": [ 0.0, 0.0, 0.0 ]
+      },
+      "sz2": {
+        "isotropic": true,
+        "distance_max": 3,
+        "values": [ 0.0, 0.0, 0.0 ]
+      }
+    }
+  },
+  "model": {
+    "type": "blbq",
+    "single_ion":  0.0,
+    "bilinear": [
+      {
+        "type": "su2 exchange",
+        "coupling": 1.0,
+        "neighbor_index": 0
+      },
+      {
+        "type": "su2 biquadratic",
+        "coupling": 0.0,
+        "neighbor_index": 0
+      }
+    ],
+    "match lattice pbc": true
+  },
+  "vmc": {
+    "steps": 10,
+    "measures": 1000,
+    "throwaway": 50,
+    "su3":  false,
+    "optimization": false,
+    "SR": {
+      "bins": 20,
+      "timestep": 0.05
+    }
+  }
+}
