@@ -209,7 +209,7 @@ namespace vmctype {
 		std::string wf_type;
 		int inequivalent_sites = 1, spin, num_spin_orbit;
 		bool match_lattice_pbc, su3_symmetry;
-		double field = 0.0;
+		double field = 0.0, mu_z = 0.0;
 		std::vector<vec3<int>> basis;
 		std::vector<vmctype::HoppingTerm> hopping_list;
 		QuadrupoleOrder directors;
@@ -248,13 +248,20 @@ namespace vmctype {
 
 	struct vmc_options {
 		int steps_per_measure, num_measures, throwaway_measures;
-		bool su3 = true, optimization = false;
+		bool su3 = true, optimization = false, search = false;
 
 		struct sr_options {
 			int bins;
+			int throwaway_bins;
 			double timestep;
 		};
 		sr_options sr;
+
+		struct parallel_options {
+			int num_parallel = 1;
+			std::vector<double> txy, tz, mu_z, g;
+		};
+		parallel_options psearch;
 	};
 
 	void to_json(json& j, const HoppingTerm& p);

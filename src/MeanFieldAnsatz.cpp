@@ -45,7 +45,8 @@ void TightBindingSitePair::get_couplings(double * tzr, double * tzi, double * tx
 //	}
 //}
 
-MeanFieldAnsatz::MeanFieldAnsatz(mean_field_options& mf_in, Lattice& lat_in, bool unit_cell_construction) : N(lat_in.get_N()), su3_symmetry(mf_in.su3_symmetry) {
+MeanFieldAnsatz::MeanFieldAnsatz(mean_field_options& mf_in, Lattice& lat_in, bool unit_cell_construction) 
+	: N(lat_in.get_N()), su3_symmetry(mf_in.su3_symmetry), mu_z(mf_in.mu_z){
 
 	//compatibility conditions:
 	//1.  Lattice types are the same
@@ -146,6 +147,9 @@ void MeanFieldAnsatz::set_hamiltonian() {
 					col = i + m2 * N;
 					if (row <= col) {
 						HMF[row*dim + col] -= field * get_director_element(directors[i], m1, m2);
+						if (m1 == 1 && m2 == 1) {
+							HMF[row * dim + col] -= mu_z;
+						}
 					}
 				}
 			}
@@ -381,7 +385,7 @@ void MeanFieldAnsatz::write_levels(std::ofstream *f) {
 		if (i == N - 1) {
 			n0_F = std::round(n0_tot);
 		}
-		sprintf(buf, "%6.2f, %6.2f, %6.2f, %6.2f, %6.2f, %6.2f, %6.2f, %6.2f", E, n1_tot + n0_tot + n_1_tot, n1_tot, n0_tot, n_1_tot, n1 * n1, n0 * n0, n_1 * n_1);
+		sprintf_s(buf, "%6.2f, %6.2f, %6.2f, %6.2f, %6.2f, %6.2f, %6.2f, %6.2f", E, n1_tot + n0_tot + n_1_tot, n1_tot, n0_tot, n_1_tot, n1 * n1, n0 * n0, n_1 * n_1);
 		*f << std::string(buf) << "\n";
 	}
 }

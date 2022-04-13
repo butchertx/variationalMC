@@ -58,7 +58,7 @@ results_struct run_mc(lattice_options lat_options, mean_field_options mf_options
             Ham = create_su2_Hamiltonian(lattice, mdl_options.get_su2_terms("J"), mdl_options.get_su2_terms("K"), mdl_options.single_ion);
         }
         else if (mdl_options.model_type.compare("su3") == 0) {
-            Ham = create_su3_Hamiltonian(lattice, mdl_options.bilinear_terms[0].coupling, mdl_options.ring3_terms[0].coupling_real, mdl_options.ring3_terms[0].coupling_imag);
+            Ham = create_su3_Hamiltonian(lattice, mdl_options.bilinear_terms[0].coupling, mdl_options.ring3_terms[0].coupling_real, mdl_options.ring3_terms[0].coupling_imag, mdl_options.single_ion);
         }
         MonteCarloEngine sampler(Ham, wf, lattice, r, v_options);
         sampler.add_observable_function(create_Correlation_SZ(lattice), "SzSz_correlation");
@@ -176,7 +176,7 @@ SpinModel create_su2_Hamiltonian(Lattice l, std::vector<double> J, std::vector<d
     return ham;
 }
 
-SpinModel create_su3_Hamiltonian(Lattice l, double J, double K, double h) {
+SpinModel create_su3_Hamiltonian(Lattice l, double J, double K, double h, double D) {
     SpinModel ham;
     std::cout << "Creating SU(3) Hamiltonian with J = " << J << ", K = " << K << ", h = " << h << "\n";
 
@@ -210,6 +210,15 @@ SpinModel create_su3_Hamiltonian(Lattice l, double J, double K, double h) {
     }
     ham.add_term("<2Re(C_3)>", p123_left, { K, 0.0 });
     ham.add_term("<2Im(C_3)>", p123_right, { 0.0, h });
+
+    if (D != 0.0) {
+        Observable ds2("<(S_i^z)^2>");
+        for (int i = 0; i < l.get_N(); ++i) {
+            auto* I0 = new SingleIonAnisotropy(i, 1.0);
+            ds2.add_interaction(I0);
+        }
+        ham.add_term("<(S_i^z)^2>", ds2, { D, 0.0 });
+    }
 
     return ham;
 }

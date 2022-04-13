@@ -14,7 +14,7 @@ class JastrowTable;
 using namespace vmctype;
 
 SpinModel create_su2_Hamiltonian(Lattice, std::vector<double> J, std::vector<double> K, double D);
-SpinModel create_su3_Hamiltonian(Lattice, double J, double K, double h);
+SpinModel create_su3_Hamiltonian(Lattice, double J, double K, double h, double D = 0.0);
 
 std::vector<Observable> create_Correlation_SZ(Lattice);
 

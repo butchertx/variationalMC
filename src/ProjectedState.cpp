@@ -218,7 +218,9 @@ void ProjectedState::update(std::vector<int>& sites, std::vector<int>& new_sz, s
 
 bool ProjectedState::try_configuration() {
 	int N0 = ansatz.get_N0F();
-	assert(2 * (N - N0) / 2 == N - N0);
+	if (2 * ((N - N0) / 2) != N - N0) {
+		N0 += 1;
+	}
 	set_configuration(rand.get_rand_spin_state(std::vector<int>{ (N - N0) / 2, N0, (N - N0) / 2 }, N));
 	
 	CBLAS_INDEX low = 0;

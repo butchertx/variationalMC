@@ -1,7 +1,7 @@
 {
   "lattice": {
     "type": "diamondcc",
-    "L": [ 3, 3, 3 ],
+    "L": [ 2, 2, 3 ],
     "dimension": 3,
     "pbc": [ 1, 1, 1 ]
   },
@@ -15,23 +15,24 @@
     "su3_symmetry": false,
     "num hop": 1,
     "field": 1.0,
+    "mu_z":  0.0,
     "num spin-orbit": 0,
     "hopping terms": [
       {
         "spin row": 0,
-        "strength": -0.0,
+        "strength": -1.0,
         "distance": 0,
-        "origins": [ 0, 0 ],
-        "neighbor index": [ 0, 1 ],
-        "phases": [ 0, 0 ]
+        "origins": [ 1, 1, 1, 1, 3, 3, 3, 3, 5, 5, 5, 5, 7, 7, 7, 7 ],
+        "neighbor index": [ 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3 ],
+        "phases": [ 0, 0, 0, 0, 0, 180, 180, 0, 0, 0, 180, 0, 180, 180, 180, 0 ]
       },
       {
         "spin row": 1,
-        "strength": -0.0,
+        "strength": -1.0,
         "distance": 0,
-        "origins": [ 0, 0 ],
-        "neighbor index": [ 0, 1 ],
-        "phases": [ 0, 0 ]
+        "origins": [ 1, 1, 1, 1, 3, 3, 3, 3, 5, 5, 5, 5, 7, 7, 7, 7 ],
+        "neighbor index": [ 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3 ],
+        "phases": [ 0, 0, 0, 0, 0, 180, 180, 0, 0, 0, 180, 0, 180, 180, 180, 0 ]
       }
     ],
     "directors": {
@@ -86,22 +87,38 @@
         "neighbor_index": 0
       },
       {
+        "type": "su2 exchange",
+        "coupling": 0.1,
+        "neighbor_index": 1
+      },
+      {
         "type": "su2 biquadratic",
-        "coupling": 0.0,
+        "coupling": 0.1,
         "neighbor_index": 0
+      },
+      {
+        "type": "su2 biquadratic",
+        "coupling": 0.01,
+        "neighbor_index": 1
       }
     ],
     "match lattice pbc": true
   },
   "vmc": {
     "steps": 10,
-    "measures": 1000,
+    "measures": 500,
     "throwaway": 50,
-    "su3":  false,
-    "optimization": false,
+    "su3": false,
+    "optimization_SR": false,
     "SR": {
-      "bins": 20,
+      "bins": 15,
+      "throwaway_bins": 10,
       "timestep": 0.05
+    },
+    "optimization_search": true,
+    "parallel_search": {
+      "mu_z": [ 0.5 ],
+      "g":  [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
     }
   }
 }

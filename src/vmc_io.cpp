@@ -106,6 +106,15 @@ mean_field_options read_json_wavefunction(json j) {
 		}
 		wf_opt.spin = j["wavefunction"]["spin"];
 		wf_opt.field = j["wavefunction"]["field"];
+
+		// mu_z term
+		// default value = 0.0
+		if (j["wavefunction"].contains("mu_z")) {
+			wf_opt.mu_z = j["wavefunction"]["mu_z"];
+		}
+		else {
+			wf_opt.mu_z = 0.0;
+		}
 		wf_opt.num_spin_orbit = j["wavefunction"]["num spin-orbit"];
 		wf_opt.match_lattice_pbc = j["wavefunction"]["match lattice pbc"];
 		wf_opt.su3_symmetry = j["wavefunction"]["su3_symmetry"];
@@ -164,16 +173,56 @@ model_options read_json_model(std::string infile_name) {
 
 vmc_options read_json_vmc(json j) {
 	vmc_options vmc_opt;
-	if (j["vmc"].contains("optimization")) {
-		vmc_opt.optimization = j["vmc"]["optimization"].get<bool>();
+
+	// SR optimization
+	if (j["vmc"].contains("optimization_SR")) {
+		vmc_opt.optimization = j["vmc"]["optimization_SR"].get<bool>();
 		if (vmc_opt.optimization) {
 			vmc_opt.sr.bins = j["vmc"]["SR"]["bins"].get<int>();
+			vmc_opt.sr.throwaway_bins = j["vmc"]["SR"]["throwaway_bins"].get<int>();
 			vmc_opt.sr.timestep = j["vmc"]["SR"]["timestep"].get<double>();
 		}
 	}
 	else {
 		vmc_opt.optimization = false;
 	}
+
+	// Parallel param search
+	if (j["vmc"].contains("optimization_search")) {
+		vmc_opt.search = j["vmc"]["optimization_search"].get<bool>();
+		if (vmc_opt.search) {
+			vmc_opt.psearch.num_parallel = 1;
+			if (j["vmc"]["parallel_search"].contains("txy")) {
+				vmc_opt.psearch.txy = j["vmc"]["parallel_search"]["txy"].get<std::vector<double>>();
+				if (vmc_opt.psearch.txy.size() > 0) {
+					vmc_opt.psearch.num_parallel *= vmc_opt.psearch.txy.size();
+				}
+			}
+			if (j["vmc"]["parallel_search"].contains("tz")) {
+				vmc_opt.psearch.tz = j["vmc"]["parallel_search"]["tz"].get<std::vector<double>>();
+				if (vmc_opt.psearch.tz.size() > 0) {
+					vmc_opt.psearch.num_parallel *= vmc_opt.psearch.tz.size();
+				}
+			}
+			if (j["vmc"]["parallel_search"].contains("mu_z")) {
+				vmc_opt.psearch.mu_z = j["vmc"]["parallel_search"]["mu_z"].get<std::vector<double>>();
+				if (vmc_opt.psearch.mu_z.size() > 0) {
+					vmc_opt.psearch.num_parallel *= vmc_opt.psearch.mu_z.size();
+				}
+			}
+			if (j["vmc"]["parallel_search"].contains("g")) {
+				vmc_opt.psearch.g = j["vmc"]["parallel_search"]["g"].get<std::vector<double>>();
+				if (vmc_opt.psearch.g.size() > 0) {
+					vmc_opt.psearch.num_parallel *= vmc_opt.psearch.g.size();
+				}
+			}
+		}
+	}
+	else {
+		vmc_opt.optimization = false;
+	}
+
+	// Maintain SU(3) symmetry
 	if (j["vmc"].contains("su3")) {
 		vmc_opt.su3 = j["vmc"]["su3"].get<bool>();
 	}
@@ -181,6 +230,7 @@ vmc_options read_json_vmc(json j) {
 		vmc_opt.su3 = true;
 	}
 	
+	// Markov chain
 	vmc_opt.num_measures = j["vmc"]["measures"].get<int>();
 	vmc_opt.steps_per_measure = j["vmc"]["steps"].get<int>();
 	vmc_opt.throwaway_measures = j["vmc"]["throwaway"].get<int>();

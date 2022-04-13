@@ -124,8 +124,15 @@ public:
 
 	std::complex<double> get_energy() {
 		std::complex<double> e_avg;
-		e_avg = { std::accumulate(E.begin() + params.throwaway_measures, E.end(), 0.0) / (E.size() - params.throwaway_measures),
-			std::accumulate(E_imag.begin() + params.throwaway_measures, E_imag.end(), 0.0) / (E.size() - params.throwaway_measures) };
+		if (params.optimization) {
+			int num_skip = params.sr.throwaway_bins * params.num_measures;
+			e_avg = { std::accumulate(E.begin() + num_skip, E.end(), 0.0) / (E.size() - num_skip),
+				std::accumulate(E_imag.begin() + num_skip, E_imag.end(), 0.0) / (E.size() - num_skip) };
+		}
+		else {
+			e_avg = { std::accumulate(E.begin() + params.throwaway_measures, E.end(), 0.0) / (E.size() - params.throwaway_measures),
+				std::accumulate(E_imag.begin() + params.throwaway_measures, E_imag.end(), 0.0) / (E.size() - params.throwaway_measures) };
+		}
 		return e_avg;
 	}
 
@@ -134,10 +141,14 @@ public:
 	std::complex<double> get_observable(std::string term) {
 		std::vector<std::complex<double>> vals = observable_measures[term];
 		std::complex<double> O_avg(0.0, 0.0);
-		for (auto v = vals.begin() + params.throwaway_measures; v != vals.end(); ++v) {
+		int num_skip = params.throwaway_measures;
+		if (params.optimization) {
+			num_skip = params.sr.throwaway_bins * params.num_measures;
+		}
+		for (auto v = vals.begin() + num_skip; v != vals.end(); ++v) {
 			O_avg += *v;
 		}
-		return std::complex<double>(O_avg.real() / (vals.size() - params.throwaway_measures), O_avg.imag() / (vals.size() - params.throwaway_measures));
+		return std::complex<double>(O_avg.real() / (vals.size() - num_skip), O_avg.imag() / (vals.size() - num_skip));
 	}
 
 	std::map<std::string, std::complex<double>> get_all_observables() {
@@ -162,9 +173,13 @@ public:
 	std::complex<double> get_energy_err() {
 		double var_r, var_i;
 		std::complex<double> e_avg;
+		int num_skip = params.throwaway_measures;
+		if (params.optimization) {
+			num_skip = params.sr.throwaway_bins * params.num_measures;
+		}
 		e_avg = get_energy();
-		var_r = error(E.begin() + params.throwaway_measures, E.end(), get_energy().real(), 10);
-		var_i = error(E_imag.begin() + params.throwaway_measures, E_imag.end(), get_energy().imag(), 10);
+		var_r = error(E.begin() + num_skip, E.end(), get_energy().real(), 10);
+		var_i = error(E_imag.begin() + num_skip, E_imag.end(), get_energy().imag(), 10);
 		return { var_r, var_i };
 	}
 
@@ -173,8 +188,12 @@ public:
 		std::vector<std::complex<double>> vals = observable_measures[term];
 		std::vector<double> vals_r = vec_r(vals), vals_i = vec_i(vals);
 		std::complex<double> O_avg = get_observable(term);
-		var_r = error(vals_r.begin() + params.throwaway_measures, vals_r.end(), O_avg.real(), 10);
-		var_i = error(vals_i.begin() + params.throwaway_measures, vals_i.end(), O_avg.imag(), 10);
+		int num_skip = params.throwaway_measures;
+		if (params.optimization) {
+			num_skip = params.sr.throwaway_bins * params.num_measures;
+		}
+		var_r = error(vals_r.begin() + num_skip, vals_r.end(), O_avg.real(), 10);
+		var_i = error(vals_i.begin() + num_skip, vals_i.end(), O_avg.imag(), 10);
 		return { var_r, var_i };
 	}
 

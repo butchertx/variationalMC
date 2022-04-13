@@ -136,7 +136,7 @@ class MeanFieldAnsatz {
 
 	bool su3_symmetry;
 	int N, info, n0_F, fermi_surface_start, fermi_surface_end;
-	double field;
+	double field, mu_z;
 	lapack_complex_double *HMF, *Phi; // , * Pair_Eig, * PhiR;
 	std::vector<lapack_complex_double*> del_H; //each element corresponds to dH for a given variational param
 	double *Energy;
