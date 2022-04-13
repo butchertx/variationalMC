@@ -70,23 +70,23 @@ results_struct run_mc(lattice_options lat_options, mean_field_options mf_options
         conf_file.close();
 
         std::ofstream obs_file_r, obs_file_i;
-        obs_file_r.open("results/SzSz_correlation_real.csv");
-        obs_file_i.open("results/SzSz_correlation_imag.csv");
-        sampler.write_observable_functions(&obs_file_r, &obs_file_i, "SzSz_correlation");
-        obs_file_r.close();
-        obs_file_i.close();
+        //obs_file_r.open("results/SzSz_correlation_real.csv");
+        //obs_file_i.open("results/SzSz_correlation_imag.csv");
+        //sampler.write_observable_functions(&obs_file_r, &obs_file_i, "SzSz_correlation");
+        //obs_file_r.close();
+        //obs_file_i.close();
 
-        obs_file_r.open("results/Spm_correlation_real.csv");
-        obs_file_i.open("results/Spm_correlation_imag.csv");
-        sampler.write_observable_functions(&obs_file_r, &obs_file_i, "Spm_correlation");
-        obs_file_r.close();
-        obs_file_i.close();
+        //obs_file_r.open("results/Spm_correlation_real.csv");
+        //obs_file_i.open("results/Spm_correlation_imag.csv");
+        //sampler.write_observable_functions(&obs_file_r, &obs_file_i, "Spm_correlation");
+        //obs_file_r.close();
+        //obs_file_i.close();
 
-        obs_file_r.open("results/Swap_correlation_real.csv");
-        obs_file_i.open("results/Swap_correlation_imag.csv");
-        sampler.write_observable_functions(&obs_file_r, &obs_file_i, "Swap_correlation");
-        obs_file_r.close();
-        obs_file_i.close();
+        //obs_file_r.open("results/Swap_correlation_real.csv");
+        //obs_file_i.open("results/Swap_correlation_imag.csv");
+        //sampler.write_observable_functions(&obs_file_r, &obs_file_i, "Swap_correlation");
+        //obs_file_r.close();
+        //obs_file_i.close();
 
 
         results.E = sampler.get_energy() * (1.0/lattice.get_N());
