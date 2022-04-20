@@ -385,7 +385,7 @@ void MeanFieldAnsatz::write_levels(std::ofstream *f) {
 		if (i == N - 1) {
 			n0_F = std::round(n0_tot);
 		}
-		sprintf_s(buf, "%6.2f, %6.2f, %6.2f, %6.2f, %6.2f, %6.2f, %6.2f, %6.2f", E, n1_tot + n0_tot + n_1_tot, n1_tot, n0_tot, n_1_tot, n1 * n1, n0 * n0, n_1 * n_1);
+		snprintf(buf, 200, "%6.2f, %6.2f, %6.2f, %6.2f, %6.2f, %6.2f, %6.2f, %6.2f", E, n1_tot + n0_tot + n_1_tot, n1_tot, n0_tot, n_1_tot, n1 * n1, n0 * n0, n_1 * n_1);
 		*f << std::string(buf) << "\n";
 	}
 }
