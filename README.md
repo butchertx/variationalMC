@@ -40,7 +40,32 @@ This will copy the spin-1-vmc directory into your current working directory.
   
   ## Commit your changes to your development branch
   
-  Use ``git add <file>`` to stage changes in a given file.  This marks them to be committed.  Then run ``git commit`` to commit your changes.  This is like pressing ``ctrl-S`` when working on a file in a text editor; it saves the changes you've made to your git branch.  Git will open a terminal editor (vim is the default) where you can type a commit message describing which changes you've made in this commit.  To exit vim, type ``:wq`` and press Enter.
+  Use ``git add <file>`` to stage changes in a given file.  This marks them to be committed.  Then run ``git commit`` to commit your changes.  This is like pressing ``ctrl-S`` when working on a file in a text editor; it saves the changes you've made to your git branch.  Git will open a terminal editor (vim is the default) where you can type a commit message describing which changes you've made in this commit.  To exit vim, type ``:wq`` and press Enter.  You can also use the shorthand ``git commit -m "<message>"`` to create a commit message in one step.
+  
+  ## Useful commands
+  
+  Use
+  
+  ``` bash
+  git status
+  ```
+  
+  to view which branch you're on, and any changed files that are staged or unstaged:
+  
+  ![image](https://user-images.githubusercontent.com/16173143/202441913-6b84ee3f-2be5-4a42-9c47-04f218fcfe5e.png)
+
+  The above image demonstrates a series of actions you would take to verify you're on your development branch, and add and commit any files you've changed.
+  
+  Another useful command is 
+  
+  ``` bash
+  git log
+  ```
+  
+  This will make a list of the previous commits from your current branch:
+  
+  ![image](https://user-images.githubusercontent.com/16173143/202442235-9a63538f-520f-4948-b4c3-7e19dbcbe1a4.png)
+
 
   ## Keep your branch up-to-date with ``main``
   
