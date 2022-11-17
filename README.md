@@ -71,4 +71,9 @@ This will copy the spin-1-vmc directory into your current working directory.
     
   ## Create a pull request
   
-  To get your branch merged back into the main branch, you will need to create a "pull request" on Github.  When you push your branch, and log in to the Github repo, there will be a banner at the top asking you to "Compare & pull request".  Click this banner.
+  To get your branch merged back into the main branch, you will need to create a "pull request" on Github.  When you push your branch, and log in to the Github repo, there will be a banner at the top asking you to "Compare & pull request".  Click this banner.  You will come to a screen that looks like this:
+  
+  ![image](https://user-images.githubusercontent.com/16173143/202440722-1e4832e8-3529-4148-a5a6-e8feedb3a901.png)
+  
+  At the top you can select which branches you want to merge.  You can also add a title and a description, using Markdown for formatting if desired.  Then click "Create pull request".  This pull request can be viewed, edited, commented on, and eventually merged (by me, @butchertx) by clicking the "Pull requests" tab at the top of the repository site page.
+
