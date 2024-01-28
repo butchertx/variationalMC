@@ -1,0 +1,9 @@
+{
+    "vmc": {
+      "steps": 10,
+      "measures": 1000,
+      "throwaway": 50,
+      "su3":  true,
+      "optimization": false
+    }
+  }

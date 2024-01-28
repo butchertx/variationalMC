@@ -1,0 +1,34 @@
+{
+    "wavefunction": {
+      "wavefunction type": "meanfield",
+      "lattice type": "chain",
+      "inequivalent sites": 1,
+      "basis": [
+        [ 0, 0, 0 ]
+      ],
+      "spin": 1,
+      "match lattice pbc": true,
+      "su3_symmetry": false,
+      "num hop": 1,
+      "field": 0.0,
+      "num spin-orbit": 0,
+      "hopping terms": [
+        {
+          "spin row": 0,
+          "strength": -1.0,
+          "distance": 0,
+          "origins": [ 0 ],
+          "neighbor index": [ 0 ],
+          "phases": [ 0 ]
+        },
+        {
+          "spin row": 1,
+          "strength": -1.0,
+          "distance": 0,
+          "origins": [ 0 ],
+          "neighbor index": [ 0 ],
+          "phases": [ 0 ]
+        }
+      ]
+    }
+  }
