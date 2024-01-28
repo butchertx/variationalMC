@@ -15,6 +15,10 @@
 
 using namespace vmctype;
 
+/*! \brief Enum for boundary conditions
+*/
+enum Boundary_conditions_t { ANTIPERIODIC = -1, OPEN, PERIODIC };
+
 /*! \brief Enum for specifying a lattice type
 */
 enum Lattice_type_t { CHAIN, TRIANGLE, KAGOME, DICE, HONEYCOMB, SQUARE, CUBIC, DIAMOND, DIAMOND111, DIAMONDCC };//require SQUARE is the last 2-D lattice in list

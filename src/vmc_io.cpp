@@ -11,7 +11,7 @@
 
 
 
-bool isDirExist(const std::string& path)
+bool doesDirExist(const std::string& path)
 {
 #if defined(_WIN32)
 	struct _stat info;
@@ -65,7 +65,7 @@ bool makePath(const std::string& path)
 
 	case EEXIST:
 		// done!
-		return isDirExist(path);
+		return doesDirExist(path);
 
 	default:
 		return false;
@@ -89,6 +89,14 @@ lattice_options read_json_lattice(json j) {
 
 lattice_options read_json_lattice(std::string infile_name) {
 	std::ifstream i(infile_name);
+	json j;
+	i >> j;
+	return read_json_lattice(j);
+}
+
+lattice_options read_json_lattice_from_dir(const std::string& dir_name) {
+	// assume a file named "lattice.json"
+	std::ifstream i(dir_name + "/lattice.json");
 	json j;
 	i >> j;
 	return read_json_lattice(j);
@@ -149,6 +157,14 @@ mean_field_options read_json_wavefunction(std::string infile_name) {
 	return read_json_wavefunction(j);
 }
 
+mean_field_options read_json_wavefunction_from_dir(const std::string& dir_name) {
+	// assume a file named "wavefunction.json"
+	std::ifstream i(dir_name + "/wavefunction.json");
+	json j;
+	i >> j;
+	return read_json_wavefunction(j);
+}
+
 model_options read_json_model(json j) {
 	model_options model_opt;
 	model_opt.model_type = j["model"]["type"].get<std::string>(); // either blbq or su3
@@ -166,6 +182,14 @@ model_options read_json_model(json j) {
 
 model_options read_json_model(std::string infile_name) {
 	std::ifstream i(infile_name);
+	json j;
+	i >> j;
+	return read_json_model(j);
+}
+
+model_options read_json_model_from_dir(const std::string& dir_name) {
+	// assume a file named "model.json"
+	std::ifstream i(dir_name + "/model.json");
 	json j;
 	i >> j;
 	return read_json_model(j);
@@ -245,6 +269,14 @@ vmc_options read_json_vmc(std::string infile_name) {
 	return read_json_vmc(j);
 }
 
+vmc_options read_json_vmc_from_dir(const std::string& dir_name) {
+	// assume a file named "vmc.json"
+	std::ifstream i(dir_name + "/vmc.json");
+	json j;
+	i >> j;
+	return read_json_vmc(j);
+}
+
 void read_json_full_input(lattice_options* lat, mean_field_options* wf, model_options* H, vmc_options* vmc, std::string infile_name) {
 	std::ifstream i(infile_name);
 	json j;
@@ -254,7 +286,6 @@ void read_json_full_input(lattice_options* lat, mean_field_options* wf, model_op
 	*H = read_json_model(j);
 	*vmc = read_json_vmc(j);
 }
-
 
 std::string lattice_options::to_string() {
 		std::stringstream ss;
