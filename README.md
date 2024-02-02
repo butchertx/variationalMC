@@ -17,7 +17,15 @@ This will copy the spin-1-vmc directory into your current working directory.
 
 ## Link Intel libraries
 
+## Set up CMake
+
 ## Build the spin-1-vmc library
+
+## (Optional) Pull in Gtest for testing
+
+- download the `googletest` repository from git: 
+  - recommended method is navigate to https://github.com/google/googletest, click "Code" in the top right, and choose "Download Zip"
+- unzip into `thirdparty/googletest-main`
 
 
 # Git Instructions and Workflow

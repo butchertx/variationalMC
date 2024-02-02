@@ -40,3 +40,6 @@ projects/
 
 # Build files
 build/**
+
+# Third-Party libraries
+thirdparty/**
