@@ -1,16 +1,10 @@
 {
     "model": {
-      "type": "blbq",
-      "single_ion":  0.0,
+      "type": "heisenberg",
       "bilinear": [
         {
           "type": "su2 exchange",
           "coupling": 1.0,
-          "neighbor_index": 0
-        },
-        {
-          "type": "su2 biquadratic",
-          "coupling": 0.5,
           "neighbor_index": 0
         }
       ],
