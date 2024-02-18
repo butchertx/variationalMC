@@ -74,8 +74,8 @@ bool makePath(const std::string& path)
 
 
 
-lattice_options read_json_lattice(json j) {
-	lattice_options lat_opt;
+LatticeOptions read_json_lattice(json j) {
+	LatticeOptions lat_opt;
 	lat_opt.type = j["lattice"]["type"].get<std::string>();
 	lat_opt.dimension = j["lattice"]["dimension"];
 	lat_opt.L = j["lattice"]["L"].get<std::vector<int>>();
@@ -87,14 +87,14 @@ lattice_options read_json_lattice(json j) {
 	return lat_opt;
 }
 
-lattice_options read_json_lattice(std::string infile_name) {
+LatticeOptions read_json_lattice(std::string infile_name) {
 	std::ifstream i(infile_name);
 	json j;
 	i >> j;
 	return read_json_lattice(j);
 }
 
-lattice_options read_json_lattice_from_dir(const std::string& dir_name) {
+LatticeOptions read_json_lattice_from_dir(const std::string& dir_name) {
 	// assume a file named "lattice.json"
 	std::ifstream i(dir_name + "/lattice.json");
 	json j;
@@ -102,8 +102,8 @@ lattice_options read_json_lattice_from_dir(const std::string& dir_name) {
 	return read_json_lattice(j);
 }
 
-mean_field_options read_json_wavefunction(json j) {
-	mean_field_options wf_opt;
+MeanFieldOptions read_json_wavefunction(json j) {
+	MeanFieldOptions wf_opt;
 	wf_opt.lattice_type = j["wavefunction"]["lattice type"].get<std::string>();
 	wf_opt.wf_type = j["wavefunction"]["wavefunction type"].get<std::string>();
 
@@ -150,14 +150,14 @@ mean_field_options read_json_wavefunction(json j) {
 	return wf_opt;
 }
 
-mean_field_options read_json_wavefunction(std::string infile_name) {
+MeanFieldOptions read_json_wavefunction(std::string infile_name) {
 	std::ifstream i(infile_name);
 	json j;
 	i >> j;
 	return read_json_wavefunction(j);
 }
 
-mean_field_options read_json_wavefunction_from_dir(const std::string& dir_name) {
+MeanFieldOptions read_json_wavefunction_from_dir(const std::string& dir_name) {
 	// assume a file named "wavefunction.json"
 	std::ifstream i(dir_name + "/wavefunction.json");
 	json j;
@@ -165,8 +165,8 @@ mean_field_options read_json_wavefunction_from_dir(const std::string& dir_name) 
 	return read_json_wavefunction(j);
 }
 
-model_options read_json_model(json j) {
-	model_options model_opt;
+ModelOptions read_json_model(json j) {
+	ModelOptions model_opt;
 	model_opt.model_type = j["model"]["type"].get<std::string>(); // either blbq or su3
 	if (j["model"].contains("single_ion")) {
 		model_opt.single_ion = j["model"]["single_ion"];
@@ -180,14 +180,14 @@ model_options read_json_model(json j) {
 	return model_opt;
 }
 
-model_options read_json_model(std::string infile_name) {
+ModelOptions read_json_model(std::string infile_name) {
 	std::ifstream i(infile_name);
 	json j;
 	i >> j;
 	return read_json_model(j);
 }
 
-model_options read_json_model_from_dir(const std::string& dir_name) {
+ModelOptions read_json_model_from_dir(const std::string& dir_name) {
 	// assume a file named "model.json"
 	std::ifstream i(dir_name + "/model.json");
 	json j;
@@ -195,8 +195,8 @@ model_options read_json_model_from_dir(const std::string& dir_name) {
 	return read_json_model(j);
 }
 
-vmc_options read_json_vmc(json j) {
-	vmc_options vmc_opt;
+VMCOptions read_json_vmc(json j) {
+	VMCOptions vmc_opt;
 
 	// SR optimization
 	if (j["vmc"].contains("optimization_SR")) {
@@ -262,14 +262,14 @@ vmc_options read_json_vmc(json j) {
 	return vmc_opt;
 }
 
-vmc_options read_json_vmc(std::string infile_name) {
+VMCOptions read_json_vmc(std::string infile_name) {
 	std::ifstream i(infile_name);
 	json j;
 	i >> j;
 	return read_json_vmc(j);
 }
 
-vmc_options read_json_vmc_from_dir(const std::string& dir_name) {
+VMCOptions read_json_vmc_from_dir(const std::string& dir_name) {
 	// assume a file named "vmc.json"
 	std::ifstream i(dir_name + "/vmc.json");
 	json j;
@@ -277,7 +277,7 @@ vmc_options read_json_vmc_from_dir(const std::string& dir_name) {
 	return read_json_vmc(j);
 }
 
-void read_json_full_input(lattice_options* lat, mean_field_options* wf, model_options* H, vmc_options* vmc, std::string infile_name) {
+void read_json_full_input(LatticeOptions* lat, MeanFieldOptions* wf, ModelOptions* H, VMCOptions* vmc, std::string infile_name) {
 	std::ifstream i(infile_name);
 	json j;
 	i >> j;
@@ -287,7 +287,7 @@ void read_json_full_input(lattice_options* lat, mean_field_options* wf, model_op
 	*vmc = read_json_vmc(j);
 }
 
-std::string lattice_options::to_string() {
+std::string LatticeOptions::to_string() {
 		std::stringstream ss;
 		ss << "Lattice=" << type << "\n"
 			<< "dimension=" << dimension << "\n"
@@ -296,7 +296,7 @@ std::string lattice_options::to_string() {
 }
 
 
-std::string mean_field_options::to_string() {
+std::string MeanFieldOptions::to_string() {
 		std::stringstream ss;
 		ss << "Lattice=" << lattice_type << "\n"
 			<< "Inequivalent sites=" << inequivalent_sites << "\n";

@@ -9,7 +9,7 @@
 #include "VariationalMonteCarlo.h"
 #include "model_and_calculation_helper.h"
 
-results_struct run_mc(lattice_options lat_options, mean_field_options mf_options, model_options mdl_options, vmc_options v_options) {
+results_struct run_mc(LatticeOptions lat_options, MeanFieldOptions mf_options, ModelOptions mdl_options, VMCOptions v_options) {
 
     Lattice lattice(Lattice_type_from_string(lat_options.type), vec3<int>(lat_options.L), vec3<int>(lat_options.pbc));
 

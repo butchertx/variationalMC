@@ -191,7 +191,7 @@ namespace vmctype {
 
 	};
 
-	struct lattice_options {
+	struct LatticeOptions {
 		std::string type;
 		int dimension;
 		std::vector<int> L;
@@ -204,7 +204,7 @@ namespace vmctype {
 		bool is_valid();
 	};
 
-	struct mean_field_options {
+	struct MeanFieldOptions {
 		std::string lattice_type;
 		std::string wf_type;
 		int inequivalent_sites = 1, spin, num_spin_orbit;
@@ -219,7 +219,7 @@ namespace vmctype {
 		std::string to_string();
 	};
 
-	struct model_options {
+	struct ModelOptions {
 		std::string model_type;
 		double single_ion = 0.0;
 		std::vector<BilinearOptions> bilinear_terms;
@@ -246,7 +246,7 @@ namespace vmctype {
 		}
 	};
 
-	struct vmc_options {
+	struct VMCOptions {
 		int steps_per_measure, num_measures, throwaway_measures;
 		bool su3 = true, optimization = false, search = false;
 

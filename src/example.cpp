@@ -29,10 +29,10 @@ int main(int argc, char* argv[]) {
     example_path = argv[1];
     std::cout << example_path << "\n";
 
-    lattice_options lat_options = read_json_lattice_from_dir(example_path);
-    mean_field_options wf_options = read_json_wavefunction_from_dir(example_path);
-    model_options mdl_options = read_json_model_from_dir(example_path);
-    vmc_options mc_options = read_json_vmc_from_dir(example_path);
+    LatticeOptions lat_options = read_json_lattice_from_dir(example_path);
+    MeanFieldOptions wf_options = read_json_wavefunction_from_dir(example_path);
+    ModelOptions mdl_options = read_json_model_from_dir(example_path);
+    VMCOptions mc_options = read_json_vmc_from_dir(example_path);
 
     // read_json_full_input(&lat_options, &wf_options, &mdl_options, &mc_options, example_path);
     // makePath("./results");

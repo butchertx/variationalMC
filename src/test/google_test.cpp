@@ -18,5 +18,5 @@ TEST(HelloTest, BasicAssertions2) {
 }
 
 TEST(VMCHello, VMCHello1) {
-    vmctype::lattice_options lat;
+    vmctype::LatticeOptions lat;
 }

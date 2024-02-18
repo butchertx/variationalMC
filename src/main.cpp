@@ -56,10 +56,10 @@ int main(int argc, char* argv[]) {
         std::cout << "Using output file: " << outfile_name << "\n";
     }
 
-    lattice_options lat_options;
-    mean_field_options wf_options;
-    model_options mdl_options;
-    vmc_options mc_options;
+    LatticeOptions lat_options;
+    MeanFieldOptions wf_options;
+    ModelOptions mdl_options;
+    VMCOptions mc_options;
 
     read_json_full_input(&lat_options, &wf_options, &mdl_options, &mc_options, infile_name);
     makePath("./results");

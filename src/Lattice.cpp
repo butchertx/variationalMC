@@ -61,7 +61,7 @@ Lattice_type_t Lattice_type_from_string(std::string str) {
 	}
 }
 
-bool vmctype::lattice_options::is_valid() {
+bool vmctype::LatticeOptions::is_valid() {
 	bool allowed = true;
 	std::cout << dimension << " " << type << " " << Lx << " " << Ly << " " << Lz << "\n";
 	allowed = (dimension == 1 && Lattice_type_from_string(type) == CHAIN) || (dimension == 2 && Lattice_type_from_string(type) <= SQUARE) || (dimension == 3 && Lattice_type_from_string(type) > SQUARE);

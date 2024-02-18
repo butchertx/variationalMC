@@ -41,7 +41,7 @@ class MonteCarloEngine {
 
 	RandomEngine& rand;
 
-	vmc_options params;
+	VMCOptions params;
 
 	std::map<std::string, std::vector<std::complex<double>>> observable_measures; // Hamiltonian observables are automatically added here
 	std::map<std::string, std::vector<std::vector<std::complex<double>>>> observable_function_measures;
@@ -56,7 +56,7 @@ class MonteCarloEngine {
 
 public:
 	
-	MonteCarloEngine(SpinModel& H_in, Wavefunction& WF_in, Lattice& lat_in, RandomEngine& rand_in, vmc_options params_in)
+	MonteCarloEngine(SpinModel& H_in, Wavefunction& WF_in, Lattice& lat_in, RandomEngine& rand_in, VMCOptions params_in)
 		: H(H_in), WF(WF_in), lat(lat_in), rand(rand_in), params(params_in) {
 
 		for (std::string term_name : H.get_terms()) {
