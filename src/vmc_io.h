@@ -47,9 +47,9 @@ LatticeOptions read_json_lattice(json j);
 LatticeOptions read_json_lattice(std::string infile_name);
 LatticeOptions read_json_lattice_from_dir(const std::string& dir_name);
 
-MeanFieldOptions read_json_wavefunction(json j);
-MeanFieldOptions read_json_wavefunction(std::string infile_name);
-MeanFieldOptions read_json_wavefunction_from_dir(const std::string& dir_name);
+WavefunctionOptions read_json_wavefunction(json j);
+WavefunctionOptions read_json_wavefunction(std::string infile_name);
+WavefunctionOptions read_json_wavefunction_from_dir(const std::string& dir_name);
 
 ModelOptions read_json_model(json j);
 ModelOptions read_json_model(std::string infile_name);
@@ -59,5 +59,5 @@ VMCOptions read_json_vmc(json j);
 VMCOptions read_json_vmc(std::string infile_name);
 VMCOptions read_json_vmc_from_dir(const std::string& dir_name);
 
-void read_json_full_input(LatticeOptions* lat, MeanFieldOptions* wf, ModelOptions* H, VMCOptions* vmc, std::string infile_name);
+void read_json_full_input(LatticeOptions* lat, WavefunctionOptions* wf, ModelOptions* H, VMCOptions* vmc, std::string infile_name);
 

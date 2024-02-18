@@ -102,8 +102,8 @@ LatticeOptions read_json_lattice_from_dir(const std::string& dir_name) {
 	return read_json_lattice(j);
 }
 
-MeanFieldOptions read_json_wavefunction(json j) {
-	MeanFieldOptions wf_opt;
+WavefunctionOptions read_json_wavefunction(json j) {
+	WavefunctionOptions wf_opt;
 	wf_opt.lattice_type = j["wavefunction"]["lattice type"].get<std::string>();
 	wf_opt.wf_type = j["wavefunction"]["wavefunction type"].get<std::string>();
 
@@ -150,14 +150,14 @@ MeanFieldOptions read_json_wavefunction(json j) {
 	return wf_opt;
 }
 
-MeanFieldOptions read_json_wavefunction(std::string infile_name) {
+WavefunctionOptions read_json_wavefunction(std::string infile_name) {
 	std::ifstream i(infile_name);
 	json j;
 	i >> j;
 	return read_json_wavefunction(j);
 }
 
-MeanFieldOptions read_json_wavefunction_from_dir(const std::string& dir_name) {
+WavefunctionOptions read_json_wavefunction_from_dir(const std::string& dir_name) {
 	// assume a file named "wavefunction.json"
 	std::ifstream i(dir_name + "/wavefunction.json");
 	json j;
@@ -277,7 +277,7 @@ VMCOptions read_json_vmc_from_dir(const std::string& dir_name) {
 	return read_json_vmc(j);
 }
 
-void read_json_full_input(LatticeOptions* lat, MeanFieldOptions* wf, ModelOptions* H, VMCOptions* vmc, std::string infile_name) {
+void read_json_full_input(LatticeOptions* lat, WavefunctionOptions* wf, ModelOptions* H, VMCOptions* vmc, std::string infile_name) {
 	std::ifstream i(infile_name);
 	json j;
 	i >> j;
@@ -296,7 +296,7 @@ std::string LatticeOptions::to_string() {
 }
 
 
-std::string MeanFieldOptions::to_string() {
+std::string WavefunctionOptions::to_string() {
 		std::stringstream ss;
 		ss << "Lattice=" << lattice_type << "\n"
 			<< "Inequivalent sites=" << inequivalent_sites << "\n";

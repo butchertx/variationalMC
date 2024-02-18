@@ -165,7 +165,7 @@ public:
 
 	//MeanFieldAnsatz(int Lx_in, int Ly_in, TightBindingUnitCell uc_in);
 
-	MeanFieldAnsatz(MeanFieldOptions& mf_in, Lattice& lat_in, bool unit_cell_construction);
+	MeanFieldAnsatz(WavefunctionOptions& mf_in, Lattice& lat_in, bool unit_cell_construction);
 
 	lapack_complex_double* get_H() {
 		return HMF;

@@ -30,7 +30,7 @@ int main(int argc, char* argv[]) {
     std::cout << example_path << "\n";
 
     LatticeOptions lat_options = read_json_lattice_from_dir(example_path);
-    MeanFieldOptions wf_options = read_json_wavefunction_from_dir(example_path);
+    WavefunctionOptions wf_options = read_json_wavefunction_from_dir(example_path);
     ModelOptions mdl_options = read_json_model_from_dir(example_path);
     VMCOptions mc_options = read_json_vmc_from_dir(example_path);
 

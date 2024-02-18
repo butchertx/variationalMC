@@ -31,4 +31,4 @@ struct results_struct {
     std::map<std::string, std::complex<double>> observables_err;
 };
 
-results_struct run_mc(LatticeOptions, MeanFieldOptions, ModelOptions, VMCOptions);
+results_struct run_mc(LatticeOptions, WavefunctionOptions, ModelOptions, VMCOptions);

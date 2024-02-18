@@ -57,7 +57,7 @@ int main(int argc, char* argv[]) {
     }
 
     LatticeOptions lat_options;
-    MeanFieldOptions wf_options;
+    WavefunctionOptions wf_options;
     ModelOptions mdl_options;
     VMCOptions mc_options;
 

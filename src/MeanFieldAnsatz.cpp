@@ -45,7 +45,7 @@ void TightBindingSitePair::get_couplings(double * tzr, double * tzi, double * tx
 //	}
 //}
 
-MeanFieldAnsatz::MeanFieldAnsatz(MeanFieldOptions& mf_in, Lattice& lat_in, bool unit_cell_construction) 
+MeanFieldAnsatz::MeanFieldAnsatz(WavefunctionOptions& mf_in, Lattice& lat_in, bool unit_cell_construction) 
 	: N(lat_in.get_N()), su3_symmetry(mf_in.su3_symmetry), mu_z(mf_in.mu_z){
 
 	//compatibility conditions:

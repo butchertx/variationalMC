@@ -204,7 +204,7 @@ namespace vmctype {
 		bool is_valid();
 	};
 
-	struct MeanFieldOptions {
+	struct WavefunctionOptions {
 		std::string lattice_type;
 		std::string wf_type;
 		int inequivalent_sites = 1, spin, num_spin_orbit;
@@ -217,6 +217,14 @@ namespace vmctype {
 		JastrowTableOptions jastrow;
 
 		std::string to_string();
+	};
+
+	struct Spin1SlaterOptions : WavefunctionOptions {
+
+	};
+
+	struct SpinHalfSlaterOptions : WavefunctionOptions {
+
 	};
 
 	struct ModelOptions {
