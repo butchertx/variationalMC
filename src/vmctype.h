@@ -202,28 +202,37 @@ namespace vmctype {
 
 		std::string to_string();
 		bool is_valid();
+
+	};
+
+	struct SpecificWFOptions {
+
+		enum Spin_t {HALF, ONE};
+		Spin_t spin;
+		int num_spin_orbit = 0;
+		double field = 0.0;
+		double mu_z = 0.0;
+		bool su3_symmetry = false;
+		std::vector<vmctype::HoppingTerm> hopping_list;
+		QuadrupoleOrder directors;
+		bool use_jastrow = false;
+		JastrowTableOptions jastrow;
+
 	};
 
 	struct WavefunctionOptions {
+
 		std::string lattice_type;
 		std::string wf_type;
-		int inequivalent_sites = 1, spin, num_spin_orbit;
-		bool match_lattice_pbc, su3_symmetry;
-		double field = 0.0, mu_z = 0.0;
-		std::vector<vec3<int>> basis;
-		std::vector<vmctype::HoppingTerm> hopping_list;
-		QuadrupoleOrder directors;
-		bool jastrow_flag = false;
-		JastrowTableOptions jastrow;
+		int inequivalent_sites = 1;
+		bool match_lattice_pbc = true;
+		std::vector<vec3<int>> basis = std::vector<vec3<int>>({vec3<int>()}); // default is {{0,0,0}}
+
+		// https://en.wikipedia.org/wiki/Strategy_pattern
+		SpecificWFOptions other_options;
 
 		std::string to_string();
-	};
-
-	struct Spin1SlaterOptions : WavefunctionOptions {
-
-	};
-
-	struct SpinHalfSlaterOptions : WavefunctionOptions {
+		bool is_valid();
 
 	};
 

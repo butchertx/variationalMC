@@ -1,6 +1,6 @@
 {
     "wavefunction": {
-      "wavefunction type": "meanfield",
+      "wavefunction type": "slater",
       "lattice type": "chain",
       "inequivalent sites": 1,
       "basis": [

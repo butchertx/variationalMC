@@ -104,43 +104,55 @@ LatticeOptions read_json_lattice_from_dir(const std::string& dir_name) {
 
 WavefunctionOptions read_json_wavefunction(json j) {
 	WavefunctionOptions wf_opt;
+
+	// base class options
 	wf_opt.lattice_type = j["wavefunction"]["lattice type"].get<std::string>();
 	wf_opt.wf_type = j["wavefunction"]["wavefunction type"].get<std::string>();
-
-	if (wf_opt.wf_type == "meanfield") {
-		if (j["wavefunction"].contains("basis")) {
-			wf_opt.basis = j["wavefunction"]["basis"].get<std::vector<vec3<int>>>();
-			wf_opt.inequivalent_sites = j["wavefunction"]["inequivalent sites"];
-		}
-		wf_opt.spin = j["wavefunction"]["spin"];
-		wf_opt.field = j["wavefunction"]["field"];
-
-		// mu_z term
-		// default value = 0.0
-		if (j["wavefunction"].contains("mu_z")) {
-			wf_opt.mu_z = j["wavefunction"]["mu_z"];
-		}
-		else {
-			wf_opt.mu_z = 0.0;
-		}
-		wf_opt.num_spin_orbit = j["wavefunction"]["num spin-orbit"];
+	if (j["wavefunction"].contains("basis")) {
+		wf_opt.basis = j["wavefunction"]["basis"].get<std::vector<vec3<int>>>();
+		wf_opt.inequivalent_sites = wf_opt.basis.size();
+	}
+	if (j["wavefunction"].contains("match lattice pbc")){
 		wf_opt.match_lattice_pbc = j["wavefunction"]["match lattice pbc"];
-		wf_opt.su3_symmetry = j["wavefunction"]["su3_symmetry"];
-		wf_opt.hopping_list = j["wavefunction"]["hopping terms"].get<std::vector<HoppingTerm>>();
+	}
+
+	// Slater options
+	if (wf_opt.wf_type == "slater") {
+		double spin = j["wavefunction"]["spin"];
+		wf_opt.other_options.spin = spin == 0.5 ? SpecificWFOptions::Spin_t::HALF : SpecificWFOptions::Spin_t::ONE;
+
+		// Set optional params if they exist
+		if (j["wavefunction"].contains("field")) {
+			wf_opt.other_options.field = j["wavefunction"]["field"];
+		}
+		if (j["wavefunction"].contains("mu_z")) {
+			wf_opt.other_options.mu_z = j["wavefunction"]["mu_z"];
+		}
+		if (j["wavefunction"].contains("num spin-orbit")) {
+			wf_opt.other_options.num_spin_orbit = j["wavefunction"]["num spin-orbit"];
+		}
+		if (j["wavefunction"].contains("su3_symmetry")) {
+			wf_opt.other_options.su3_symmetry = j["wavefunction"]["su3_symmetry"];
+		}
+
+		// Set hopping, LRO, and jastrow
+		if (j["wavefunction"].contains("hopping")) {
+			wf_opt.other_options.hopping_list = j["wavefunction"]["hopping"].get<std::vector<HoppingTerm>>();
+		}
 		if (j["wavefunction"].contains("directors")) {
-			wf_opt.directors = j["wavefunction"]["directors"].get<QuadrupoleOrder>();
+			wf_opt.other_options.directors = j["wavefunction"]["directors"].get<QuadrupoleOrder>();
 		}
 		if (j["wavefunction"].contains("jastrow")) {
-			wf_opt.jastrow_flag = true;
+			wf_opt.other_options.use_jastrow = true;
 			if (j["wavefunction"]["jastrow"].contains("density")) {
-				wf_opt.jastrow.density_flag = true;
-				wf_opt.jastrow.density_coupling = j["wavefunction"]["jastrow"]["density"]["strength"];
+				wf_opt.other_options.jastrow.density_flag = true;
+				wf_opt.other_options.jastrow.density_coupling = j["wavefunction"]["jastrow"]["density"]["strength"];
 			}
 			if (j["wavefunction"]["jastrow"].contains("sz")) {
-				wf_opt.jastrow.sz = j["wavefunction"]["jastrow"]["sz"].get<JastrowFactorOptions>();
+				wf_opt.other_options.jastrow.sz = j["wavefunction"]["jastrow"]["sz"].get<JastrowFactorOptions>();
 			}
 			if (j["wavefunction"]["jastrow"].contains("sz2")) {
-				wf_opt.jastrow.sz2 = j["wavefunction"]["jastrow"]["sz2"].get<JastrowFactorOptions>();
+				wf_opt.other_options.jastrow.sz2 = j["wavefunction"]["jastrow"]["sz2"].get<JastrowFactorOptions>();
 			}
 		}
 	}

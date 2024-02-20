@@ -6,6 +6,11 @@
 
 //void print_matrix(const char* desc, MKL_INT m, MKL_INT n, MKL_Complex16* a, MKL_INT lda);
 
+bool vmctype::WavefunctionOptions::is_valid(){
+	// TODO: implement this
+	return true;
+}
+
 class origin_direction_pair {
 public:
 	int origin;
@@ -24,26 +29,6 @@ void TightBindingSitePair::get_couplings(double * tzr, double * tzi, double * tx
 	*txyr = pbc_sign * txy * cos(2 * M_PI * txy_phase);
 	*txyi = pbc_sign * txy * sin(2 * M_PI * txy_phase);
 }
-
-//
-//MeanFieldAnsatz::MeanFieldAnsatz(int Lx_in, int Ly_in, TightBindingUnitCell uc_in){
-//	//for Lx,Ly, for site pairs in uc_in:
-//	//shift indices, create new site pair with the given params
-//	int N = Lx_in * Ly_in;
-//	int shift;
-//	int site1, site2;
-//	site_pair_list.push_back({});
-//	for (int x = 0; x < Lx_in; ++x) {
-//		for (int y = 0; y < Ly_in; ++y) {
-//			shift = x*Ly_in + y;
-//			for (auto pair : uc_in.site_pairs) {
-//				pair.get_sites(&site1, &site2);
-//				pair.set_sites((site1 + shift)%N, (site2 + shift)%N);
-//				site_pair_list[0].push_back(pair);
-//			}
-//		}
-//	}
-//}
 
 MeanFieldAnsatz::MeanFieldAnsatz(WavefunctionOptions& mf_in, Lattice& lat_in, bool unit_cell_construction) 
 	: N(lat_in.get_N()), su3_symmetry(mf_in.su3_symmetry), mu_z(mf_in.mu_z){
