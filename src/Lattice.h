@@ -17,11 +17,26 @@ using namespace vmctype;
 
 /*! \brief Enum for boundary conditions
 */
-enum Boundary_conditions_t { ANTIPERIODIC = -1, OPEN, PERIODIC };
+enum Boundary_conditions_t { INVALID_PBC = -2, ANTIPERIODIC, OPEN, PERIODIC, MAX_PBC };
+
+Boundary_conditions_t Boundary_conditions_from_int(int);
 
 /*! \brief Enum for specifying a lattice type
 */
-enum Lattice_type_t { CHAIN, TRIANGLE, KAGOME, DICE, HONEYCOMB, SQUARE, CUBIC, DIAMOND, DIAMOND111, DIAMONDCC };//require SQUARE is the last 2-D lattice in list
+enum Lattice_type_t { 
+	INVALID_LAT = -1,
+	CHAIN, //require CHAIN is the only 1-D lattice in list
+	TRIANGLE,
+	KAGOME,
+	DICE,
+	HONEYCOMB,
+	SQUARE, //require SQUARE is the last 2-D lattice in list
+	CUBIC,
+	DIAMOND,
+	DIAMOND111,
+	DIAMONDCC,
+	MAX_LAT // require MAX_LAT is the last lattice in list
+};
 
 /*! \brief Get string for Lattice_type_t
  */
@@ -46,8 +61,8 @@ class RingList {
 public:
 	RingList() {}
 
-	RingList(int num_sites_in, int num_rings_in, int total_sites_in) 
-		: num_sites(num_sites_in), num_rings(num_rings_in), total_sites(total_sites_in){
+	RingList(int num_sites_in, int total_sites_in, int num_rings_in) 
+		: num_sites(num_sites_in), total_sites(total_sites_in), num_rings(num_rings_in){
 		for (int r = 0; r < num_rings; ++r) {
 			if (r % 2 == 0) { ring_names.push_back("up"); }
 			else { ring_names.push_back("down"); }//TODO: make this more robust (currently is fine for kagome)
@@ -116,6 +131,7 @@ private:
     std::vector<std::vector<std::vector<int>>> pbc;
 	RingList rings1;
 
+	bool inputIsValid(Lattice_type_t, vec3<int>, vec3<int>);
 	double nearest_periodic_distance(int, int, vec3<int>&);
 	double nearest_periodic_distance(int, int);
 	void set_neighbors(int);

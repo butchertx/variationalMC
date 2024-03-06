@@ -1,5 +1,15 @@
 #include "Lattice.h"
 #include <iostream>
+#include <stdexcept>
+
+Boundary_conditions_t Boundary_conditions_from_int(int bc_in){
+	if(bc_in > Boundary_conditions_t::INVALID_PBC && bc_in <= Boundary_conditions_t::PERIODIC){
+		return static_cast<Boundary_conditions_t>(bc_in);
+	}
+	else{
+		return Boundary_conditions_t::INVALID_PBC;
+	}
+}
 
 /*! \brief Get string for Lattice_type_t
  */
@@ -83,19 +93,15 @@ Lattice::~Lattice() {}
 
 Lattice::Lattice(Lattice_type_t lat_type_in, vec3<int> L_in, vec3<int> pbc_in)
 	: lat_type(lat_type_in), L(L_in), pbc_signs(pbc_in) {
-	assert(L.x > 0);
-	assert(pbc_signs.x == 1 || pbc_signs.x == -1);
-	assert(L.y > 0);
-	assert(pbc_signs.y == 1 || pbc_signs.y == -1);
-	assert(L.z > 0);
-	assert(pbc_signs.z == 1 || pbc_signs.z == -1);
+
+	if (!inputIsValid(lat_type_in, L_in, pbc_in)){
+		throw std::invalid_argument("Lattice input is invalid");
+	}
 
 	vec3<double> delta_1;
 	vec3<double> primitive_axy;
 	vec3<double> primitive_ayz;
 	vec3<double> primitive_axz;
-
-	
 
 	switch (lat_type) {
 	case CHAIN:
@@ -160,7 +166,9 @@ Lattice::Lattice(Lattice_type_t lat_type_in, vec3<int> L_in, vec3<int> pbc_in)
 		a = vec3<vec3<double>>(vec3<double>(1,0,0)*a_const, vec3<double>(0,1,0)*a_const, vec3<double>(0,0,1)*a_const);
 		break;
 	default:
-		std::cout << "Error, no correct lattice input\n";
+		std::stringstream ss;
+		ss << "Lattice input \"" << Lattice_type_to_string(lat_type_in) << "\" is not implemented";
+		throw vmctype::NotImplemented(ss.str());
 		break;
 	}
 
@@ -185,6 +193,21 @@ Lattice::Lattice(Lattice_type_t lat_type_in, vec3<int> L_in, vec3<int> pbc_in)
 
 	set_rings();
 
+}
+
+bool Lattice::inputIsValid(Lattice_type_t lat_type_in, vec3<int> L_in, vec3<int> pbc_in) {
+	bool valid = true;
+
+	valid = valid && (lat_type_in > Lattice_type_t::INVALID_LAT);
+	valid = valid && (lat_type_in < Lattice_type_t::MAX_LAT);
+
+	valid = valid && (L_in.x > 0) && (L_in.y > 0) && (L_in.z > 0);
+
+	valid = valid && (pbc_in.x > Boundary_conditions_t::INVALID_PBC) && (pbc_in.x < Boundary_conditions_t::MAX_PBC);
+	valid = valid && (pbc_in.y > Boundary_conditions_t::INVALID_PBC) && (pbc_in.y < Boundary_conditions_t::MAX_PBC);
+	valid = valid && (pbc_in.z > Boundary_conditions_t::INVALID_PBC) && (pbc_in.z < Boundary_conditions_t::MAX_PBC);
+
+	return valid;
 }
 
 std::vector<int> Lattice::get_ring_sites(int base_vertex, std::vector<vec3<double>> vertices, int neighbor_distance = 0) {
@@ -324,12 +347,23 @@ vec3<double> Lattice::nearest_periodic_translation(int reference_site, int other
 
 double Lattice::nearest_periodic_distance(int reference_site, int other_site, vec3<int>& pbcs) {
 	//cycle through all periodic images of "other_site" and return the distance to the closest image
+	//returns distance, puts periodic image indices in pbcs
 	vec3<double> reference_position = coordinates[reference_site], other_position = coordinates[other_site];
 	double distance = reference_position ^ other_position;
     double new_distance;
 	for (int i = -1; i <= 1; ++i) {
+		// break if any open BCs are broken
+		if (pbc_signs.x == 0 && i != 0){
+			continue;
+		}
 		for (int j = -1; j <= 1; ++j) {
+			if (pbc_signs.y == 0 && j != 0){
+				continue;
+			}
 			for (int k = -1; k <= 1; ++k) {
+				if (pbc_signs.z == 0 && k != 0){
+					continue;
+				}
                 new_distance = reference_position ^ (other_position + (a.x*i*L.x) + (a.y*j*L.y) + (a.z*k*L.z));
                 if(new_distance <= distance){
                     distance = new_distance;
@@ -460,9 +494,9 @@ void Lattice::set_reciprocal_vectors() {
 	b.y =  (a.z % a.x) * 2 * M_PI * (1 / volume);
 	b.z =  (a.x % a.y) * 2 * M_PI * (1 / volume);
 
-	assert(abs(2 * M_PI - a.x*b.x) < EPSILON);
-	assert(abs(2 * M_PI - a.y*b.y) < EPSILON);
-	assert(abs(2 * M_PI - a.z*b.z) < EPSILON);
+	assert(std::abs(2 * M_PI - a.x*b.x) < EPSILON);
+	assert(std::abs(2 * M_PI - a.y*b.y) < EPSILON);
+	assert(std::abs(2 * M_PI - a.z*b.z) < EPSILON);
 }
 
 bool Lattice::check_in_plane(int i1, int i2){

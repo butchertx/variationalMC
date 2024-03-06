@@ -17,6 +17,12 @@ namespace vmctype {
 		*/
 	const double EPSILON = 1e-12;
 
+	class NotImplemented : public std::logic_error{
+	public:
+		NotImplemented() : std::logic_error("Function not yet implemented") { };
+		NotImplemented(std::string str_in) : std::logic_error(str_in) { };
+	};
+
 	class HoppingTerm {
 	public:
 		int spin_row; //|m|: in spin-1 this is 0 for tz and 1 for txy
