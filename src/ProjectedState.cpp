@@ -10,14 +10,14 @@ void print_matrix(const char* desc, MKL_INT m, MKL_INT n, MKL_Complex16* a, MKL_
 	}
 }
 
-ProjectedState::ProjectedState(MeanFieldAnsatz& M_, RandomEngine& rand_)
+ProjectedState::ProjectedState(MeanFieldAnsatz_ONE& M_, RandomEngine& rand_)
 	: ansatz(M_), rand(rand_) {
 	initialize_matrices();
 	jastrow = {};
 	assert(!jastrow.exist());
 }
 
-ProjectedState::ProjectedState(MeanFieldAnsatz& M, RandomEngine& rand_in, JastrowTable jastrow_)
+ProjectedState::ProjectedState(MeanFieldAnsatz_ONE& M, RandomEngine& rand_in, JastrowTable jastrow_)
 	: ansatz(M), rand(rand_in), jastrow(jastrow_) {
 	initialize_matrices();
 	jastrow.initialize_tables(configuration);

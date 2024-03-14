@@ -138,7 +138,7 @@
 
 class ProjectedState : public Wavefunction {
 
-	MeanFieldAnsatz& ansatz;
+	MeanFieldAnsatz_ONE& ansatz;
 	RandomEngine& rand;
 	JastrowTable jastrow;
 	int N;
@@ -176,9 +176,9 @@ public:
 		mkl_free(ipiv);
 	}
 
-	ProjectedState(MeanFieldAnsatz& M, RandomEngine& rand_in);
+	ProjectedState(MeanFieldAnsatz_ONE& M, RandomEngine& rand_in);
 
-	ProjectedState(MeanFieldAnsatz& M, RandomEngine& rand_in, JastrowTable jastrow_in);
+	ProjectedState(MeanFieldAnsatz_ONE& M, RandomEngine& rand_in, JastrowTable jastrow_in);
 
 	void reset_configuration() {
 		for (int i = 0; i < N * N; ++i) {

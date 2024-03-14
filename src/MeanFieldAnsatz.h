@@ -95,7 +95,7 @@ public:
 
 class TightBindingUnitCell {
 public:
-	std::vector<TightBindingSitePair> site_pairs;
+	std::vector<std::unique_ptr<TightBindingSitePair>> site_pairs;
 };
 
 class Orbital {
@@ -163,7 +163,7 @@ public:
 
 
 
-class MeanFieldAnsatz {
+class MeanFieldAnsatz_ONE {
 
 	bool su3_symmetry;
 	int N, info, n0_F, fermi_surface_start, fermi_surface_end;
@@ -171,7 +171,7 @@ class MeanFieldAnsatz {
 	lapack_complex_double *HMF, *Phi; // , * Pair_Eig, * PhiR;
 	std::vector<lapack_complex_double*> del_H; //each element corresponds to dH for a given variational param
 	double *Energy;
-	std::vector<std::vector<TightBindingSitePair>> site_pair_list;//each hopping vmc param has its own vector of site pairs
+	std::vector<std::vector<std::unique_ptr<TightBindingSitePair>>> site_pair_list;//each hopping vmc param has its own vector of site pairs
 	//std::vector<std::vector<SingletPairingSitePair>> singlet_pair_list;
 	std::vector<vec3<std::complex<double>>> directors;
 	std::vector<std::vector<std::complex<double>>> mean_field_hamiltonian;
@@ -185,7 +185,7 @@ class MeanFieldAnsatz {
 
 public:
 
-	~MeanFieldAnsatz() {
+	~MeanFieldAnsatz_ONE() {
 		mkl_free(HMF);
 		mkl_free(Phi);
 		mkl_free(Energy);
@@ -194,9 +194,9 @@ public:
 		}
 	}
 
-	//MeanFieldAnsatz(int Lx_in, int Ly_in, TightBindingUnitCell uc_in);
+	//MeanFieldAnsatz_ONE(int Lx_in, int Ly_in, TightBindingUnitCell uc_in);
 
-	MeanFieldAnsatz(WavefunctionOptions& mf_in, Lattice& lat_in, bool unit_cell_construction);
+	MeanFieldAnsatz_ONE(WavefunctionOptions& mf_in, Lattice& lat_in, bool unit_cell_construction);
 
 	lapack_complex_double* get_H() {
 		return HMF;

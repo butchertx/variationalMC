@@ -63,7 +63,7 @@ std::string TightBindingSitePair_HALF::to_string() {
 		return ss.str();
 }
 
-MeanFieldAnsatz::MeanFieldAnsatz(WavefunctionOptions& mf_in, Lattice& lat_in, bool unit_cell_construction) 
+MeanFieldAnsatz_ONE::MeanFieldAnsatz_ONE(WavefunctionOptions& mf_in, Lattice& lat_in, bool unit_cell_construction) 
 	: N(lat_in.get_N()), su3_symmetry(mf_in.su3_symmetry), mu_z(mf_in.mu_z){
 
 	//compatibility conditions:
@@ -120,7 +120,7 @@ MeanFieldAnsatz::MeanFieldAnsatz(WavefunctionOptions& mf_in, Lattice& lat_in, bo
 	set_fermi_surface();
 }
 
-void MeanFieldAnsatz::set_hamiltonian() {
+void MeanFieldAnsatz_ONE::set_hamiltonian() {
 	//Use row major form (n = row*num_cols + col)
 	//initialize to zero
 	for (int i = 0; i < 9 * N * N; ++i) {
@@ -176,7 +176,7 @@ void MeanFieldAnsatz::set_hamiltonian() {
 
 }
 
-double MeanFieldAnsatz::get_su3_element(std::string irrep, int m1, int m2, int i) {
+double MeanFieldAnsatz_ONE::get_su3_element(std::string irrep, int m1, int m2, int i) {
 	double s1[3][3] = { {8.0, 4.0, -2.0}, {4.0, 8.0, -2.0}, {-2.0, -2.0, 8.0} };
 	double s2[3][3] = { {8.0, -2.0, 4.0}, {-2.0, 8.0, -2.0}, {4.0, -2.0, 8.0} };
 	double s3[3][3] = { {8.0, -2.0, -2.0}, {-2.0, 8.0, 4.0}, {-2.0, 4.0, 8.0} };
@@ -194,7 +194,7 @@ double MeanFieldAnsatz::get_su3_element(std::string irrep, int m1, int m2, int i
 	}
 }
 
-std::complex<double> MeanFieldAnsatz::get_director_element(vec3<std::complex<double>> d, int m1, int m2) {
+std::complex<double> MeanFieldAnsatz_ONE::get_director_element(vec3<std::complex<double>> d, int m1, int m2) {
 	assert(m1 >= 0 && m1 <= 2);
 	assert(m2 >= 0 && m2 <= 2);
 	vec3<double> u(std::real(d.x), std::real(d.y), std::real(d.z)), v(std::imag(d.x), std::imag(d.y), std::imag(d.z));
@@ -231,12 +231,12 @@ std::complex<double> MeanFieldAnsatz::get_director_element(vec3<std::complex<dou
 	}
 }
 
-void MeanFieldAnsatz::diagonalize_hamiltonian() {
+void MeanFieldAnsatz_ONE::diagonalize_hamiltonian() {
 	std::memcpy(Phi, HMF, 9 * N * N * sizeof(lapack_complex_double));
 	info = LAPACKE_zheev(LAPACK_ROW_MAJOR, 'V', 'U', 3*N, Phi, 3*N, Energy);
 }
 
-void MeanFieldAnsatz::print_levels() {
+void MeanFieldAnsatz_ONE::print_levels() {
 	MKL_INT i;
 	double E, n1 = 0, n0 = 0, n_1 = 0,
 		n1_tot = 0, n0_tot = 0, n_1_tot = 0;
@@ -257,7 +257,7 @@ void MeanFieldAnsatz::print_levels() {
 	}
 }
 
-void MeanFieldAnsatz::print_fermi_level() {
+void MeanFieldAnsatz_ONE::print_fermi_level() {
 	MKL_INT i;
 	double E, n1 = 0, n0 = 0, n_1 = 0,
 		n1_tot = 0, n0_tot = 0, n_1_tot = 0, Ef = Energy[N-1];
@@ -294,7 +294,7 @@ void MeanFieldAnsatz::print_fermi_level() {
 	}
 }
 
-void MeanFieldAnsatz::set_fermi_surface() {
+void MeanFieldAnsatz_ONE::set_fermi_surface() {
 	MKL_INT i;
 	double E, n1 = 0, n0 = 0, n_1 = 0,
 		n1_tot = 0, n0_tot = 0, n_1_tot = 0, Ef = Energy[N - 1];
@@ -326,7 +326,7 @@ void MeanFieldAnsatz::set_fermi_surface() {
 	}
 }
 
-void MeanFieldAnsatz::shuffle_FS(int n0, int n1, RandomEngine* rand) {
+void MeanFieldAnsatz_ONE::shuffle_FS(int n0, int n1, RandomEngine* rand) {
 	if (fermi_surface_end != n0 + 2 * n1) {
 		lapack_complex_double* fs_temp_matrix = (lapack_complex_double*)mkl_malloc(3 * N * (fermi.get_size()) * sizeof(lapack_complex_double), 64);
 		double n0fermi = n0 - fermi.get_inner_shell_count(0), n1fermi = n1 - fermi.get_inner_shell_count(1), n_1fermi = n1fermi;
@@ -386,7 +386,7 @@ void MeanFieldAnsatz::shuffle_FS(int n0, int n1, RandomEngine* rand) {
 	}
 }
 
-void MeanFieldAnsatz::write_levels(std::ofstream *f) {
+void MeanFieldAnsatz_ONE::write_levels(std::ofstream *f) {
 	MKL_INT i;
 	double E, n1 = 0, n0 = 0, n_1 = 0,
 		n1_tot = 0, n0_tot = 0, n_1_tot = 0;
@@ -407,7 +407,7 @@ void MeanFieldAnsatz::write_levels(std::ofstream *f) {
 		*f << std::string(buf) << "\n";
 	}
 }
-void MeanFieldAnsatz::write_directors(std::ofstream* f) {
+void MeanFieldAnsatz_ONE::write_directors(std::ofstream* f) {
 	*f << "site, ux, uy, uz, vx, vy, vz\n";
 	for (auto site = 0; site < directors.size(); ++site) {
 		*f << site << ", " << directors[site].x.real() << ", " << directors[site].y.real() << ", " << directors[site].z.real() << ", ";

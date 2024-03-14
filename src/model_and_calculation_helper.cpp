@@ -25,7 +25,7 @@ results_struct run_mc(LatticeOptions lat_options, WavefunctionOptions mf_options
         latticefile.close();
     }
 
-    MeanFieldAnsatz mf(mf_options, lattice, true);
+    MeanFieldAnsatz_ONE mf(mf_options, lattice, true);
 
     std::ofstream wavefunctionfile;
     wavefunctionfile.open("data/mean_field_energies.csv");
