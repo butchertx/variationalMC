@@ -15,6 +15,9 @@ add_library(VMC_TYPE
 add_library(LATTICE
     Lattice.cpp
 )
+add_library(MEAN_FIELD_ANSATZ
+    MeanFieldAnsatz.cpp
+)
 
 # Set compile and link flags
 set(COMPILE_FLAGS "-Wall")
@@ -31,4 +34,4 @@ set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS "${LINK_FLAGS}")
 add_custom_target(cpu-gpu DEPENDS ${TARGET_NAME})
 
 
-target_link_libraries(${TARGET_NAME} VMC_IO VMC_TYPE LATTICE)
+target_link_libraries(${TARGET_NAME} VMC_IO VMC_TYPE LATTICE MEAN_FIELD_ANSATZ)

@@ -7,7 +7,7 @@
 #include "vmc_io.h"
 #include "MemTimeTester.h"
 #include "Lattice.h"
-// #include "MeanFieldAnsatz.h"
+#include "MeanFieldAnsatz.h"
 // #include "RandomEngine.h"
 // #include "Wavefunction.h"
 // #include "ProjectedState.h"
@@ -37,6 +37,7 @@ int main(int argc, char* argv[]) {
 
     // Create objects
     Lattice lattice(Lattice_type_from_string(lat_options.type), vec3<int>(lat_options.L), vec3<int>(lat_options.pbc));
+    MeanFieldAnsatz mf_ansatz(wf_options, lattice, true);
 
     timer.flag_end_time("Total Program Time");
     timer.print_timers();
