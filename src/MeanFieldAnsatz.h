@@ -19,47 +19,78 @@ class Lattice;
 class RandomEngine;
 
 class TightBindingSitePair {
+
+protected:
 	int x1, x2;//site indices (ordered)
-	double tz, txy;//couplings
-	double tz_phase, txy_phase;//phases (in units of 2pi, ordered)
 
 public:
 	TightBindingSitePair(int x1_in, int x2_in)
-		: x1(x1_in), x2(x2_in) {
-		tz = 0.0;
-		txy = 0.0;
-		tz_phase = 0.0;
-		txy_phase = 0.0;
-	}
-
-	TightBindingSitePair(int x1_in, int x2_in, double tz_in, double txy_in, double tz_phase_in, double txy_phase_in)
-		: x1(x1_in), x2(x2_in), tz(tz_in), txy(txy_in), tz_phase(tz_phase_in), txy_phase(txy_phase_in) {}
+		: x1(x1_in), x2(x2_in) {};
 
 	void set_sites(int first, int second) {
 		x1 = first;
 		x2 = second;
 	}
 
-	void get_sites(int * first, int * second) {
-		*first = std::abs(x1);
-		*second = std::abs(x2);
+	void get_sites(int& first, int& second) {
+		first = std::abs(x1);
+		second = std::abs(x2);
 	}
 
-	void get_couplings(double * tzr, double * tzi, double * txyr, double * txyi);
+	virtual void get_couplings(double&, double&) = 0;
 
-	void conjugate() {
-		int temp = x2;
-		x2 = temp < 0 ? -x1 : x1;
-		x1 = std::abs(temp);
-		tz_phase *= -1;
-		txy_phase *= -1;
-	}
+	virtual void get_couplings(double&, double&, double&, double&) = 0;
 
-	std::string to_string() {
-		std::stringstream ss;
-		ss << "Sites: (" << x1 << "," << x2 << "); Tz, Txy (polar, units of 2pi) = {(" << tz << "," << tz_phase << "), (" << txy << "," << txy_phase << ")}";
-		return ss.str();
-	}
+	virtual void conjugate() = 0;
+
+	virtual std::string to_string() = 0;
+
+};
+
+class TightBindingSitePair_HALF : public TightBindingSitePair {
+
+	double t;//coupling
+	double t_phase;//phase (in units of 2pi, ordered)
+
+public:
+	TightBindingSitePair_HALF(int x1_in, int x2_in)
+		: TightBindingSitePair(x1_in, x2_in), t(0.0), t_phase(0.0) {}
+
+	TightBindingSitePair_HALF(int x1_in, int x2_in, double t_in, double t_phase_in)
+		: TightBindingSitePair(x1_in, x2_in), t(t_in), t_phase(t_phase_in) {}
+
+	void get_couplings(double& t, double& t_phase) override;
+
+	void get_couplings(double&, double&, double&, double&) override{
+		throw std::invalid_argument("Spin half hoppings have 2 parameters");
+	};
+
+	void conjugate() override;
+
+	std::string to_string() override;
+};
+
+class TightBindingSitePair_ONE : public TightBindingSitePair {
+
+	double tz, txy;//couplings
+	double tz_phase, txy_phase;//phases (in units of 2pi, ordered)
+
+public:
+	TightBindingSitePair_ONE(int x1_in, int x2_in)
+		: TightBindingSitePair(x1_in, x2_in), tz(0.0), txy(0.0), tz_phase(0.0), txy_phase(0.0) {}
+
+	TightBindingSitePair_ONE(int x1_in, int x2_in, double tz_in, double txy_in, double tz_phase_in, double txy_phase_in)
+		: TightBindingSitePair(x1_in, x2_in), tz(tz_in), txy(txy_in), tz_phase(tz_phase_in), txy_phase(txy_phase_in) {}
+
+	void get_couplings(double&, double&) override {
+		throw std::invalid_argument("Spin one hoppings have 4 parameters");
+	};
+
+	void get_couplings(double& tzr, double& tzi, double& txyr, double& txyi) override;
+
+	void conjugate() override;
+
+	std::string to_string() override;
 };
 
 class TightBindingUnitCell {
@@ -203,7 +234,7 @@ public:
 		int first, second;
 		assert(hop_class < site_pair_list.size());
 		for (auto tb_pair : site_pair_list[hop_class]) {
-			tb_pair.get_sites(&first, &second);
+			tb_pair.get_sites(first, second);
 			result.push_back(std::pair<int,int>(std::abs(first),std::abs(second)));
 		}
 		return result;

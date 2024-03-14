@@ -22,12 +22,45 @@ public:
 
 };
 
-void TightBindingSitePair::get_couplings(double * tzr, double * tzi, double * txyr, double * txyi) {
+void TightBindingSitePair_ONE::get_couplings(double& tzr, double& tzi, double& txyr, double& txyi) {
 	int pbc_sign = x2 >= 0 ? 1 : -1;
-	*tzr = pbc_sign * tz * cos(2 * M_PI * tz_phase);
-	*tzi = pbc_sign * tz * sin(2 * M_PI * tz_phase);
-	*txyr = pbc_sign * txy * cos(2 * M_PI * txy_phase);
-	*txyi = pbc_sign * txy * sin(2 * M_PI * txy_phase);
+	tzr = pbc_sign * tz * cos(2 * M_PI * tz_phase);
+	tzi = pbc_sign * tz * sin(2 * M_PI * tz_phase);
+	txyr = pbc_sign * txy * cos(2 * M_PI * txy_phase);
+	txyi = pbc_sign * txy * sin(2 * M_PI * txy_phase);
+}
+
+void TightBindingSitePair_ONE::conjugate() {
+		int temp = x2;
+		x2 = temp < 0 ? -x1 : x1;
+		x1 = std::abs(temp);
+		tz_phase *= -1;
+		txy_phase *= -1;
+}
+
+std::string TightBindingSitePair_ONE::to_string() {
+		std::stringstream ss;
+		ss << "Sites: (" << x1 << "," << x2 << "); Tz, Txy (polar, units of 2pi) = {(" << tz << "," << tz_phase << "), (" << txy << "," << txy_phase << ")}";
+		return ss.str();
+}
+
+void TightBindingSitePair_HALF::get_couplings(double& tr, double& ti) {
+	int pbc_sign = x2 >= 0 ? 1 : -1;
+	tr = pbc_sign * t * cos(2 * M_PI * t_phase);
+	ti = pbc_sign * t * sin(2 * M_PI * t_phase);
+}
+
+void TightBindingSitePair_HALF::conjugate() {
+		int temp = x2;
+		x2 = temp < 0 ? -x1 : x1;
+		x1 = std::abs(temp);
+		t_phase *= -1;
+}
+
+std::string TightBindingSitePair_HALF::to_string() {
+		std::stringstream ss;
+		ss << "Sites: (" << x1 << "," << x2 << "); T (polar, units of 2pi) = {(" << t << "," << t_phase << ")}";
+		return ss.str();
 }
 
 MeanFieldAnsatz::MeanFieldAnsatz(WavefunctionOptions& mf_in, Lattice& lat_in, bool unit_cell_construction) 
@@ -99,9 +132,9 @@ void MeanFieldAnsatz::set_hamiltonian() {
 	double tzr, tzi, txyr, txyi;
 	for (int hop_class = 0; hop_class < site_pair_list.size(); ++hop_class) {
 		for (auto tb_pair : site_pair_list[hop_class]) {
-			tb_pair.get_sites(&row, &col);
+			tb_pair.get_sites(row, col);
 			if (row <= col) {
-				tb_pair.get_couplings(&tzr, &tzi, &txyr, &txyi);
+				tb_pair.get_couplings(tzr, tzi, txyr, txyi);
 				HMF[row*dim + col] -= std::complex<double>(txyr, txyi);
 				HMF[(row + N)*dim + col + N] -= std::complex<double>(tzr, tzi);
 				HMF[(row + 2 * N)*dim + col + 2 * N] -= std::complex<double>(txyr,txyi);
