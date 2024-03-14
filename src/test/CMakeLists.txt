@@ -16,3 +16,5 @@ include_directories(${vmc_src})
 
 include(GoogleTest)
 gtest_discover_tests(google_test)
+
+target_link_libraries(google_test VMC_TYPE LATTICE)

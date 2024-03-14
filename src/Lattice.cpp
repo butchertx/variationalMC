@@ -86,8 +86,7 @@ bool vmctype::LatticeOptions::is_valid() {
 ///////////////////////////////////
 ///////////////////////////////////
 
-Lattice::Lattice() {
-}
+Lattice::Lattice() {}
 
 Lattice::~Lattice() {}
 
@@ -191,7 +190,7 @@ Lattice::Lattice(Lattice_type_t lat_type_in, vec3<int> L_in, vec3<int> pbc_in)
 	set_neighbors_faster();
 	timer.flag_end_time("Set Neighbors");
 
-	set_rings();
+	// set_rings();
 
 }
 
