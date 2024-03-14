@@ -31,17 +31,17 @@ void TightBindingSitePair_ONE::get_couplings(double& tzr, double& tzi, double& t
 }
 
 void TightBindingSitePair_ONE::conjugate() {
-		int temp = x2;
-		x2 = temp < 0 ? -x1 : x1;
-		x1 = std::abs(temp);
-		tz_phase *= -1;
-		txy_phase *= -1;
+	int temp = x2;
+	x2 = temp < 0 ? -x1 : x1;
+	x1 = std::abs(temp);
+	tz_phase *= -1;
+	txy_phase *= -1;
 }
 
 std::string TightBindingSitePair_ONE::to_string() {
-		std::stringstream ss;
-		ss << "Sites: (" << x1 << "," << x2 << "); Tz, Txy (polar, units of 2pi) = {(" << tz << "," << tz_phase << "), (" << txy << "," << txy_phase << ")}";
-		return ss.str();
+	std::stringstream ss;
+	ss << "Sites: (" << x1 << "," << x2 << "); Tz, Txy (polar, units of 2pi) = {(" << tz << "," << tz_phase << "), (" << txy << "," << txy_phase << ")}";
+	return ss.str();
 }
 
 void TightBindingSitePair_HALF::get_couplings(double& tr, double& ti) {
@@ -51,20 +51,42 @@ void TightBindingSitePair_HALF::get_couplings(double& tr, double& ti) {
 }
 
 void TightBindingSitePair_HALF::conjugate() {
-		int temp = x2;
-		x2 = temp < 0 ? -x1 : x1;
-		x1 = std::abs(temp);
-		t_phase *= -1;
+	int temp = x2;
+	x2 = temp < 0 ? -x1 : x1;
+	x1 = std::abs(temp);
+	t_phase *= -1;
 }
 
 std::string TightBindingSitePair_HALF::to_string() {
-		std::stringstream ss;
-		ss << "Sites: (" << x1 << "," << x2 << "); T (polar, units of 2pi) = {(" << t << "," << t_phase << ")}";
-		return ss.str();
+	std::stringstream ss;
+	ss << "Sites: (" << x1 << "," << x2 << "); T (polar, units of 2pi) = {(" << t << "," << t_phase << ")}";
+	return ss.str();
 }
 
-MeanFieldAnsatz_ONE::MeanFieldAnsatz_ONE(WavefunctionOptions& mf_in, Lattice& lat_in, bool unit_cell_construction) 
-	: N(lat_in.get_N()), su3_symmetry(mf_in.su3_symmetry), mu_z(mf_in.mu_z){
+std::vector<std::pair<int,int>> MeanFieldAnsatz::get_tb_pairs(int hop_class) {
+	std::vector<std::pair<int,int>> result;
+	int first, second;
+	assert(hop_class < site_pair_list.size());
+	for (auto tb_pair : site_pair_list[hop_class]) {
+		tb_pair->get_sites(first, second);
+		result.push_back(std::pair<int,int>(std::abs(first),std::abs(second)));
+	}
+	return result;
+}
+
+std::string MeanFieldAnsatz::get_tb_string() {
+	std::stringstream ss;
+	ss << "Listing Hopping pairs:\n";
+	for (auto tb_list : site_pair_list) {
+		for (auto tb_pair : tb_list) {
+			ss << tb_pair->to_string() << "\n";
+		}
+	}
+	return ss.str();
+}
+
+MeanFieldAnsatz_ONE::MeanFieldAnsatz_ONE(WavefunctionOptions& mf_in, Lattice& lat_in) 
+	: MeanFieldAnsatz(lat_in.get_N(), mf_in.other_options.field), opts(mf_in.other_options) {
 
 	//compatibility conditions:
 	//1.  Lattice types are the same
@@ -77,10 +99,10 @@ MeanFieldAnsatz_ONE::MeanFieldAnsatz_ONE(WavefunctionOptions& mf_in, Lattice& la
 	//TightBindingUnitCell tb_cell;
 	double tz, tzp, txy, txyp;
 	int origin, neighbor;
-	TightBindingSitePair tbp(0,0);
+	std::shared_ptr<TightBindingSitePair> tbp;
 	std::vector<std::vector<int>> basis_partition = lat_in.basis_partition(mf_in.basis);
 
-	for (auto hopterm : mf_in.hopping_list) {//int hop = 0; hop < mf_in.hopping_list.size(); ++hop) {
+	for (auto hopterm : mf_in.other_options.hopping_list) {
 		site_pair_list.push_back({});
 		tz = hopterm.spin_row == 0 ? hopterm.strength : 0.0;
 		tzp = 0.0;
@@ -91,9 +113,10 @@ MeanFieldAnsatz_ONE::MeanFieldAnsatz_ONE(WavefunctionOptions& mf_in, Lattice& la
 				origin = basis_partition[uc][hopterm.origins[termind]];
 				neighbor = lat_in.get_neighbor_with_pbc(origin, hopterm.distance, hopterm.neighbor_index[termind]);
 				neighbor = mf_in.match_lattice_pbc ? neighbor : abs(neighbor);
-				tbp = TightBindingSitePair(origin, neighbor, tz, txy, tzp + hopterm.phases[termind] / 360.0, txyp + hopterm.phases[termind] / 360.0);
+				tbp = std::shared_ptr<TightBindingSitePair>(new TightBindingSitePair_ONE(origin, neighbor, tz, txy, tzp + hopterm.phases[termind] / 360.0, txyp + hopterm.phases[termind] / 360.0));
 				site_pair_list[site_pair_list.size() - 1].push_back(tbp);
-				tbp.conjugate();
+				tbp = std::shared_ptr<TightBindingSitePair>(new TightBindingSitePair_ONE(origin, neighbor, tz, txy, tzp + hopterm.phases[termind] / 360.0, txyp + hopterm.phases[termind] / 360.0));
+				tbp->conjugate();
 				site_pair_list[site_pair_list.size() - 1].push_back(tbp);
 			}
 		}
@@ -103,11 +126,10 @@ MeanFieldAnsatz_ONE::MeanFieldAnsatz_ONE(WavefunctionOptions& mf_in, Lattice& la
 	}
 
 
-	if (mf_in.directors.unit_cell_u_polar.size() > 0) {
-		field = mf_in.field;
+	if (opts.directors.unit_cell_u_polar.size() > 0) {
 		for (auto uc : basis_partition) {
 			for (int site = 0; site < uc.size(); ++site) {
-				directors.push_back(mf_in.directors.eval_at(site, lat_in.get_coordinate(uc[0])));
+				directors.push_back(opts.directors.eval_at(site, lat_in.get_coordinate(uc[0])));
 			}
 		}
 	}
@@ -132,9 +154,9 @@ void MeanFieldAnsatz_ONE::set_hamiltonian() {
 	double tzr, tzi, txyr, txyi;
 	for (int hop_class = 0; hop_class < site_pair_list.size(); ++hop_class) {
 		for (auto tb_pair : site_pair_list[hop_class]) {
-			tb_pair.get_sites(row, col);
+			tb_pair->get_sites(row, col);
 			if (row <= col) {
-				tb_pair.get_couplings(tzr, tzi, txyr, txyi);
+				tb_pair->get_couplings(tzr, tzi, txyr, txyi);
 				HMF[row*dim + col] -= std::complex<double>(txyr, txyi);
 				HMF[(row + N)*dim + col + N] -= std::complex<double>(tzr, tzi);
 				HMF[(row + 2 * N)*dim + col + 2 * N] -= std::complex<double>(txyr,txyi);
@@ -166,7 +188,7 @@ void MeanFieldAnsatz_ONE::set_hamiltonian() {
 					if (row <= col) {
 						HMF[row*dim + col] -= field * get_director_element(directors[i], m1, m2);
 						if (m1 == 1 && m2 == 1) {
-							HMF[row * dim + col] -= mu_z;
+							HMF[row * dim + col] -= opts.mu_z;
 						}
 					}
 				}

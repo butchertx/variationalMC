@@ -33,5 +33,4 @@ set_target_properties(${TARGET_NAME} PROPERTIES COMPILE_FLAGS "${COMPILE_FLAGS}"
 set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS "${LINK_FLAGS}")
 add_custom_target(cpu-gpu DEPENDS ${TARGET_NAME})
 
-
-target_link_libraries(${TARGET_NAME} VMC_IO VMC_TYPE LATTICE MEAN_FIELD_ANSATZ)
+target_link_libraries(${TARGET_NAME} VMC_IO VMC_TYPE LATTICE MEAN_FIELD_ANSATZ $<LINK_ONLY:MKL::MKL>)

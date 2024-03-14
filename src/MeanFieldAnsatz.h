@@ -161,31 +161,29 @@ public:
 	}
 };
 
+class MeanFieldAnsatz {
 
+protected:
 
-class MeanFieldAnsatz_ONE {
-
-	bool su3_symmetry;
-	int N, info, n0_F, fermi_surface_start, fermi_surface_end;
-	double field, mu_z;
+	int N, info, fermi_surface_start, fermi_surface_end;
+	double field;
 	lapack_complex_double *HMF, *Phi; // , * Pair_Eig, * PhiR;
 	std::vector<lapack_complex_double*> del_H; //each element corresponds to dH for a given variational param
 	double *Energy;
-	std::vector<std::vector<std::unique_ptr<TightBindingSitePair>>> site_pair_list;//each hopping vmc param has its own vector of site pairs
-	//std::vector<std::vector<SingletPairingSitePair>> singlet_pair_list;
-	std::vector<vec3<std::complex<double>>> directors;
+	std::vector<std::vector<std::shared_ptr<TightBindingSitePair>>> site_pair_list;//each hopping vmc param has its own vector of site pairs
 	std::vector<std::vector<std::complex<double>>> mean_field_hamiltonian;
 	FermiSurface fermi;
 
-	void set_hamiltonian();
-	void diagonalize_hamiltonian();
-	std::complex<double> get_director_element(vec3<std::complex<double>>, int m1, int m2);
-	double get_su3_element(std::string, int, int, int);
-
+	virtual void set_hamiltonian() = 0;
+	virtual void diagonalize_hamiltonian() = 0;
 
 public:
 
-	~MeanFieldAnsatz_ONE() {
+	// Implemented functions
+
+	MeanFieldAnsatz(int N_in, double field_in) : N(N_in), field(field_in) {};
+
+	~MeanFieldAnsatz() {
 		mkl_free(HMF);
 		mkl_free(Phi);
 		mkl_free(Energy);
@@ -194,51 +192,40 @@ public:
 		}
 	}
 
-	//MeanFieldAnsatz_ONE(int Lx_in, int Ly_in, TightBindingUnitCell uc_in);
+	lapack_complex_double* get_H() { return HMF; }
 
-	MeanFieldAnsatz_ONE(WavefunctionOptions& mf_in, Lattice& lat_in, bool unit_cell_construction);
+	lapack_complex_double* get_Phi() { return Phi; }
 
-	lapack_complex_double* get_H() {
-		return HMF;
-	}
+	double* get_Energy() { return Energy; }
 
-	lapack_complex_double* get_Phi() {
-		return Phi;
-	}
+	int get_num_hop_classes() { return site_pair_list.size(); }
 
-	double* get_Energy() {
-		return Energy;
-	}
+	std::vector<std::pair<int,int>> get_tb_pairs(int hop_class);
 
-	int get_dim() {
-		return 3 * N;
-	}
+	std::string get_tb_string();
 
-	int get_num_hop_classes() {
-		return site_pair_list.size();
-	}
+	// pure functions
 
-	std::string get_tb_string() {
-		std::stringstream ss;
-		ss << "Listing Hopping pairs:\n";
-		for (auto tb_list : site_pair_list) {
-			for (auto tb_pair : tb_list) {
-				ss << tb_pair.to_string() << "\n";
-			}
-		}
-		return ss.str();
-	}
+	virtual int get_dim() = 0;
 
-	std::vector<std::pair<int,int>> get_tb_pairs(int hop_class) {
-		std::vector<std::pair<int,int>> result;
-		int first, second;
-		assert(hop_class < site_pair_list.size());
-		for (auto tb_pair : site_pair_list[hop_class]) {
-			tb_pair.get_sites(first, second);
-			result.push_back(std::pair<int,int>(std::abs(first),std::abs(second)));
-		}
-		return result;
-	}
+};
+
+class MeanFieldAnsatz_ONE : public MeanFieldAnsatz {
+
+	int n0_F;
+	vmctype::SpecificWFOptions opts;
+	std::vector<vec3<std::complex<double>>> directors;
+
+	virtual void set_hamiltonian() override;
+	virtual void diagonalize_hamiltonian() override;
+	std::complex<double> get_director_element(vec3<std::complex<double>>, int m1, int m2);
+	double get_su3_element(std::string, int, int, int);
+
+public:
+
+	MeanFieldAnsatz_ONE(WavefunctionOptions& mf_in, Lattice& lat_in);
+
+	int get_dim() override { return 3 * N; }
 
 	void print_levels();
 	void print_fermi_level();
@@ -257,7 +244,7 @@ public:
 	}
 
 	int get_N0F() {
-		if (su3_symmetry) {
+		if (opts.su3_symmetry) {
 			assert(3 * (N / 3) == N);
 			return N/3;
 		}

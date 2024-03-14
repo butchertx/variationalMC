@@ -37,7 +37,7 @@ int main(int argc, char* argv[]) {
 
     // Create objects
     Lattice lattice(Lattice_type_from_string(lat_options.type), vec3<int>(lat_options.L), vec3<int>(lat_options.pbc));
-    MeanFieldAnsatz_ONE mf_ansatz(wf_options, lattice, true);
+    MeanFieldAnsatz_ONE mf_ansatz(wf_options, lattice);
 
     timer.flag_end_time("Total Program Time");
     timer.print_timers();

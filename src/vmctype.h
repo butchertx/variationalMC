@@ -25,7 +25,9 @@ namespace vmctype {
 
 	class HoppingTerm {
 	public:
-		int spin_row; //|m|: in spin-1 this is 0 for tz and 1 for txy
+
+		enum SPIN_ROW_t { ALL = -1, Z, XY };
+		SPIN_ROW_t spin_row; //|m|: in spin-1 this is 0 for tz and 1 for txy
 		double strength;
 		int distance; //neighbor distance
 		std::vector<int> origins, neighbor_index;//within unit cell
