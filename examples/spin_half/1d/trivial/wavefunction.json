@@ -13,7 +13,8 @@
       "num spin-orbit": 0,
       "hopping": [
         {
-          "strength": -1.0,
+          "spin_row": -1,
+          "strength": 1.0,
           "distance": 0,
           "origins": [ 0 ],
           "neighbor index": [ 0 ],

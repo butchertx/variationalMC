@@ -165,7 +165,7 @@ class MeanFieldAnsatz {
 
 protected:
 
-	int N, info, fermi_surface_start, fermi_surface_end;
+	int N, DIM = 0, info, fermi_surface_start, fermi_surface_end;
 	double field;
 	lapack_complex_double *HMF, *Phi; // , * Pair_Eig, * PhiR;
 	std::vector<lapack_complex_double*> del_H; //each element corresponds to dH for a given variational param
@@ -175,7 +175,7 @@ protected:
 	FermiSurface fermi;
 
 	virtual void set_hamiltonian() = 0;
-	virtual void diagonalize_hamiltonian() = 0;
+	void diagonalize_hamiltonian();
 
 public:
 
@@ -197,16 +197,27 @@ public:
 	lapack_complex_double* get_Phi() { return Phi; }
 
 	double* get_Energy() { return Energy; }
+	
+	int get_dim() { return DIM; }
 
 	int get_num_hop_classes() { return site_pair_list.size(); }
 
 	std::vector<std::pair<int,int>> get_tb_pairs(int hop_class);
 
 	std::string get_tb_string();
+};
 
-	// pure functions
+class MeanFieldAnsatz_HALF : public MeanFieldAnsatz {
 
-	virtual int get_dim() = 0;
+	vmctype::SpecificWFOptions opts;
+
+	virtual void set_hamiltonian() override;
+
+public:
+
+	MeanFieldAnsatz_HALF(WavefunctionOptions& mf_in, Lattice& lat_in);
+
+	void print_levels(bool);
 
 };
 
@@ -217,7 +228,6 @@ class MeanFieldAnsatz_ONE : public MeanFieldAnsatz {
 	std::vector<vec3<std::complex<double>>> directors;
 
 	virtual void set_hamiltonian() override;
-	virtual void diagonalize_hamiltonian() override;
 	std::complex<double> get_director_element(vec3<std::complex<double>>, int m1, int m2);
 	double get_su3_element(std::string, int, int, int);
 
@@ -225,9 +235,7 @@ public:
 
 	MeanFieldAnsatz_ONE(WavefunctionOptions& mf_in, Lattice& lat_in);
 
-	int get_dim() override { return 3 * N; }
-
-	void print_levels();
+	void print_levels(bool);
 	void print_fermi_level();
 	void write_levels(std::ofstream* f);
 	void write_directors(std::ofstream* f);

@@ -85,6 +85,92 @@ std::string MeanFieldAnsatz::get_tb_string() {
 	return ss.str();
 }
 
+void MeanFieldAnsatz::diagonalize_hamiltonian() {
+	std::memcpy(Phi, HMF, DIM * DIM * sizeof(lapack_complex_double));
+	info = LAPACKE_zheev(LAPACK_ROW_MAJOR, 'V', 'U', DIM, Phi, DIM, Energy);
+}
+
+MeanFieldAnsatz_HALF::MeanFieldAnsatz_HALF(WavefunctionOptions& mf_in, Lattice& lat_in) 
+	: MeanFieldAnsatz(lat_in.get_N(), mf_in.other_options.field), opts(mf_in.other_options) {
+
+	//compatibility conditions:
+	//1.  Lattice types are the same
+	//2.  all hopping elements have valid connections
+	assert(mf_in.lattice_type.compare(Lattice_type_to_string(lat_in.get_lattice_type())) == 0);
+
+	DIM = 2 * lat_in.get_N();
+	double t;
+	int origin, neighbor;
+	std::shared_ptr<TightBindingSitePair> tbp;
+	std::vector<std::vector<int>> basis_partition = lat_in.basis_partition(mf_in.basis);
+
+	for (auto hopterm : mf_in.other_options.hopping_list) {
+		site_pair_list.push_back({});
+		t = (hopterm.spin_row == HoppingTerm::SPIN_ROW_t::ALL) ? hopterm.strength : 0.0;
+		for (int uc = 0; uc < basis_partition.size(); ++uc) {
+			for (int termind = 0; termind < hopterm.origins.size(); ++termind) {
+				origin = basis_partition[uc][hopterm.origins[termind]];
+				neighbor = lat_in.get_neighbor_with_pbc(origin, hopterm.distance, hopterm.neighbor_index[termind]);
+				neighbor = mf_in.match_lattice_pbc ? neighbor : abs(neighbor);
+				tbp = std::shared_ptr<TightBindingSitePair>(new TightBindingSitePair_HALF(origin, neighbor, t, hopterm.phases[termind] / 360.0));
+				site_pair_list[site_pair_list.size() - 1].push_back(tbp);
+				tbp = std::shared_ptr<TightBindingSitePair>(new TightBindingSitePair_HALF(origin, neighbor, t, hopterm.phases[termind] / 360.0));
+				tbp->conjugate();
+				site_pair_list[site_pair_list.size() - 1].push_back(tbp);
+			}
+		}
+
+		std::cout << "TB pair list size: " << site_pair_list[site_pair_list.size() - 1].size() << "\n";
+
+	}
+
+	HMF = (lapack_complex_double *)mkl_malloc(DIM * DIM * sizeof(lapack_complex_double), 64);
+	Phi = (lapack_complex_double *)mkl_malloc(DIM * DIM * sizeof(lapack_complex_double), 64);
+	Energy = (double *)mkl_malloc(DIM * sizeof(double), 64);
+	set_hamiltonian();
+	diagonalize_hamiltonian();
+}
+
+void MeanFieldAnsatz_HALF::set_hamiltonian() {
+	//Use row major form (n = row*num_cols + col)
+	//initialize to zero
+	for (int i = 0; i < DIM * DIM; ++i) {
+		HMF[i] = { 0.0, 0.0 };
+	}
+
+	//iterate TB pairs and add upper triangle values
+	int row, col;
+	double tr, ti;
+	for (int hop_class = 0; hop_class < site_pair_list.size(); ++hop_class) {
+		for (auto tb_pair : site_pair_list[hop_class]) {
+			tb_pair->get_sites(row, col);
+			if (row <= col) {
+				tb_pair->get_couplings(tr, ti);
+				HMF[row*DIM + col] -= std::complex<double>(tr, ti);
+				HMF[(row + N)*DIM + col + N] -= std::complex<double>(tr, ti);
+			}
+		}
+	}
+
+}
+
+void MeanFieldAnsatz_HALF::print_levels(bool print_all = false) {
+	MKL_INT i;
+	double E, n1 = 0, n_1 = 0,
+		n1_tot = 0, n_1_tot = 0;
+	std::cout << "\nEnergies and Occupation numbers of Single-Particle Orbitals\n";
+	int loop_limit = print_all ? DIM : N+1;
+	for (i = 0; i < loop_limit; i++) {
+		E = Energy[i];
+		n1 = cblas_dznrm2(N, &(Phi[i]), DIM);
+		n_1 = cblas_dznrm2(N, &(Phi[i+DIM*N]), DIM);
+		n1_tot += n1*n1;
+		n_1_tot += n_1*n_1;
+		printf(" (%6.2f,%6.2f,%6.2f)", E, n1_tot, n_1_tot);
+		printf("\n");
+	}
+}
+
 MeanFieldAnsatz_ONE::MeanFieldAnsatz_ONE(WavefunctionOptions& mf_in, Lattice& lat_in) 
 	: MeanFieldAnsatz(lat_in.get_N(), mf_in.other_options.field), opts(mf_in.other_options) {
 
@@ -93,6 +179,7 @@ MeanFieldAnsatz_ONE::MeanFieldAnsatz_ONE(WavefunctionOptions& mf_in, Lattice& la
 	//2.  all hopping elements have valid connections
 	assert(mf_in.lattice_type.compare(Lattice_type_to_string(lat_in.get_lattice_type())) == 0);
 
+	DIM = 3 * lat_in.get_N();
 	double tz, txy;
 	int origin, neighbor;
 	std::shared_ptr<TightBindingSitePair> tbp;
@@ -128,9 +215,9 @@ MeanFieldAnsatz_ONE::MeanFieldAnsatz_ONE(WavefunctionOptions& mf_in, Lattice& la
 		}
 	}
 
-	HMF = (lapack_complex_double *)mkl_malloc(9 * N * N * sizeof(lapack_complex_double), 64);
-	Phi = (lapack_complex_double *)mkl_malloc(9 * N * N * sizeof(lapack_complex_double), 64);
-	Energy = (double *)mkl_malloc(3 * N * sizeof(double), 64);
+	HMF = (lapack_complex_double *)mkl_malloc(DIM * DIM * sizeof(lapack_complex_double), 64);
+	Phi = (lapack_complex_double *)mkl_malloc(DIM * DIM * sizeof(lapack_complex_double), 64);
+	Energy = (double *)mkl_malloc(DIM * sizeof(double), 64);
 	set_hamiltonian();
 	diagonalize_hamiltonian();
 	set_fermi_surface();
@@ -139,38 +226,24 @@ MeanFieldAnsatz_ONE::MeanFieldAnsatz_ONE(WavefunctionOptions& mf_in, Lattice& la
 void MeanFieldAnsatz_ONE::set_hamiltonian() {
 	//Use row major form (n = row*num_cols + col)
 	//initialize to zero
-	for (int i = 0; i < 9 * N * N; ++i) {
+	for (int i = 0; i < DIM * DIM; ++i) {
 		HMF[i] = { 0.0, 0.0 };
 	}
 
 	//iterate TB pairs and add upper triangle values
-	int row, col, dim = 3*N;
+	int row, col;
 	double tzr, tzi, txyr, txyi;
 	for (int hop_class = 0; hop_class < site_pair_list.size(); ++hop_class) {
 		for (auto tb_pair : site_pair_list[hop_class]) {
 			tb_pair->get_sites(row, col);
 			if (row <= col) {
 				tb_pair->get_couplings(tzr, tzi, txyr, txyi);
-				HMF[row*dim + col] -= std::complex<double>(txyr, txyi);
-				HMF[(row + N)*dim + col + N] -= std::complex<double>(tzr, tzi);
-				HMF[(row + 2 * N)*dim + col + 2 * N] -= std::complex<double>(txyr,txyi);
+				HMF[row*DIM + col] -= std::complex<double>(txyr, txyi);
+				HMF[(row + N)*DIM + col + N] -= std::complex<double>(tzr, tzi);
+				HMF[(row + 2 * N)*DIM + col + 2 * N] -= std::complex<double>(txyr,txyi);
 			}
 		}
 	}
-
-	//SU(3) irrep terms (kagome only)
-	//std::string irrep = "octet";
-	//for (int i = 0; i < N; ++i) {
-	//	for (int m1 = 0; m1 < 3; ++m1) {
-	//		for (int m2 = 0; m2 < 3; ++m2) {
-	//			row = i + m1 * N;
-	//			col = i + m2 * N;
-	//			if (row <= col) {
-	//				HMF[row * dim + col] -= 0.0;// -0.05 * get_su3_element(irrep, m1, m2, i);
-	//			}
-	//		}
-	//	}
-	//}
 
 	//add director terms
 	if (directors.size() > 0) {
@@ -180,9 +253,9 @@ void MeanFieldAnsatz_ONE::set_hamiltonian() {
 					row = i + m1 * N;
 					col = i + m2 * N;
 					if (row <= col) {
-						HMF[row*dim + col] -= field * get_director_element(directors[i], m1, m2);
+						HMF[row*DIM + col] -= field * get_director_element(directors[i], m1, m2);
 						if (m1 == 1 && m2 == 1) {
-							HMF[row * dim + col] -= opts.mu_z;
+							HMF[row * DIM + col] -= opts.mu_z;
 						}
 					}
 				}
@@ -247,21 +320,17 @@ std::complex<double> MeanFieldAnsatz_ONE::get_director_element(vec3<std::complex
 	}
 }
 
-void MeanFieldAnsatz_ONE::diagonalize_hamiltonian() {
-	std::memcpy(Phi, HMF, 9 * N * N * sizeof(lapack_complex_double));
-	info = LAPACKE_zheev(LAPACK_ROW_MAJOR, 'V', 'U', 3*N, Phi, 3*N, Energy);
-}
-
-void MeanFieldAnsatz_ONE::print_levels() {
+void MeanFieldAnsatz_ONE::print_levels(bool print_all = false) {
 	MKL_INT i;
 	double E, n1 = 0, n0 = 0, n_1 = 0,
 		n1_tot = 0, n0_tot = 0, n_1_tot = 0;
 	std::cout << "\nEnergies and Occupation numbers of Single-Particle Orbitals\n";
-	for (i = 0; i < N+1; i++) {
+	int loop_limit = print_all ? DIM : N+1;
+	for (i = 0; i < loop_limit; i++) {
 		E = Energy[i];
-		n1 = cblas_dznrm2(N, &(Phi[i]), 3 * N);
-		n0 = cblas_dznrm2(N, &(Phi[i+3*N*N]), 3 * N);
-		n_1 = cblas_dznrm2(N, &(Phi[i+6*N*N]), 3 * N);
+		n1 = cblas_dznrm2(N, &(Phi[i]), DIM);
+		n0 = cblas_dznrm2(N, &(Phi[i+DIM*N]), DIM);
+		n_1 = cblas_dznrm2(N, &(Phi[i+DIM*2*N]), DIM);
 		n1_tot += n1*n1;
 		n0_tot += n0*n0;
 		n_1_tot += n_1*n_1;
