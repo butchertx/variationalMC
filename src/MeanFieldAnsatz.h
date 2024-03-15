@@ -205,6 +205,11 @@ public:
 	std::vector<std::pair<int,int>> get_tb_pairs(int hop_class);
 
 	std::string get_tb_string();
+
+	// pure functions
+
+	virtual void print_levels(bool print_all = false) = 0;
+
 };
 
 class MeanFieldAnsatz_HALF : public MeanFieldAnsatz {
@@ -217,7 +222,7 @@ public:
 
 	MeanFieldAnsatz_HALF(WavefunctionOptions& mf_in, Lattice& lat_in);
 
-	void print_levels(bool);
+	virtual void print_levels(bool) override;
 
 };
 
@@ -235,7 +240,7 @@ public:
 
 	MeanFieldAnsatz_ONE(WavefunctionOptions& mf_in, Lattice& lat_in);
 
-	void print_levels(bool);
+	virtual void print_levels(bool) override;
 	void print_fermi_level();
 	void write_levels(std::ofstream* f);
 	void write_directors(std::ofstream* f);

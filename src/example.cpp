@@ -37,8 +37,20 @@ int main(int argc, char* argv[]) {
 
     // Create objects
     Lattice lattice(Lattice_type_from_string(lat_options.type), vec3<int>(lat_options.L), vec3<int>(lat_options.pbc));
-    MeanFieldAnsatz_ONE mf_ansatz(wf_options, lattice);
-    mf_ansatz.print_levels(true);
+    std::shared_ptr<MeanFieldAnsatz> mf_ansatz;
+    if (wf_options.other_options.spin == SpecificWFOptions::Spin_t::HALF){
+        mf_ansatz = std::shared_ptr<MeanFieldAnsatz>(new MeanFieldAnsatz_HALF(wf_options, lattice));
+    }
+    else if (wf_options.other_options.spin == SpecificWFOptions::Spin_t::ONE){
+        mf_ansatz = std::shared_ptr<MeanFieldAnsatz>(new MeanFieldAnsatz_ONE(wf_options, lattice));
+    }
+    else {
+        std::stringstream ss;
+        ss << "Spin value " << wf_options.other_options.spin << " not implemented\n";
+        throw vmctype::NotImplemented(ss.str());
+    }
+
+    mf_ansatz->print_levels(true);
 
     timer.flag_end_time("Total Program Time");
     timer.print_timers();
