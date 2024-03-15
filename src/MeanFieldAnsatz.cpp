@@ -93,29 +93,23 @@ MeanFieldAnsatz_ONE::MeanFieldAnsatz_ONE(WavefunctionOptions& mf_in, Lattice& la
 	//2.  all hopping elements have valid connections
 	assert(mf_in.lattice_type.compare(Lattice_type_to_string(lat_in.get_lattice_type())) == 0);
 
-	//std::vector<std::vector<origin_direction_pair>> hopping_list(1);
-	//std::vector<vec3<std::complex<double>>> directors;
-
-	//TightBindingUnitCell tb_cell;
-	double tz, tzp, txy, txyp;
+	double tz, txy;
 	int origin, neighbor;
 	std::shared_ptr<TightBindingSitePair> tbp;
 	std::vector<std::vector<int>> basis_partition = lat_in.basis_partition(mf_in.basis);
 
 	for (auto hopterm : mf_in.other_options.hopping_list) {
 		site_pair_list.push_back({});
-		tz = hopterm.spin_row == 0 ? hopterm.strength : 0.0;
-		tzp = 0.0;
-		txy = hopterm.spin_row == 1 ? hopterm.strength : 0.0;
-		txyp = 0.0;
+		tz = (hopterm.spin_row == HoppingTerm::SPIN_ROW_t::Z || hopterm.spin_row == HoppingTerm::SPIN_ROW_t::ALL) ? hopterm.strength : 0.0;
+		txy = (hopterm.spin_row == HoppingTerm::SPIN_ROW_t::XY || hopterm.spin_row == HoppingTerm::SPIN_ROW_t::ALL) ? hopterm.strength : 0.0;
 		for (int uc = 0; uc < basis_partition.size(); ++uc) {
 			for (int termind = 0; termind < hopterm.origins.size(); ++termind) {
 				origin = basis_partition[uc][hopterm.origins[termind]];
 				neighbor = lat_in.get_neighbor_with_pbc(origin, hopterm.distance, hopterm.neighbor_index[termind]);
 				neighbor = mf_in.match_lattice_pbc ? neighbor : abs(neighbor);
-				tbp = std::shared_ptr<TightBindingSitePair>(new TightBindingSitePair_ONE(origin, neighbor, tz, txy, tzp + hopterm.phases[termind] / 360.0, txyp + hopterm.phases[termind] / 360.0));
+				tbp = std::shared_ptr<TightBindingSitePair>(new TightBindingSitePair_ONE(origin, neighbor, tz, txy, hopterm.phases[termind] / 360.0, hopterm.phases[termind] / 360.0));
 				site_pair_list[site_pair_list.size() - 1].push_back(tbp);
-				tbp = std::shared_ptr<TightBindingSitePair>(new TightBindingSitePair_ONE(origin, neighbor, tz, txy, tzp + hopterm.phases[termind] / 360.0, txyp + hopterm.phases[termind] / 360.0));
+				tbp = std::shared_ptr<TightBindingSitePair>(new TightBindingSitePair_ONE(origin, neighbor, tz, txy, hopterm.phases[termind] / 360.0, hopterm.phases[termind] / 360.0));
 				tbp->conjugate();
 				site_pair_list[site_pair_list.size() - 1].push_back(tbp);
 			}
@@ -262,7 +256,7 @@ void MeanFieldAnsatz_ONE::print_levels() {
 	MKL_INT i;
 	double E, n1 = 0, n0 = 0, n_1 = 0,
 		n1_tot = 0, n0_tot = 0, n_1_tot = 0;
-	printf("\n %s\n", "Energies and Occupation numbers of Single-Particle Orbitals");
+	std::cout << "\nEnergies and Occupation numbers of Single-Particle Orbitals\n";
 	for (i = 0; i < N+1; i++) {
 		E = Energy[i];
 		n1 = cblas_dznrm2(N, &(Phi[i]), 3 * N);

@@ -2,7 +2,7 @@
 
 void vmctype::to_json(json& j, const vmctype::HoppingTerm& p) {
 	j = json{
-			{"spin row", p.spin_row},
+			{"spin_row", p.spin_row},
 			{"strength", p.strength},
 			{"distance", p.distance},
 			{"origins", p.origins},
@@ -12,7 +12,7 @@ void vmctype::to_json(json& j, const vmctype::HoppingTerm& p) {
 }
 
 void vmctype::from_json(const json& j, vmctype::HoppingTerm& p) {
-	j.at("spin row").get_to(p.spin_row);
+	j.at("spin_row").get_to(p.spin_row);
 	j.at("strength").get_to(p.strength);
 	j.at("distance").get_to(p.distance);
 	j.at("origins").get_to<std::vector<int>>(p.origins);

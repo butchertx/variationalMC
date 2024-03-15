@@ -134,7 +134,7 @@ public:
 
 	FermiSurface() {};
 	FermiSurface(double e_in, std::vector<double> shell_in) 
-	: energy(e_in), inner_shell(shell_in) {};
+	: inner_shell(shell_in), energy(e_in) {};
 
 	void update_index(int fs_index, int new_orb_index) {
 		orbitals[fs_index].update_index(new_orb_index);
