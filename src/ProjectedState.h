@@ -75,22 +75,12 @@ public:
 	void update(std::vector<int>& ring_swap) override;
 	void update(std::vector<int>& flips, std::vector<int>& new_sz) override;	
 
-	std::vector<double> log_derivative() override { 
-		return jastrow.log_derivative(); 
-	}
-
-	std::vector<double> greedy_log_derivative() override {
-		return jastrow.greedy_log_derivative(configuration);
-	}
-
-	void update_parameters(std::vector<double> new_params) override {
-		jastrow.set_params(new_params);
-	};
-
-	std::vector<double> get_parameters() override {
-		return jastrow.get_params();
-	};
+	std::vector<double> log_derivative() override { return jastrow.log_derivative(); }
+	std::vector<double> greedy_log_derivative() override { return jastrow.greedy_log_derivative(configuration);	}
+	void update_parameters(std::vector<double> new_params) override { jastrow.set_params(new_params); }
+	std::vector<double> get_parameters() override { return jastrow.get_params(); }
 	
+	// TODO: this should be moved to VariationalMonteCarlo and should only write the Markov chain updates
 	void write_configuration(std::ofstream* f) override {
 		*f << configuration[0];
 		for (int i = 1; i < configuration.size(); ++i) {
@@ -113,6 +103,7 @@ public:
 	}
 
 	//Tests
+	// TODO: move these to an appropriate test module
 
 	bool test_2_spin_swap_pop(bool);
 
