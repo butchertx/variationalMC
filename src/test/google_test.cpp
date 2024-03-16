@@ -18,23 +18,8 @@ TEST(HelloTest, BasicAssertions2) {
   EXPECT_EQ(7 * 8, 56);
 }
 
-class LatticeTest : public ::testing::Test{
-  protected:
-
-    LatticeTest() {}
-    virtual ~LatticeTest() {}
-
-    void SetUp() override {
-      chainLattice = Lattice(Lattice_type_t::CHAIN, vec3<int>(2, 1, 1), vec3<int>(0, 0, 0));
-    }
-
-    virtual void TearDown() override {
-    }
-
-    Lattice chainLattice;
-};
-
-TEST_F(LatticeTest, ValidateLattices) {
+TEST(LatticeTest, ValidateLattices) {
+  Lattice chainLattice(Lattice_type_t::CHAIN, vec3<int>(2, 1, 1), vec3<int>(0, 0, 0));
   auto n = chainLattice.get_N();
   EXPECT_EQ(n, 2);
 }
