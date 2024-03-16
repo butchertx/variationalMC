@@ -129,7 +129,7 @@ WavefunctionOptions read_json_wavefunction(json j) {
 	// Slater options
 	if (wf_opt.wf_type == "slater") {
 		double spin = j["wavefunction"]["spin"];
-		wf_opt.other_options.spin = spin == 0.5 ? SpecificWFOptions::Spin_t::HALF : SpecificWFOptions::Spin_t::ONE;
+		wf_opt.other_options.spin = spin == 0.5 ? vmctype::Spin_t::HALF : vmctype::Spin_t::ONE;
 
 		// Set optional params if they exist
 		if (j["wavefunction"].contains("field")) {

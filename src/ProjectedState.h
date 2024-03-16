@@ -18,27 +18,33 @@ class ProjectedState : public Wavefunction {
 	lapack_complex_double *Slater, *LU, *Winv, *UP1, *UP2, *UP3;
 	lapack_int *ipiv;
 	std::complex<double> det;
-	std::vector<int> conf_copy;
+	static const int CONFIG_ATTEMPTS = 50;
 
+	// initialization
 	void malloc_matrices();
 	void clear_matrices();
 	void initialize_configuration();
+	bool try_configuration();
+	void set_configuration(std::vector<int> conf);
 	std::complex<double> calc_det();
+
+	// updates
 	void upinvhop2(int, int, int, int);
 	void upinvhop2_flip(int, int, int, int);
-	void set_configuration(std::vector<int> conf);
-	bool try_configuration();
+
+	// matrix elements
 	std::complex<double> psi_over_psi2(int site1, int site2, int new_sz1, int new_sz2);
 	std::complex<double> psi_over_psi_swap(int site1, int site2, int site3);
 	std::complex<double> psi_over_psi(int, int, int);
 
+	// helpers
+	int Spin_t_to_row(int spin_idx);
+
 public:
 
-	void print_timers() {
-		if (jastrow.exist()) {
-			jastrow.print_timers();
-		}
-	}
+	ProjectedState(MeanFieldAnsatz& M, RandomEngine& rand_in);
+
+	ProjectedState(MeanFieldAnsatz& M, RandomEngine& rand_in, JastrowTable jastrow_in);
 
 	~ProjectedState() {
 		mkl_free(Slater);
@@ -50,9 +56,11 @@ public:
 		mkl_free(ipiv);
 	}
 
-	ProjectedState(MeanFieldAnsatz& M, RandomEngine& rand_in);
-
-	ProjectedState(MeanFieldAnsatz& M, RandomEngine& rand_in, JastrowTable jastrow_in);
+	void print_timers() {
+		if (jastrow.exist()) {
+			jastrow.print_timers();
+		}
+	}
 
 	// Override Parent Virtual Functions
 	

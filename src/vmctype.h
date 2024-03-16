@@ -213,9 +213,10 @@ namespace vmctype {
 
 	};
 
+	enum Spin_t {HALF, ONE};
+
 	struct SpecificWFOptions {
 
-		enum Spin_t {HALF, ONE};
 		Spin_t spin;
 		int num_spin_orbit = 0;
 		double field = 0.0;

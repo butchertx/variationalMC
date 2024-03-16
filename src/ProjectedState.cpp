@@ -5,15 +5,11 @@ ProjectedState::ProjectedState(MeanFieldAnsatz& M_, RandomEngine& rand_)
 	malloc_matrices();
 	clear_matrices();
 	initialize_configuration();
-	jastrow = {};
-	assert(!jastrow.exist());
 }
 
-ProjectedState::ProjectedState(MeanFieldAnsatz& M, RandomEngine& rand_in, JastrowTable jastrow_)
-	: ansatz(M), rand(rand_in), N(ansatz.get_N()), DIM(ansatz.get_dim()), jastrow(jastrow_) {
-	malloc_matrices();
-	clear_matrices();
-	initialize_configuration();	
+ProjectedState::ProjectedState(MeanFieldAnsatz& M_, RandomEngine& rand_, JastrowTable jastrow_)
+	: ProjectedState(M_, rand_) {
+	jastrow = jastrow_;
 	jastrow.initialize_tables(configuration);
 }
 
@@ -47,7 +43,7 @@ void ProjectedState::clear_matrices(){
 
 void ProjectedState::initialize_configuration(){
 	int config_attempt = 0;
-	while (!try_configuration() && config_attempt < 50) {
+	while (!try_configuration() && config_attempt < CONFIG_ATTEMPTS) {
 		det = { 0, 0 };
 		++config_attempt;
 	}
@@ -67,32 +63,47 @@ bool ProjectedState::try_configuration() {
 	return (cblas_dcabs1(&(LU[low*(N+1)])) > 10e-10);
 }
 
+int ProjectedState::Spin_t_to_row(int spin_idx){
+	if (ansatz.get_spin_type() == vmctype::Spin_t::ONE){
+		// spin_idx = -1, 0, or 1
+		return (-spin_idx + 1) * N;
+	}
+	else if (ansatz.get_spin_type() == vmctype::Spin_t::HALF){
+		// spin_idx = -1, or 1
+		return ((-spin_idx + 1) / 2) * N;
+	}
+}
+
 void ProjectedState::set_configuration(std::vector<int> conf) {
 	configuration = conf;
-	int row = 0, N3 = 3 * N, mi = 0, rand_orbital = 0;
-	bool selected = false;
+	int row = 0;
 	lapack_complex_double* phi = ansatz.get_Phi();
 	parton_labels.clear();
-	//print_matrix("Orbitals 3Nx10", 3*N, 10, phi, 3*N);
 	lapack_int info;
 	MKL_Complex16 alpha = { 1.0, 0.0 }, beta = { 0.0, 0.0 };
+
+	// move the relevant rows of Phi into Slater
 	for (int i = 0; i < N; ++i) {
 		parton_labels.push_back(i);
-		mi = configuration[i];
-		row = (-mi + 1) * N + i;
-		//std::cout << "Site " << i << ", Sz = " << conf[i] << ", row " << row << "\n";
-		//print_matrix("Row: ", 1, 10, &(phi[row*3*N]), 3*N);
-		std::memcpy(&(Slater[parton_labels[i] * N]), &(phi[row * 3 * N]), N * sizeof(lapack_complex_double));
+		row = Spin_t_to_row(configuration[i]) + i;
+		std::memcpy(&(Slater[parton_labels[i] * N]), &(phi[row * DIM]), N * sizeof(lapack_complex_double));
 	}
 	info = LAPACKE_zgetrf(LAPACK_ROW_MAJOR, N, N, Slater, N, ipiv);
 	std::memcpy(LU, Slater, N * N * sizeof(lapack_complex_double));
 	if (info == 0) {
 		info = LAPACKE_zgetri(LAPACK_ROW_MAJOR, N, Slater, N, ipiv);
 		//zgemm3m(CblasRowMajor, CblasNoTrans, CblasNoTrans, 3 * N, N, N, &alpha, phi, 3 * N, Slater, N, &beta, Winv, 3 * N);
-		zgemm3m("N", "N", &N, &N3, &N, &alpha, Slater, &N, phi, &N3, &beta, Winv, &N);
-		//print_matrix("Winv: ", 10,10, Winv, N);
+		zgemm3m("N", "N", &N, &DIM, &N, &alpha, Slater, &N, phi, &DIM, &beta, Winv, &N);
 	}
 	det = calc_det();
+}
+
+std::complex<double> ProjectedState::calc_det() {
+	std::complex<double> result = { 1.0, 0.0 };
+	for (int i = 0; i < N; ++i) {
+		result *= LU[i*N + i];
+	}
+	return result;
 }
 
 std::complex<double> ProjectedState::psi_over_psi2(int site1, int site2, int new_sz1, int new_sz2) {
@@ -252,15 +263,6 @@ void ProjectedState::update(std::vector<int>& sites, std::vector<int>& new_sz, s
 	configuration[sites[0]] = new_sz[0];
 	configuration[sites[1]] = new_sz[1];
 	det *= psioverpsi;
-}
-
-std::complex<double> ProjectedState::calc_det() {
-	std::complex<double> result = { 1.0, 0.0 };
-	for (int i = 0; i < N; ++i) {
-		//std::cout << "(" << LU[i*N + i].real << "," << LU[i*N + i].imag << ")\n";
-		result *= LU[i*N + i];
-	}
-	return result;
 }
 
 void ProjectedState::upinvhop2(int rowk, int colk, int rowl, int coll) {

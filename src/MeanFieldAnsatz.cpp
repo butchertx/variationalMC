@@ -97,8 +97,9 @@ MeanFieldAnsatz_HALF::MeanFieldAnsatz_HALF(WavefunctionOptions& mf_in, Lattice& 
 	//1.  Lattice types are the same
 	//2.  all hopping elements have valid connections
 	assert(mf_in.lattice_type.compare(Lattice_type_to_string(lat_in.get_lattice_type())) == 0);
-	assert(mf_in.other_options.spin == SpecificWFOptions::Spin_t::HALF);
+	assert(mf_in.other_options.spin == vmctype::Spin_t::HALF);
 
+	SPIN_TYPE = vmctype::Spin_t::HALF;
 	DIM = 2 * lat_in.get_N();
 	double t;
 	int origin, neighbor;
@@ -179,8 +180,9 @@ MeanFieldAnsatz_ONE::MeanFieldAnsatz_ONE(WavefunctionOptions& mf_in, Lattice& la
 	//1.  Lattice types are the same
 	//2.  all hopping elements have valid connections
 	assert(mf_in.lattice_type.compare(Lattice_type_to_string(lat_in.get_lattice_type())) == 0);
-	assert(mf_in.other_options.spin == SpecificWFOptions::Spin_t::ONE);
+	assert(mf_in.other_options.spin == vmctype::Spin_t::ONE);
 
+	SPIN_TYPE = vmctype::Spin_t::ONE;
 	DIM = 3 * lat_in.get_N();
 	double tz, txy;
 	int origin, neighbor;

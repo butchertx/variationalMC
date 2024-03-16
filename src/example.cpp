@@ -38,10 +38,10 @@ int main(int argc, char* argv[]) {
     // Create objects
     Lattice lattice(Lattice_type_from_string(lat_options.type), vec3<int>(lat_options.L), vec3<int>(lat_options.pbc));
     std::shared_ptr<MeanFieldAnsatz> mf_ansatz;
-    if (wf_options.other_options.spin == SpecificWFOptions::Spin_t::HALF){
+    if (wf_options.other_options.spin == vmctype::Spin_t::HALF){
         mf_ansatz = std::shared_ptr<MeanFieldAnsatz>(new MeanFieldAnsatz_HALF(wf_options, lattice));
     }
-    else if (wf_options.other_options.spin == SpecificWFOptions::Spin_t::ONE){
+    else if (wf_options.other_options.spin == vmctype::Spin_t::ONE){
         mf_ansatz = std::shared_ptr<MeanFieldAnsatz>(new MeanFieldAnsatz_ONE(wf_options, lattice));
     }
     else {

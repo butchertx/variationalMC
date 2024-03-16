@@ -166,6 +166,7 @@ class MeanFieldAnsatz {
 protected:
 
 	int N, DIM = 0, info, fermi_surface_start, fermi_surface_end;
+	vmctype::Spin_t SPIN_TYPE;
 	double field;
 	lapack_complex_double *HMF, *Phi; // , * Pair_Eig, * PhiR;
 	std::vector<lapack_complex_double*> del_H; //each element corresponds to dH for a given variational param
@@ -201,6 +202,8 @@ public:
 	int get_N() { return N; }
 	
 	int get_dim() { return DIM; }
+
+	vmctype::Spin_t get_spin_type() { return SPIN_TYPE; }
 
 	int get_num_hop_classes() { return site_pair_list.size(); }
 
