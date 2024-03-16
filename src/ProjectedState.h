@@ -32,6 +32,8 @@ class ProjectedState : public Wavefunction {
 	std::complex<double> calc_det();
 
 	// updates
+	void update(std::vector<int>& flips, std::vector<int>& new_sz, std::complex<double> pop);
+	void update(int site1, int site2, std::complex<double> pop);
 	void upinvhop2(int, int, int, int);
 
 	// matrix elements
@@ -63,39 +65,15 @@ public:
 	// Override Parent Virtual Functions
 	
 	void f() override {};
-
 	std::complex<double> basis_element(const std::vector<int>&) override { return { 0.0, 0.0 }; }
 
-	std::complex<double> psi_over_psi(std::vector<int>& ring_swap) override {
-		std::vector<int> sz(ring_swap.size());
-		for (int i = 0; i < ring_swap.size(); ++i) {
-			if (i == ring_swap.size() - 1) {
-				sz[i] = configuration[ring_swap[0]];
-			}
-			else {
-				sz[i] = configuration[ring_swap[i + 1]];
-			}
-		}
-		return psi_over_psi(ring_swap, sz);
-	}
-
+	// can swap spins at 2 or 3 sites given in ring_swap
+	std::complex<double> psi_over_psi(std::vector<int>& ring_swap) override;
+	// chooses a ring swap or a 2-site swap, potentially with an additional spin flip for the 2-site swap
 	std::complex<double> psi_over_psi(std::vector<int>& flips, std::vector<int>& new_sz) override;
 
-	void update(std::vector<int>& flips, std::vector<int>& new_sz) override;
-	void update(std::vector<int>& flips, std::vector<int>& new_sz, std::complex<double> pop);
-
-	void update(std::vector<int>& ring_swap) override {
-		std::vector<int> sz(ring_swap.size());
-		for (int i = 0; i < ring_swap.size(); ++i) {
-			if (i == ring_swap.size() - 1) {
-				sz[i] = configuration[ring_swap[0]];
-			}
-			else {
-				sz[i] = configuration[ring_swap[i + 1]];
-			}
-		}
-		update(ring_swap, sz);
-	}
+	void update(std::vector<int>& ring_swap) override;
+	void update(std::vector<int>& flips, std::vector<int>& new_sz) override;	
 
 	std::vector<double> log_derivative() override { 
 		return jastrow.log_derivative(); 
@@ -133,8 +111,6 @@ public:
 	std::complex<double> get_det() {
 		return det;
 	}
-
-	void update(int, int, std::complex<double>);
 
 	//Tests
 

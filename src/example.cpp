@@ -53,6 +53,8 @@ int main(int argc, char* argv[]) {
 
     RandomEngine r(-1, lattice.get_N(), lattice.get_neighbor_counts()[0]);
     ProjectedState wf(*mf_ansatz, r);
+    std::vector<int> flips({0, 1});
+    wf.update(flips);
 
     timer.flag_end_time("Total Program Time");
     timer.print_timers();

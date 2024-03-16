@@ -138,8 +138,10 @@ void ProjectedState::upinvhop2(int rowk, int colk, int rowl, int coll) {
 		UP3[N + i] = c21 * UP2[i] + c22 * UP2[N + i];
 	}
 
-	cblas_zgemm3m(CblasRowMajor, CblasNoTrans, CblasNoTrans, DIM, N, 2, &g, UP1, 2, UP3, N, &beta, Winv, N);
+	cblas_zgemm3m_64(CblasRowMajor, CblasNoTrans, CblasNoTrans, DIM, N, 2, &g, UP1, 2, UP3, N, &beta, Winv, N);
 }
+
+/// PRIVATE MATRIX ELEMENTS
 
 // swap 2 sites with specified sz values, with jastrow
 std::complex<double> ProjectedState::psi_over_psi2(int site1, int site2, int new_sz1, int new_sz2) {
@@ -161,21 +163,39 @@ std::complex<double> ProjectedState::psi_over_psi_swap(int site1, int site2, int
 	int new_sz1 = configuration[site2], new_sz2 = configuration[site3], new_sz3 = configuration[site1];
 	int spin_row1 = Spin_t_to_row(new_sz1), spin_row2 = Spin_t_to_row(new_sz2), spin_row3 = Spin_t_to_row(new_sz3);
 
-	std::complex<double> row1_1 = Winv[(site1 + spin_row1) * N + parton_labels[site1]],
+	std::complex<double> 
+		row1_1 = Winv[(site1 + spin_row1) * N + parton_labels[site1]],
 		row1_2 = Winv[(site1 + spin_row1) * N + parton_labels[site2]],
 		row1_3 = Winv[(site1 + spin_row1) * N + parton_labels[site3]];
 
 	result = row1_1 * (Winv[(site2 + spin_row2) * N + parton_labels[site2]] * Winv[(site3 + spin_row3) * N + parton_labels[site3]]
-		- Winv[(site3 + spin_row3) * N + parton_labels[site2]] * Winv[(site2 + spin_row2) * N + parton_labels[site3]])
+					 - Winv[(site3 + spin_row3) * N + parton_labels[site2]] * Winv[(site2 + spin_row2) * N + parton_labels[site3]])
 		- row1_2 * (Winv[(site2 + spin_row2) * N + parton_labels[site1]] * Winv[(site3 + spin_row3) * N + parton_labels[site3]]
-			- Winv[(site3 + spin_row3) * N + parton_labels[site1]] * Winv[(site2 + spin_row2) * N + parton_labels[site3]])
+				- Winv[(site3 + spin_row3) * N + parton_labels[site1]] * Winv[(site2 + spin_row2) * N + parton_labels[site3]])
 		+ row1_3 * (Winv[(site2 + spin_row2) * N + parton_labels[site1]] * Winv[(site3 + spin_row3) * N + parton_labels[site2]]
-			- Winv[(site3 + spin_row3) * N + parton_labels[site1]] * Winv[(site2 + spin_row2) * N + parton_labels[site2]]);
+				- Winv[(site3 + spin_row3) * N + parton_labels[site1]] * Winv[(site2 + spin_row2) * N + parton_labels[site2]]);
 
 	std::vector<int> flip_sites = { site1, site2, site3 }, new_sz = { new_sz1, new_sz2, new_sz3 };
 	return result * jastrow.lazy_eval(flip_sites, new_sz, configuration);
 }
 
+/// OVERRIDE MATRIX ELEMENTS
+
+// can swap spins at 2 or 3 sites given in ring_swap
+std::complex<double> ProjectedState::psi_over_psi(std::vector<int>& ring_swap) {
+		std::vector<int> sz(ring_swap.size());
+		for (int i = 0; i < ring_swap.size(); ++i) {
+			if (i == ring_swap.size() - 1) {
+				sz[i] = configuration[ring_swap[0]];
+			}
+			else {
+				sz[i] = configuration[ring_swap[i + 1]];
+			}
+		}
+		return psi_over_psi(ring_swap, sz);
+	}
+
+// chooses a ring swap or a 2-site swap, potentially with an additional spin flip for the 2-site swap
 std::complex<double> ProjectedState::psi_over_psi(std::vector<int>& flips, std::vector<int>& new_sz) {
 
 	std::complex<double> result(1.0, 0.0);
@@ -188,59 +208,20 @@ std::complex<double> ProjectedState::psi_over_psi(std::vector<int>& flips, std::
 	else {
 		assert(flips.size() == 2);
 	}
-	return result;// *exp(jastrow.logpsi_over_psi(flips, configuration));
+	return result;
 
 }
 
-
-void ProjectedState::update(std::vector<int>& flips, std::vector<int>& new_sz) {
-	std::complex<double> pop;
-
-	if (flips.size() == 2) {
-		/*std::cout << "Lazy and Greedy jastrows: \n" << jastrow.lazy_eval(flips, new_sz, configuration); 
-		double greedy_old = jastrow.greedy_eval(configuration);*/
-		jastrow.update_tables(flips, new_sz, configuration);
-		pop = psi_over_psi(flips, new_sz);
-		if (configuration[flips[0]] == new_sz[1] && configuration[flips[1]] == new_sz[0]) {
-			update(flips[0], flips[1], pop);
-		}
-		else {
-			//test_2_spin_flip_pop(flips, new_sz);
-			update(flips, new_sz, pop);
-		}
-		/*double greedy_new = jastrow.greedy_eval(configuration);
-		std::cout << ", " << greedy_new / greedy_old << "\n";*/
-	}
-	else if (flips.size() == 3) {
-		assert(!jastrow.exist()); //jastrow not implemented for ring exchanges
-		std::vector<int> fliplist(2), spinlist(2);
-		fliplist = { flips[0], flips[1] };
-		spinlist = { new_sz[0], new_sz[2] };
-		pop = psi_over_psi(fliplist, spinlist);
-		update(flips[0], flips[1], pop);
-
-		fliplist = { flips[1], flips[2] };
-		spinlist = { new_sz[1], new_sz[2] };
-		pop = psi_over_psi(fliplist, spinlist);
-		update(flips[1], flips[2], pop);
-	}
-	else {
-		std::cout << "Error: did not provide 2 or 3 elements to update Projected State. Flip list:\n";
-		for (int i = 0; i < flips.size(); ++i) {
-			std::cout << flips[i] << ",";
-		}
-		std::cout << "\n";
-	}
-}
+/// PRIVATE UPDATES - ACTUAL CALLERS
 
 void ProjectedState::update(int site1, int site2, std::complex<double> psioverpsi) {
 	//only for swapping spins at two different sites
 
 	if (configuration[site1] < configuration[site2]) {
-		upinvhop2((site1 + (1 - configuration[site2]) * N), parton_labels[site2], (site2 + (1 - configuration[site1]) * N), parton_labels[site1]);
+		upinvhop2((site1 + Spin_t_to_row(configuration[site2])), parton_labels[site2], (site2 + Spin_t_to_row(configuration[site1])), parton_labels[site1]);
 	}
 	else {
-		upinvhop2((site2 + (1 - configuration[site1]) * N), parton_labels[site1], (site1 + (1 - configuration[site2]) * N), parton_labels[site2]);
+		upinvhop2((site2 + Spin_t_to_row(configuration[site1])), parton_labels[site1], (site1 + Spin_t_to_row(configuration[site2])), parton_labels[site2]);
 	}
 	//std::cout << "labels: " << vec2str(parton_labels) << "\n";
 	int templabel = parton_labels[site1];
@@ -258,15 +239,68 @@ void ProjectedState::update(std::vector<int>& sites, std::vector<int>& new_sz, s
 	assert(new_sz.size() == 2);
 
 	if (configuration[sites[0]] < configuration[sites[1]]) {
-		upinvhop2((sites[0] + (1 - new_sz[0]) * N), parton_labels[sites[0]], (sites[1] + (1 - new_sz[1]) * N), parton_labels[sites[1]]);
+		upinvhop2((sites[0] + Spin_t_to_row(new_sz[0])), parton_labels[sites[0]], (sites[1] + Spin_t_to_row(new_sz[1])), parton_labels[sites[1]]);
 	}
 	else {
-		upinvhop2((sites[1] + (1 - new_sz[1]) * N), parton_labels[sites[1]], (sites[0] + (1 - new_sz[0]) * N), parton_labels[sites[0]]);
+		upinvhop2((sites[1] + Spin_t_to_row(new_sz[1])), parton_labels[sites[1]], (sites[0] + Spin_t_to_row(new_sz[0])), parton_labels[sites[0]]);
 	}
 
 	configuration[sites[0]] = new_sz[0];
 	configuration[sites[1]] = new_sz[1];
 	det *= psioverpsi;
+}
+
+/// OVERRIDE UPDATES - PUBLIC INTERFACE
+
+// pass-thru, analogous to psi_over_psi(ring_swap)
+void ProjectedState::update(std::vector<int>& ring_swap) {
+	std::vector<int> sz(ring_swap.size());
+	for (int i = 0; i < ring_swap.size(); ++i) {
+		if (i == ring_swap.size() - 1) {
+			sz[i] = configuration[ring_swap[0]];
+		}
+		else {
+			sz[i] = configuration[ring_swap[i + 1]];
+		}
+	}
+	update(ring_swap, sz);
+}
+
+void ProjectedState::update(std::vector<int>& flips, std::vector<int>& new_sz) {
+	std::complex<double> pop;
+
+	if (flips.size() == 2) {
+		jastrow.update_tables(flips, new_sz, configuration);
+		pop = psi_over_psi(flips, new_sz);
+		if (configuration[flips[0]] == new_sz[1] && configuration[flips[1]] == new_sz[0]) {
+			update(flips[0], flips[1], pop);
+		}
+		else {
+			update(flips, new_sz, pop);
+		}
+	}
+	else if (flips.size() == 3) {
+		assert(!jastrow.exist()); //jastrow not implemented for ring exchanges
+		std::vector<int> fliplist(2), spinlist(2);
+		fliplist = { flips[0], flips[1] };
+		spinlist = { new_sz[0], new_sz[2] };
+		pop = psi_over_psi(fliplist, spinlist);
+		update(flips[0], flips[1], pop);
+
+		fliplist = { flips[1], flips[2] };
+		spinlist = { new_sz[1], new_sz[2] };
+		pop = psi_over_psi(fliplist, spinlist);
+		update(flips[1], flips[2], pop);
+	}
+	else {
+		std::stringstream ss;
+		ss << "Spin exchanges with <2 or >3 sites not implemented.\nFlip list:\n";
+		for (int i = 0; i < flips.size(); ++i) {
+			ss << flips[i] << ",";
+		}
+		ss << "\n";
+		throw vmctype::NotImplemented(ss.str());
+	}
 }
 
 //Tests
