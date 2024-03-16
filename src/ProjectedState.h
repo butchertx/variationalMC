@@ -13,7 +13,7 @@ class ProjectedState : public Wavefunction {
 	MeanFieldAnsatz& ansatz;
 	RandomEngine& rand;
 	JastrowTable jastrow;
-	int N, DIM; // number of sites/particles, and state space dimension
+	MKL_INT N, DIM; // number of sites/particles, and state space dimension
 	std::vector<int> parton_labels;
 	lapack_complex_double *Slater, *LU, *Winv, *UP1, *UP2, *UP3;
 	lapack_int *ipiv;

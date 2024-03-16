@@ -72,6 +72,7 @@ int ProjectedState::Spin_t_to_row(int spin_idx){
 		// spin_idx = -1, or 1
 		return ((-spin_idx + 1) / 2) * N;
 	}
+	throw vmctype::NotImplemented("Spins other than 1/2 and 1 not implemented.");
 }
 
 void ProjectedState::set_configuration(std::vector<int> conf) {
@@ -81,6 +82,7 @@ void ProjectedState::set_configuration(std::vector<int> conf) {
 	parton_labels.clear();
 	lapack_int info;
 	MKL_Complex16 alpha = { 1.0, 0.0 }, beta = { 0.0, 0.0 };
+	MKL_INT64 N_64 = N, DIM_64 = DIM; // needed for use with intel ilp64 interface / libraries
 
 	// move the relevant rows of Phi into Slater
 	for (int i = 0; i < N; ++i) {
@@ -92,8 +94,8 @@ void ProjectedState::set_configuration(std::vector<int> conf) {
 	std::memcpy(LU, Slater, N * N * sizeof(lapack_complex_double));
 	if (info == 0) {
 		info = LAPACKE_zgetri(LAPACK_ROW_MAJOR, N, Slater, N, ipiv);
-		//zgemm3m(CblasRowMajor, CblasNoTrans, CblasNoTrans, 3 * N, N, N, &alpha, phi, 3 * N, Slater, N, &beta, Winv, 3 * N);
-		zgemm3m("N", "N", &N, &DIM, &N, &alpha, Slater, &N, phi, &DIM, &beta, Winv, &N);
+		// cblas_zgemm3m(CblasRowMajor, CblasNoTrans, CblasNoTrans, DIM, N, N, &alpha, phi, DIM, Slater, N, &beta, Winv, DIM);
+		zgemm3m_64("N", "N", &N_64, &DIM_64, &N_64, &alpha, Slater, &N_64, phi, &DIM_64, &beta, Winv, &N_64);
 	}
 	det = calc_det();
 }
@@ -293,7 +295,7 @@ void ProjectedState::upinvhop2(int rowk, int colk, int rowl, int coll) {
 	cblas_zcopy(N, &(Winv[rowl*N]), 1, &(UP2[N]), 1);
 	UP2[N + coll] -= std::complex<double>(1.0, 0.0);
 
-	g = std::complex<double>({ -1.0, 0.0 }) / g;
+	g = std::complex<double>(-1.0, 0.0) / g;
 
 	for (int i = 0; i < N; ++i) {
 		UP3[i] = c11 * UP2[i] + c12 * UP2[N + i];
@@ -329,7 +331,7 @@ void ProjectedState::upinvhop2_flip(int rowk, int colk, int rowl, int coll) {
 	cblas_zcopy(N, &(Winv[rowl * N]), 1, &(UP2[N]), 1);
 	UP2[N + coll] -= std::complex<double>(1.0, 0.0);
 
-	g = std::complex<double>({ -1.0, 0.0 }) / g;
+	g = std::complex<double>(-1.0, 0.0) / g;
 
 	for (int i = 0; i < N; ++i) {
 		UP3[i] = c11 * UP2[i] + c12 * UP2[N + i];

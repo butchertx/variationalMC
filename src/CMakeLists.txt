@@ -18,6 +18,12 @@ add_library(LATTICE
 add_library(MEAN_FIELD_ANSATZ
     MeanFieldAnsatz.cpp
 )
+add_library(WAVEFUNCTION
+    Wavefunction.cpp
+)
+add_library(PROJECTED_STATE
+    ProjectedState.cpp
+)
 
 # Set compile and link flags
 set(COMPILE_FLAGS "-Wall")
@@ -33,4 +39,4 @@ set_target_properties(${TARGET_NAME} PROPERTIES COMPILE_FLAGS "${COMPILE_FLAGS}"
 set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS "${LINK_FLAGS}")
 add_custom_target(cpu-gpu DEPENDS ${TARGET_NAME})
 
-target_link_libraries(${TARGET_NAME} VMC_IO VMC_TYPE LATTICE MEAN_FIELD_ANSATZ $<LINK_ONLY:MKL::MKL>)
+target_link_libraries(${TARGET_NAME} VMC_IO VMC_TYPE LATTICE MEAN_FIELD_ANSATZ PROJECTED_STATE WAVEFUNCTION $<LINK_ONLY:MKL::MKL>)

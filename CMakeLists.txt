@@ -23,3 +23,4 @@ add_subdirectory (src/test EXCLUDE_FROM_ALL)
 
 find_package(MKL CONFIG REQUIRED PATHS $ENV{MKLROOT})
 message(STATUS "Imported oneMKL targets: ${MKL_IMPORTED_TARGETS}")
+
