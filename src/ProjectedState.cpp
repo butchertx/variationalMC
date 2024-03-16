@@ -138,7 +138,8 @@ void ProjectedState::upinvhop2(int rowk, int colk, int rowl, int coll) {
 		UP3[N + i] = c21 * UP2[i] + c22 * UP2[N + i];
 	}
 
-	cblas_zgemm3m_64(CblasRowMajor, CblasNoTrans, CblasNoTrans, DIM, N, 2, &g, UP1, 2, UP3, N, &beta, Winv, N);
+	MKL_INT64 N_64 = N, DIM_64 = DIM; // needed for use with intel ilp64 interface / libraries
+	cblas_zgemm3m_64(CblasRowMajor, CblasNoTrans, CblasNoTrans, DIM_64, N_64, 2, &g, UP1, 2, UP3, N_64, &beta, Winv, N_64);
 }
 
 /// PRIVATE MATRIX ELEMENTS
