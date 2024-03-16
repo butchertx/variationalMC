@@ -94,7 +94,6 @@ void ProjectedState::set_configuration(std::vector<int> conf) {
 	std::memcpy(LU, Slater, N * N * sizeof(lapack_complex_double));
 	if (info == 0) {
 		info = LAPACKE_zgetri(LAPACK_ROW_MAJOR, N, Slater, N, ipiv);
-		// cblas_zgemm3m(CblasRowMajor, CblasNoTrans, CblasNoTrans, DIM, N, N, &alpha, phi, DIM, Slater, N, &beta, Winv, DIM);
 		zgemm3m_64("N", "N", &N_64, &DIM_64, &N_64, &alpha, Slater, &N_64, phi, &DIM_64, &beta, Winv, &N_64);
 	}
 	det = calc_det();
@@ -106,6 +105,41 @@ std::complex<double> ProjectedState::calc_det() {
 		result *= LU[i*N + i];
 	}
 	return result;
+}
+
+void ProjectedState::upinvhop2(int rowk, int colk, int rowl, int coll) {
+	//perform the update of Winv according to the Woodbury Matrix identity
+	//Winv' = Winv - Winv * U (I_k + V A^-1 U)^-1 V A^-1
+	//where U and V are defined so A' = A + UV (A is the Slater matrix)
+	//UP1 is Winv * U; the i and j columns of Winv where i and j are the sites to update
+	//UP2 is V A^-1 (which can be computed easily from rows of Winv)
+	//UP3 is (I_k + V A^-1 U)^-1 (2x2) times UP2 (2xN)
+
+	int N3 = 3 * N;
+
+	std::complex<double>
+		c11 = Winv[rowl * N + coll],
+		c22 = Winv[rowk * N + colk],
+		c12 = -Winv[rowk * N + coll],
+		c21 = -Winv[rowl * N + colk];
+
+	std::complex<double> g = c11 * c22 - c12 * c21, beta = { 1.0, 0.0 };
+
+	cblas_zcopy(N3, &(Winv[colk]), N, UP1, 2);
+	cblas_zcopy(N3, &(Winv[coll]), N, &(UP1[1]), 2);
+	cblas_zcopy(N, &(Winv[rowk * N]), 1, UP2, 1);
+	UP2[colk] -= std::complex<double>(1.0, 0.0);
+	cblas_zcopy(N, &(Winv[rowl * N]), 1, &(UP2[N]), 1);
+	UP2[N + coll] -= std::complex<double>(1.0, 0.0);
+
+	g = std::complex<double>(-1.0, 0.0) / g;
+
+	for (int i = 0; i < N; ++i) {
+		UP3[i] = c11 * UP2[i] + c12 * UP2[N + i];
+		UP3[N + i] = c21 * UP2[i] + c22 * UP2[N + i];
+	}
+
+	cblas_zgemm3m(CblasRowMajor, CblasNoTrans, CblasNoTrans, N3, N, 2, &g, UP1, 2, UP3, N, &beta, Winv, N);
 }
 
 std::complex<double> ProjectedState::psi_over_psi2(int site1, int site2, int new_sz1, int new_sz2) {
@@ -256,89 +290,15 @@ void ProjectedState::update(std::vector<int>& sites, std::vector<int>& new_sz, s
 	assert(new_sz.size() == 2);
 
 	if (configuration[sites[0]] < configuration[sites[1]]) {
-		upinvhop2_flip((sites[0] + (1 - new_sz[0]) * N), parton_labels[sites[0]], (sites[1] + (1 - new_sz[1]) * N), parton_labels[sites[1]]);
+		upinvhop2((sites[0] + (1 - new_sz[0]) * N), parton_labels[sites[0]], (sites[1] + (1 - new_sz[1]) * N), parton_labels[sites[1]]);
 	}
 	else {
-		upinvhop2_flip((sites[1] + (1 - new_sz[1]) * N), parton_labels[sites[1]], (sites[0] + (1 - new_sz[0]) * N), parton_labels[sites[0]]);
+		upinvhop2((sites[1] + (1 - new_sz[1]) * N), parton_labels[sites[1]], (sites[0] + (1 - new_sz[0]) * N), parton_labels[sites[0]]);
 	}
 
 	configuration[sites[0]] = new_sz[0];
 	configuration[sites[1]] = new_sz[1];
 	det *= psioverpsi;
-}
-
-void ProjectedState::upinvhop2(int rowk, int colk, int rowl, int coll) {
-
-	int N3 = 3 * N;
-
-	std::complex<double> 
-		c11 = Winv[rowl*N + coll],
-		c22 = Winv[rowk*N + colk],
-		c12 = -Winv[rowk*N + coll],
-		c21 = -Winv[rowl*N + colk];
-
-	std::complex<double> g = c11 * c22 - c12 * c21, beta = { 1.0, 0.0 };
-
-	//if (std::abs(g) < 10e-20) {
-	//	std::cout << "Invalid Update Requested, g = " << g << "; Check Acceptance Probability\n";
-	//	std::cout << "Program Finished, Press Enter to exit\n";
-	//	std::string trash;
-	//	std::getline(std::cin, trash);
-	//	exit(0);
-	//}
-
-	cblas_zcopy(N3, &(Winv[colk]), N, UP1, 2);
-	cblas_zcopy(N3, &(Winv[coll]), N, &(UP1[1]), 2);
-	//print_matrix("UP1", 3 * N, 2, UP1, 2);
-	cblas_zcopy(N, &(Winv[rowk*N]), 1, UP2, 1);
-	UP2[colk] -= std::complex<double>(1.0, 0.0);
-	cblas_zcopy(N, &(Winv[rowl*N]), 1, &(UP2[N]), 1);
-	UP2[N + coll] -= std::complex<double>(1.0, 0.0);
-
-	g = std::complex<double>(-1.0, 0.0) / g;
-
-	for (int i = 0; i < N; ++i) {
-		UP3[i] = c11 * UP2[i] + c12 * UP2[N + i];
-		UP3[N + i] = c21 * UP2[i] + c22 * UP2[N + i];
-	}
-	//print_matrix("UP1", 3 * N, 2, UP1, 2);
-	//print_matrix("UP2", 2, N, UP2, N);
-	cblas_zgemm3m(CblasRowMajor, CblasNoTrans, CblasNoTrans, N3, N, 2, &g, UP1, 2, UP3, N, &beta, Winv, N);
-}
-
-void ProjectedState::upinvhop2_flip(int rowk, int colk, int rowl, int coll) {
-	//perform the update of Winv according to the Woodbury Matrix identity
-	//Winv' = Winv - Winv * U (I_k + V A^-1 U)^-1 V A^-1
-	//where U and V are defined so A' = A + UV (A is the Slater matrix)
-	//UP1 is Winv * U; the i and j columns of Winv where i and j are the sites to update
-	//UP2 is V A^-1 (which can be computed easily from rows of Winv)
-	//UP3 is (I_k + V A^-1 U)^-1 (2x2) times UP2 (2xN)
-
-	int N3 = 3 * N;
-
-	std::complex<double>
-		c11 = Winv[rowl * N + coll],
-		c22 = Winv[rowk * N + colk],
-		c12 = -Winv[rowk * N + coll],
-		c21 = -Winv[rowl * N + colk];
-
-	std::complex<double> g = c11 * c22 - c12 * c21, beta = { 1.0, 0.0 };
-
-	cblas_zcopy(N3, &(Winv[colk]), N, UP1, 2);
-	cblas_zcopy(N3, &(Winv[coll]), N, &(UP1[1]), 2);
-	cblas_zcopy(N, &(Winv[rowk * N]), 1, UP2, 1);
-	UP2[colk] -= std::complex<double>(1.0, 0.0);
-	cblas_zcopy(N, &(Winv[rowl * N]), 1, &(UP2[N]), 1);
-	UP2[N + coll] -= std::complex<double>(1.0, 0.0);
-
-	g = std::complex<double>(-1.0, 0.0) / g;
-
-	for (int i = 0; i < N; ++i) {
-		UP3[i] = c11 * UP2[i] + c12 * UP2[N + i];
-		UP3[N + i] = c21 * UP2[i] + c22 * UP2[N + i];
-	}
-
-	cblas_zgemm3m(CblasRowMajor, CblasNoTrans, CblasNoTrans, N3, N, 2, &g, UP1, 2, UP3, N, &beta, Winv, N);
 }
 
 //Tests

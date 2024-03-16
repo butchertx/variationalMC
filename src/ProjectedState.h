@@ -30,7 +30,6 @@ class ProjectedState : public Wavefunction {
 
 	// updates
 	void upinvhop2(int, int, int, int);
-	void upinvhop2_flip(int, int, int, int);
 
 	// matrix elements
 	std::complex<double> psi_over_psi2(int site1, int site2, int new_sz1, int new_sz2);
