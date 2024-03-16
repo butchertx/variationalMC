@@ -63,6 +63,7 @@ bool ProjectedState::try_configuration() {
 	return (cblas_dcabs1(&(LU[low*(N+1)])) > 10e-10);
 }
 
+// TODO: this implementation can be sped up with a lookup table
 int ProjectedState::Spin_t_to_row(int spin_idx){
 	if (ansatz.get_spin_type() == vmctype::Spin_t::ONE){
 		// spin_idx = -1, 0, or 1
@@ -115,8 +116,6 @@ void ProjectedState::upinvhop2(int rowk, int colk, int rowl, int coll) {
 	//UP2 is V A^-1 (which can be computed easily from rows of Winv)
 	//UP3 is (I_k + V A^-1 U)^-1 (2x2) times UP2 (2xN)
 
-	int N3 = 3 * N;
-
 	std::complex<double>
 		c11 = Winv[rowl * N + coll],
 		c22 = Winv[rowk * N + colk],
@@ -125,8 +124,8 @@ void ProjectedState::upinvhop2(int rowk, int colk, int rowl, int coll) {
 
 	std::complex<double> g = c11 * c22 - c12 * c21, beta = { 1.0, 0.0 };
 
-	cblas_zcopy(N3, &(Winv[colk]), N, UP1, 2);
-	cblas_zcopy(N3, &(Winv[coll]), N, &(UP1[1]), 2);
+	cblas_zcopy(DIM, &(Winv[colk]), N, UP1, 2);
+	cblas_zcopy(DIM, &(Winv[coll]), N, &(UP1[1]), 2);
 	cblas_zcopy(N, &(Winv[rowk * N]), 1, UP2, 1);
 	UP2[colk] -= std::complex<double>(1.0, 0.0);
 	cblas_zcopy(N, &(Winv[rowl * N]), 1, &(UP2[N]), 1);
@@ -139,66 +138,42 @@ void ProjectedState::upinvhop2(int rowk, int colk, int rowl, int coll) {
 		UP3[N + i] = c21 * UP2[i] + c22 * UP2[N + i];
 	}
 
-	cblas_zgemm3m(CblasRowMajor, CblasNoTrans, CblasNoTrans, N3, N, 2, &g, UP1, 2, UP3, N, &beta, Winv, N);
+	cblas_zgemm3m(CblasRowMajor, CblasNoTrans, CblasNoTrans, DIM, N, 2, &g, UP1, 2, UP3, N, &beta, Winv, N);
 }
 
+// swap 2 sites with specified sz values, with jastrow
 std::complex<double> ProjectedState::psi_over_psi2(int site1, int site2, int new_sz1, int new_sz2) {
 	MKL_Complex16 result;
 	//new_sz1 = configuration[site2], new_sz2 = configuration[site1];
 
-	result = Winv[(site1 + (1 - new_sz1) * N) * N + parton_labels[site1]] * Winv[(site2 + (1 - new_sz2) * N) * N + parton_labels[site2]]
-		- Winv[(site1 + (1 - new_sz1) * N) * N + parton_labels[site2]] * Winv[(site2 + (1 - new_sz2) * N) * N + parton_labels[site1]];
+	int spin_row1 = Spin_t_to_row(new_sz1), spin_row2 = Spin_t_to_row(new_sz2);
+
+	result = Winv[(site1 + spin_row1) * N + parton_labels[site1]] * Winv[(site2 + spin_row2) * N + parton_labels[site2]]
+		- Winv[(site1 + spin_row1) * N + parton_labels[site2]] * Winv[(site2 + spin_row2) * N + parton_labels[site1]];
 
 	std::vector<int> flip_sites = { site1, site2 }, new_sz = { new_sz1, new_sz2 };
 	return result * jastrow.lazy_eval(flip_sites, new_sz, configuration);
 }
 
+// 3-site ring exchange, with jastrow
 std::complex<double> ProjectedState::psi_over_psi_swap(int site1, int site2, int site3) {
 	MKL_Complex16 result;
 	int new_sz1 = configuration[site2], new_sz2 = configuration[site3], new_sz3 = configuration[site1];
+	int spin_row1 = Spin_t_to_row(new_sz1), spin_row2 = Spin_t_to_row(new_sz2), spin_row3 = Spin_t_to_row(new_sz3);
 
-	std::complex<double> row1_1 = Winv[(site1 + (1 - new_sz1) * N) * N + parton_labels[site1]],
-		row1_2 = Winv[(site1 + (1 - new_sz1) * N) * N + parton_labels[site2]],
-		row1_3 = Winv[(site1 + (1 - new_sz1) * N) * N + parton_labels[site3]];
+	std::complex<double> row1_1 = Winv[(site1 + spin_row1) * N + parton_labels[site1]],
+		row1_2 = Winv[(site1 + spin_row1) * N + parton_labels[site2]],
+		row1_3 = Winv[(site1 + spin_row1) * N + parton_labels[site3]];
 
-	result = row1_1 * (Winv[(site2 + (1 - new_sz2) * N) * N + parton_labels[site2]] * Winv[(site3 + (1 - new_sz3) * N) * N + parton_labels[site3]]
-		- Winv[(site3 + (1 - new_sz3) * N) * N + parton_labels[site2]] * Winv[(site2 + (1 - new_sz2) * N) * N + parton_labels[site3]])
-		- row1_2 * (Winv[(site2 + (1 - new_sz2) * N) * N + parton_labels[site1]] * Winv[(site3 + (1 - new_sz3) * N) * N + parton_labels[site3]]
-			- Winv[(site3 + (1 - new_sz3) * N) * N + parton_labels[site1]] * Winv[(site2 + (1 - new_sz2) * N) * N + parton_labels[site3]])
-		+ row1_3 * (Winv[(site2 + (1 - new_sz2) * N) * N + parton_labels[site1]] * Winv[(site3 + (1 - new_sz3) * N) * N + parton_labels[site2]]
-			- Winv[(site3 + (1 - new_sz3) * N) * N + parton_labels[site1]] * Winv[(site2 + (1 - new_sz2) * N) * N + parton_labels[site2]]);
+	result = row1_1 * (Winv[(site2 + spin_row2) * N + parton_labels[site2]] * Winv[(site3 + spin_row3) * N + parton_labels[site3]]
+		- Winv[(site3 + spin_row3) * N + parton_labels[site2]] * Winv[(site2 + spin_row2) * N + parton_labels[site3]])
+		- row1_2 * (Winv[(site2 + spin_row2) * N + parton_labels[site1]] * Winv[(site3 + spin_row3) * N + parton_labels[site3]]
+			- Winv[(site3 + spin_row3) * N + parton_labels[site1]] * Winv[(site2 + spin_row2) * N + parton_labels[site3]])
+		+ row1_3 * (Winv[(site2 + spin_row2) * N + parton_labels[site1]] * Winv[(site3 + spin_row3) * N + parton_labels[site2]]
+			- Winv[(site3 + spin_row3) * N + parton_labels[site1]] * Winv[(site2 + spin_row2) * N + parton_labels[site2]]);
 
 	std::vector<int> flip_sites = { site1, site2, site3 }, new_sz = { new_sz1, new_sz2, new_sz3 };
 	return result * jastrow.lazy_eval(flip_sites, new_sz, configuration);
-}
-
-std::complex<double> ProjectedState::psi_over_psi(int site1, int site2, int site3) {
-	assert(!jastrow.exist()); //jastrow not implemented for ring exchanges
-
-	//swap sites 1 and 2, with labels 1 and 2, newsz 1 and 3
-	std::complex<double> detswap1 = psi_over_psi2(site1, site2, configuration[site2], configuration[site1]);
-
-	if (std::abs(detswap1) > 10e-16) {
-		update(site1, site2, detswap1);
-		std::complex<double> detswap2 = psi_over_psi2(site2, site3, configuration[site3], configuration[site2]);
-		update(site2, site1, 1.0 / detswap1);
-		return detswap1 * detswap2;
-	}
-	else { 
-		detswap1 = psi_over_psi2(site2, site3, configuration[site3], configuration[site2]);
-		if (std::abs(detswap1) > 10e-16) {
-			update(site2, site3, detswap1);
-			//std::cout << "successful update 1, detswap = " << detswap1 << ", 1/detswap = " << 1.0 / detswap1 << "\n";
-			//swap sites 2 and 3, with labels 1 and 3, newsz 2 and 3
-			std::complex<double> detswap2 = psi_over_psi2(site3, site1, configuration[site1], configuration[site3]);
-			update(site3, site2, 1.0 / detswap1);
-			//std::cout << "successful update 2, detswap = " << detswap2 << "\n";
-			return detswap1 * detswap2;
-		}
-		else {
-			return { 0.0, 0.0 };
-		}
-	}
 }
 
 std::complex<double> ProjectedState::psi_over_psi(std::vector<int>& flips, std::vector<int>& new_sz) {
@@ -213,13 +188,6 @@ std::complex<double> ProjectedState::psi_over_psi(std::vector<int>& flips, std::
 	else {
 		assert(flips.size() == 2);
 	}
-	//conf_copy = configuration;
-	//for (int i = 0; i < flips.size(); ++i) {
-	//	conf_copy[flips[i]] = new_sz[i];
-	//}
-	//double newj, oldj;
-	//oldj = jastrow.logpsi(configuration);
-	//newj = jastrow.logpsi(conf_copy);
 	return result;// *exp(jastrow.logpsi_over_psi(flips, configuration));
 
 }

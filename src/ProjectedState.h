@@ -20,6 +20,9 @@ class ProjectedState : public Wavefunction {
 	std::complex<double> det;
 	static const int CONFIG_ATTEMPTS = 50;
 
+	// helpers
+	int Spin_t_to_row(int spin_idx);
+
 	// initialization
 	void malloc_matrices();
 	void clear_matrices();
@@ -32,12 +35,8 @@ class ProjectedState : public Wavefunction {
 	void upinvhop2(int, int, int, int);
 
 	// matrix elements
-	std::complex<double> psi_over_psi2(int site1, int site2, int new_sz1, int new_sz2);
-	std::complex<double> psi_over_psi_swap(int site1, int site2, int site3);
-	std::complex<double> psi_over_psi(int, int, int);
-
-	// helpers
-	int Spin_t_to_row(int spin_idx);
+	std::complex<double> psi_over_psi2(int site1, int site2, int new_sz1, int new_sz2); // swap 2 sites with specified sz values, with jastrow
+	std::complex<double> psi_over_psi_swap(int site1, int site2, int site3); // 3-site ring exchange, with jastrow
 
 public:
 
