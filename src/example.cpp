@@ -8,9 +8,9 @@
 #include "MemTimeTester.h"
 #include "Lattice.h"
 #include "MeanFieldAnsatz.h"
-// #include "RandomEngine.h"
-// #include "Wavefunction.h"
-// #include "ProjectedState.h"
+#include "RandomEngine.h"
+#include "Wavefunction.h"
+#include "ProjectedState.h"
 // #include "SpinModel.h"
 // #include "VariationalMonteCarlo.h"
 // #include "model_and_calculation_helper.h"
@@ -49,8 +49,10 @@ int main(int argc, char* argv[]) {
         ss << "Spin value " << wf_options.other_options.spin << " not implemented\n";
         throw vmctype::NotImplemented(ss.str());
     }
-
     mf_ansatz->print_levels(true);
+
+    RandomEngine r(-1, lattice.get_N(), lattice.get_neighbor_counts()[0]);
+    ProjectedState wf(*mf_ansatz, r);
 
     timer.flag_end_time("Total Program Time");
     timer.print_timers();

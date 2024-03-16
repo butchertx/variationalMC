@@ -11,6 +11,10 @@
 #if defined(_WIN32)
     #include <direct.h> //mkdir
 #endif
+#include "mkl.h"
+#ifndef MKL_Complex16
+#define MKL_Complex16 std::complex<double>
+#endif // !MKL_Complex16
 
 // for convenience
 using json = nlohmann::json;
@@ -30,7 +34,7 @@ bool makePath(const std::string& path);
 
 
 //------------------------------------------
-//	I/O Functions
+//	I/O Print Functions
 //------------------------------------------
 
 template <class T>
@@ -42,6 +46,12 @@ std::string vec2str(std::vector<T> vec) {
 	ss << vec.back();
 	return ss.str();
 }
+
+void print_matrix(const char* desc, MKL_INT m, MKL_INT n, MKL_Complex16* a, MKL_INT lda);
+
+//------------------------------------------
+//	I/O File Functions
+//------------------------------------------
 
 LatticeOptions read_json_lattice(json j);
 LatticeOptions read_json_lattice(std::string infile_name);

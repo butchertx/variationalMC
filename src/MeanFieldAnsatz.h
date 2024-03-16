@@ -197,6 +197,8 @@ public:
 	lapack_complex_double* get_Phi() { return Phi; }
 
 	double* get_Energy() { return Energy; }
+
+	int get_N() { return N; }
 	
 	int get_dim() { return DIM; }
 
@@ -209,6 +211,8 @@ public:
 	// pure functions
 
 	virtual void print_levels(bool print_all = false) = 0;
+
+	virtual int get_N0F() = 0;
 
 };
 
@@ -223,6 +227,8 @@ public:
 	MeanFieldAnsatz_HALF(WavefunctionOptions& mf_in, Lattice& lat_in);
 
 	virtual void print_levels(bool) override;
+
+	virtual int get_N0F() override { return 0; }
 
 };
 
@@ -256,7 +262,7 @@ public:
 		return fermi.get_orbital(fs_index).get_index();
 	}
 
-	int get_N0F() {
+	int get_N0F() override {
 		if (opts.su3_symmetry) {
 			assert(3 * (N / 3) == N);
 			return N/3;

@@ -6,8 +6,6 @@
 
 class RandomEngine {
 
-	static unsigned const TEST_SEED = 8271617;
-
 	std::default_random_engine generator_default;
 
 	std::mt19937 generator_twister;
@@ -21,6 +19,8 @@ class RandomEngine {
 	std::uniform_int_distribution<> distribution_neighbor; //Roll neighbor site in [0, N]
 
 public:
+
+	static unsigned const TEST_SEED = 8271617;
 
 	RandomEngine(int seed_in, int N_in, int swap_range_in) {
 		unsigned seed;
@@ -107,6 +107,7 @@ public:
 	}
 
 	std::vector<int> get_rand_spin_state(std::vector<int> spindist, int Nsite) {
+		//guarantees total Sz = 0
 		//spindist = {#(-s), #(-s+1), ... #(s-1), #(s)}
 		std::vector<int> result(Nsite), sites;
 		for (int i = 0; i < Nsite; ++i) {

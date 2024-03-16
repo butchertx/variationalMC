@@ -37,7 +37,7 @@ results_struct run_mc(LatticeOptions lat_options, WavefunctionOptions mf_options
     mf.write_directors(&wavefunctionfile);
     wavefunctionfile.close();
 
-    RandomEngine r(-1, lattice.get_N(), lattice.get_neighbor_counts()[0]);
+    RandomEngine r(RandomEngine::TEST_SEED, lattice.get_N(), lattice.get_neighbor_counts()[0]);
     ProjectedState wf(mf, r, create_Jastrow(lattice, mf_options.jastrow));
 
     std::ofstream conf_file;
