@@ -46,6 +46,7 @@
 // };
 
 class JastrowFactor {
+	
 	bool sz2 = false; // true if the jastrow factor couples to (S^z)^2
 	double strength = 0.0;
 	std::vector<std::vector<int>> neighbor_table;
@@ -57,53 +58,28 @@ class JastrowFactor {
 
 public:
 
-	void print_timers() {
-		timer.print_timers();
-	}
-
-	std::vector<std::vector<int>> get_neighbor_table() {
-		return neighbor_table;
-	}
-
-	bool check_neighbors(int site1, int site2) {
-		return neighbor_bool[site1][site2];
-	}
+	void print_timers() { timer.print_timers();	}
+	std::vector<std::vector<int>> get_neighbor_table() { return neighbor_table;	}
+	bool check_neighbors(int site1, int site2) { return neighbor_bool[site1][site2]; }
 
 	JastrowFactor() {};
-
 	JastrowFactor(double strength_, std::vector<std::vector<int>> neighbor_table_);
-	
-	JastrowFactor(double strength_, std::vector<std::vector<int>> neighbor_table_, std::vector<int>& configuration_);
-
 	JastrowFactor(double strength_, std::vector<std::vector<int>> neighbor_table_, bool sz2_flag);
 
-	JastrowFactor(double strength_, std::vector<std::vector<int>> neighbor_table_, std::vector<int>& configuration_, bool sz2_flag);
+	// SETUP
+	void initialize_table(std::vector<int>& configuration_);
+	void update_tables(std::vector<int>& flip_sites, std::vector<int>& new_val, std::vector<int>& old_configuration_);
+	double conf_sum_difference(std::vector<int>& flip_sites, std::vector<int>& new_val, std::vector<int>& configuration_, bool are_neighbors);
 
-	void initialize_table(std::vector<int>&);
-
+	// EVAL
+	double lazy_eval(std::vector<int>&, std::vector<int>&, std::vector<int>&);
+	double log_derivative() { return conf_sum; }
 	double greedy_eval(std::vector<int>&);
-
 	double greedy_log_derivative(std::vector<int>&);
 
-	double conf_sum_difference(std::vector<int>&, std::vector<int>&, std::vector<int>&, bool);
-
-	double lazy_eval(std::vector<int>&, std::vector<int>&, std::vector<int>&);
-
-	//double lazy_eval(std::vector<int>&, std::vector<int>&, std::vector<int>&, bool);
-
-	void update_tables(std::vector<int>&, std::vector<int>&, std::vector<int>&);
-
-	double log_derivative() {
-		return conf_sum;
-	}
-
-	double get_param() {
-		return strength;
-	}
-
-	void set_param(double strength_) {
-		strength = strength_;
-	}
+	// UPDATE PARAMS
+	double get_param() { return strength; }
+	void set_param(double strength_) { strength = strength_; }
 };
 
 class JastrowTable {
