@@ -72,18 +72,6 @@ bool makePath(const std::string& path)
 	}
 }
 
-
-void print_matrix(const char* desc, MKL_INT m, MKL_INT n, MKL_Complex16* a, MKL_INT lda) {
-	std::cout << desc << ":\n";
-	for (int i = 0; i < m; ++i) {
-		for (int j = 0; j < n-1; ++j) {
-			std::cout << a[i * lda + j] << ",";
-		}
-		std::cout << a[i * lda + n - 1] << "\n";
-	}
-}
-
-
 LatticeOptions read_json_lattice(json j) {
 	LatticeOptions lat_opt;
 	lat_opt.type = j["lattice"]["type"].get<std::string>();

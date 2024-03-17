@@ -7,16 +7,18 @@
 #include "MeanFieldAnsatz.h"
 #include "Wavefunction.h"
 #include "Lattice.h"
+#include "vmc_io.h"
+#include "mkl_types.h"
 
 class ProjectedState : public Wavefunction {
 
 	MeanFieldAnsatz& ansatz;
 	RandomEngine& rand;
 	JastrowTable jastrow;
-	MKL_INT N, DIM; // number of sites/particles, and state space dimension
+	int N, DIM; // number of sites/particles, and state space dimension
 	std::vector<int> parton_labels;
 	lapack_complex_double *Slater, *LU, *Winv, *UP1, *UP2, *UP3;
-	lapack_int *ipiv;
+	int *ipiv;
 	std::complex<double> det;
 	static const int CONFIG_ATTEMPTS = 50;
 
@@ -24,7 +26,15 @@ class ProjectedState : public Wavefunction {
 	int Spin_t_to_row(int spin_idx);
 
 	// initialization
-	void malloc_matrices();
+	void malloc_matrices() {
+		Slater = (lapack_complex_double*)mkl_malloc(N * N * sizeof(lapack_complex_double), 64);
+		LU = (lapack_complex_double*)mkl_malloc(N * N * sizeof(lapack_complex_double), 64);
+		Winv = (lapack_complex_double*)mkl_malloc(DIM * N * sizeof(lapack_complex_double), 64);
+		UP1 = (lapack_complex_double*)mkl_malloc(DIM * 2 * sizeof(lapack_complex_double), 64);
+		UP2 = (lapack_complex_double*)mkl_malloc(N * 2 * sizeof(lapack_complex_double), 64);
+		UP3 = (lapack_complex_double*)mkl_malloc(N * 2 * sizeof(lapack_complex_double), 64);
+		ipiv = (int *)mkl_malloc(N * N * sizeof(int), 64);
+	}
 	void clear_matrices();
 	void initialize_configuration();
 	bool try_configuration();
@@ -55,6 +65,9 @@ public:
 		mkl_free(UP3);
 		mkl_free(ipiv);
 	}
+
+	// printing
+	void print_matrix(std::string name);
 
 	void print_timers() {
 		if (jastrow.exist()) {

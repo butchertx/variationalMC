@@ -1,4 +1,33 @@
 #include "ProjectedState.h"
+#include "mkl_types.h"
+
+// printing
+
+void ProjectedState::print_matrix(std::string name){
+	if (std::strcmp(name.c_str(), "Slater") == 0){
+		vmc_io::print_matrix("Slater", N, N, Slater, N);
+	}
+	else if (std::strcmp(name.c_str(), "LU") == 0){
+		vmc_io::print_matrix("LU", N, N, LU, N);
+	}
+	else if (std::strcmp(name.c_str(), "Winv") == 0){
+		vmc_io::print_matrix("Winv", DIM, N, Winv, N);
+	}
+	else if (std::strcmp(name.c_str(), "UP1") == 0){
+		vmc_io::print_matrix("UP1", DIM, 2, UP1, 2);
+	}
+	else if (std::strcmp(name.c_str(), "UP2") == 0){
+		vmc_io::print_matrix("UP2", 2, N, UP2, N);
+	}
+	else if (std::strcmp(name.c_str(), "UP3") == 0){
+		vmc_io::print_matrix("UP3", 2, N, UP3, N);
+	}
+	else if (std::strcmp(name.c_str(), "ipiv") == 0){
+		vmc_io::print_matrix("ipiv", N, N, ipiv, N);
+	}
+}
+
+// constructors
 
 ProjectedState::ProjectedState(MeanFieldAnsatz& M_, RandomEngine& rand_)
 	: ansatz(M_), rand(rand_), N(ansatz.get_N()), DIM(ansatz.get_dim()) {
@@ -11,16 +40,6 @@ ProjectedState::ProjectedState(MeanFieldAnsatz& M_, RandomEngine& rand_, Jastrow
 	: ProjectedState(M_, rand_) {
 	jastrow = jastrow_;
 	jastrow.initialize_tables(configuration);
-}
-
-void ProjectedState::malloc_matrices(){
-	Slater = (lapack_complex_double*)mkl_malloc(N * N * sizeof(lapack_complex_double), 64);
-	LU = (lapack_complex_double*)mkl_malloc(N * N * sizeof(lapack_complex_double), 64);
-	Winv = (lapack_complex_double*)mkl_malloc(DIM * N * sizeof(lapack_complex_double), 64);
-	UP1 = (lapack_complex_double*)mkl_malloc(DIM * 2 * sizeof(lapack_complex_double), 64);
-	UP2 = (lapack_complex_double*)mkl_malloc(N * 2 * sizeof(lapack_complex_double), 64);
-	UP3 = (lapack_complex_double*)mkl_malloc(N * 2 * sizeof(lapack_complex_double), 64);
-	ipiv = (lapack_int*)mkl_malloc(N * N * sizeof(lapack_int), 64);
 }
 
 void ProjectedState::clear_matrices(){
@@ -81,7 +100,7 @@ void ProjectedState::set_configuration(std::vector<int> conf) {
 	int row = 0;
 	lapack_complex_double* phi = ansatz.get_Phi();
 	parton_labels.clear();
-	lapack_int info;
+	int info;
 	MKL_Complex16 alpha = { 1.0, 0.0 }, beta = { 0.0, 0.0 };
 	MKL_INT64 N_64 = N, DIM_64 = DIM; // needed for use with intel ilp64 interface / libraries
 
@@ -95,7 +114,9 @@ void ProjectedState::set_configuration(std::vector<int> conf) {
 	std::memcpy(LU, Slater, N * N * sizeof(lapack_complex_double));
 	if (info == 0) {
 		info = LAPACKE_zgetri(LAPACK_ROW_MAJOR, N, Slater, N, ipiv);
-		zgemm3m_64("N", "N", &N_64, &DIM_64, &N_64, &alpha, Slater, &N_64, phi, &DIM_64, &beta, Winv, &N_64);
+		// zgemm3m("N", "N", &DIM, &N, &N, &alpha, phi, &N, Slater, &N, &beta, Winv, &N);
+		// cblas_zgemm3m(CblasRowMajor, CblasNoTrans, CblasNoTrans, DIM, N, N, &alpha, phi, N, Slater, N, &beta, Winv, N);
+		cblas_zgemm3m_64(CblasRowMajor, CblasNoTrans, CblasNoTrans, DIM_64, N_64, N_64, &alpha, phi, N_64, Slater, N_64, &beta, Winv, N_64);
 	}
 	det = calc_det();
 }
@@ -140,6 +161,7 @@ void ProjectedState::upinvhop2(int rowk, int colk, int rowl, int coll) {
 
 	MKL_INT64 N_64 = N, DIM_64 = DIM; // needed for use with intel ilp64 interface / libraries
 	cblas_zgemm3m_64(CblasRowMajor, CblasNoTrans, CblasNoTrans, DIM_64, N_64, 2, &g, UP1, 2, UP3, N_64, &beta, Winv, N_64);
+	// cblas_zgemm3m(CblasRowMajor, CblasNoTrans, CblasNoTrans, DIM, N, 2, &g, UP1, 2, UP3, N, &beta, Winv, N);
 }
 
 /// PRIVATE MATRIX ELEMENTS
