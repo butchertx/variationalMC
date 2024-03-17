@@ -94,6 +94,7 @@ TEST_F(ProjectedStateTest, CheckFixture) {
     RandomEngine r(0, chainLatticeHalf.get_N(), chainLatticeHalf.get_neighbor_counts()[0]);
     ProjectedState wf_half(*mf_ansatz_half, r);
     std::vector<int> flips({0, 1});
+    std::cout << "ratio = " << wf_half.psi_over_psi(flips) << "\n";
     wf_half.update(flips);
     wf_half.print_matrix("Slater");
     wf_half.print_matrix("LU");
@@ -105,7 +106,9 @@ TEST_F(ProjectedStateTest, CheckFixture) {
 
     RandomEngine r2(0, chainLatticeOne.get_N(), chainLatticeOne.get_neighbor_counts()[0]);
     ProjectedState wf_one(*mf_ansatz_one, r2);
-    wf_one.update(flips);
+    std::vector<int> flips1({0, 1});
+    std::cout << "ratio = " << wf_one.psi_over_psi(flips1) << "\n";
+    wf_one.update(flips1);
     wf_one.print_matrix("Slater");
     wf_one.print_matrix("LU");
     wf_one.print_matrix("Winv");

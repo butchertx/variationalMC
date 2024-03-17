@@ -1,49 +1,49 @@
 #include "Wavefunction.h"
 #include "vmc_io.h"
 
-JastrowDensity::JastrowDensity(double strength_) : strength(strength_){}
+// JastrowDensity::JastrowDensity(double strength_) : strength(strength_){}
 
-void JastrowDensity::initialize_Sz0(std::vector<int>& configuration_) {
-	sz0_density = 0.0;
-	for (int i = 0; i < configuration_.size(); ++i) {
-		sz0_density += (1 - configuration_[i] * configuration_[i]);
-	}
-	//sz0_density /= configuration_.size();
-}
+// void JastrowDensity::initialize_Sz0(std::vector<int>& configuration_) {
+// 	sz0_density = 0.0;
+// 	for (int i = 0; i < configuration_.size(); ++i) {
+// 		sz0_density += (1 - configuration_[i] * configuration_[i]);
+// 	}
+// 	//sz0_density /= configuration_.size();
+// }
 
-double JastrowDensity::greedy_eval(std::vector<int>& configuration_) {
-	int num_Sz0_greedy = 0;
-	for (int i = 0; i < configuration_.size(); ++i) {
-		num_Sz0_greedy += (1 - configuration_[i] * configuration_[i]);
-	}
-	return exp(strength * num_Sz0_greedy);// / configuration_.size());
-}
+// double JastrowDensity::greedy_eval(std::vector<int>& configuration_) {
+// 	int num_Sz0_greedy = 0;
+// 	for (int i = 0; i < configuration_.size(); ++i) {
+// 		num_Sz0_greedy += (1 - configuration_[i] * configuration_[i]);
+// 	}
+// 	return exp(strength * num_Sz0_greedy);// / configuration_.size());
+// }
 
-double JastrowDensity::greedy_log_derivative(std::vector<int>& configuration_) {
-	int num_Sz0_greedy = 0;
-	for (int i = 0; i < configuration_.size(); ++i) {
-		num_Sz0_greedy += (1 - configuration_[i] * configuration_[i]);
-	}
-	return num_Sz0_greedy;
-}
+// double JastrowDensity::greedy_log_derivative(std::vector<int>& configuration_) {
+// 	int num_Sz0_greedy = 0;
+// 	for (int i = 0; i < configuration_.size(); ++i) {
+// 		num_Sz0_greedy += (1 - configuration_[i] * configuration_[i]);
+// 	}
+// 	return num_Sz0_greedy;
+// }
 
-double JastrowDensity::conf_sum_difference(std::vector<int>& flips, std::vector<int>& new_sz, std::vector<int>& configuration_) {
+// double JastrowDensity::conf_sum_difference(std::vector<int>& flips, std::vector<int>& new_sz, std::vector<int>& configuration_) {
 	
-	double new_sum = 0.0;
-	for (int s = 0; s < flips.size(); ++s) {
-		new_sum += configuration_[flips[s]] * configuration_[flips[s]] - new_sz[s] * new_sz[s];
-	}
+// 	double new_sum = 0.0;
+// 	for (int s = 0; s < flips.size(); ++s) {
+// 		new_sum += configuration_[flips[s]] * configuration_[flips[s]] - new_sz[s] * new_sz[s];
+// 	}
 	
-	return new_sum; // / configuration_.size();
-}
+// 	return new_sum; // / configuration_.size();
+// }
 
-double JastrowDensity::lazy_eval(std::vector<int>& flips, std::vector<int>& new_sz, std::vector<int>& configuration_) {
-	return exp(strength * (sz0_density + conf_sum_difference(flips, new_sz, configuration_)));
-}
+// double JastrowDensity::lazy_eval(std::vector<int>& flips, std::vector<int>& new_sz, std::vector<int>& configuration_) {
+// 	return exp(strength * (sz0_density + conf_sum_difference(flips, new_sz, configuration_)));
+// }
 
-void JastrowDensity::update_Sz0(std::vector<int>& flips, std::vector<int>& new_sz, std::vector<int>& configuration_) {
-	sz0_density += conf_sum_difference(flips, new_sz, configuration_);
-}
+// void JastrowDensity::update_Sz0(std::vector<int>& flips, std::vector<int>& new_sz, std::vector<int>& configuration_) {
+// 	sz0_density += conf_sum_difference(flips, new_sz, configuration_);
+// }
 
 JastrowFactor::JastrowFactor(double strength_, std::vector<std::vector<int>> neighbor_table_)
 	: strength(strength_), neighbor_table(neighbor_table_) {

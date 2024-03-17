@@ -9,41 +9,41 @@
 #include "MemTimeTester.h"
 
 
-class JastrowDensity {
+// class JastrowDensity {
 
-	double strength;
-	double sz0_density;
+// 	double strength;
+// 	double sz0_density;
 
-public:
+// public:
 
-	JastrowDensity() {};
+// 	JastrowDensity() {};
 
-	JastrowDensity(double strength_);
+// 	JastrowDensity(double strength_);
 
-	void initialize_Sz0(std::vector<int>&);
+// 	void initialize_Sz0(std::vector<int>&);
 
-	double greedy_eval(std::vector<int>&);
+// 	double greedy_eval(std::vector<int>&);
 
-	double greedy_log_derivative(std::vector<int>&);
+// 	double greedy_log_derivative(std::vector<int>&);
 
-	double conf_sum_difference(std::vector<int>&, std::vector<int>&, std::vector<int>&);
+// 	double conf_sum_difference(std::vector<int>&, std::vector<int>&, std::vector<int>&);
 
-	double lazy_eval(std::vector<int>&, std::vector<int>&, std::vector<int>&);
+// 	double lazy_eval(std::vector<int>&, std::vector<int>&, std::vector<int>&);
 
-	void update_Sz0(std::vector<int>&, std::vector<int>&, std::vector<int>&);
+// 	void update_Sz0(std::vector<int>&, std::vector<int>&, std::vector<int>&);
 
-	double log_derivative() {
-		return sz0_density;
-	}
+// 	double log_derivative() {
+// 		return sz0_density;
+// 	}
 
-	double get_param() {
-		return strength;
-	}
+// 	double get_param() {
+// 		return strength;
+// 	}
 
-	void set_param(double strength_) {
-		strength = strength_;
-	}
-};
+// 	void set_param(double strength_) {
+// 		strength = strength_;
+// 	}
+// };
 
 class JastrowFactor {
 	bool sz2 = false; // true if the jastrow factor couples to (S^z)^2
@@ -109,8 +109,8 @@ public:
 class JastrowTable {
 
 	std::vector<JastrowFactor> jastrows;
-	JastrowDensity jdens;
-	bool jdens_flag = false;
+	// JastrowDensity jdens;
+	// bool jdens_flag = false;
 	MemTimeTester timer;
 
 public:
@@ -122,13 +122,7 @@ public:
 
 	JastrowTable() {};
 	
-	JastrowTable(std::vector<JastrowFactor> jastrows_) : jastrows(jastrows_) {
-		jdens_flag = false;
-	};
-
-	JastrowTable(std::vector<JastrowFactor> jastrows_, JastrowDensity jdens_) : jastrows(jastrows_), jdens(jdens_) {
-		jdens_flag = true;
-	};
+	JastrowTable(std::vector<JastrowFactor> jastrows_) : jastrows(jastrows_) {};
 
 	void initialize_tables(std::vector<int>& configuration) {
 
@@ -140,13 +134,13 @@ public:
 
 		}
 
-		if (jdens_flag) {
-			jdens.initialize_Sz0(configuration);
-		}
+		// if (jdens_flag) {
+		// 	jdens.initialize_Sz0(configuration);
+		// }
 	}
 
 	bool exist() {
-		return jastrows.size() > 0 || jdens_flag;
+		return jastrows.size() > 0; // || jdens_flag;
 	}
 
 	double greedy_eval(std::vector<int>& configuration_) {
@@ -154,9 +148,9 @@ public:
 		for (int j = 0; j < jastrows.size(); ++j) {
 			result *= jastrows[j].greedy_eval(configuration_);
 		}
-		if (jdens_flag) {
-			result *= jdens.greedy_eval(configuration_);
-		}
+		// if (jdens_flag) {
+		// 	result *= jdens.greedy_eval(configuration_);
+		// }
 		return result;
 	}
 
@@ -166,9 +160,9 @@ public:
 		for (int j = 0; j < jastrows.size(); ++j) {
 			result *= jastrows[j].lazy_eval(a, b, c);
 		}
-		if (jdens_flag) {
-			result *= jdens.lazy_eval(a, b, c);
-		}
+		// if (jdens_flag) {
+		// 	result *= jdens.lazy_eval(a, b, c);
+		// }
 		timer.flag_end_time("lazy eval");
 		return result;
 	}
@@ -178,17 +172,17 @@ public:
 		for (int j = 0; j < jastrows.size(); ++j) {
 			jastrows[j].update_tables(a, b, c);
 		}
-		if (jdens_flag) {
-			jdens.update_Sz0(a, b, c);
-		}
+		// if (jdens_flag) {
+		// 	jdens.update_Sz0(a, b, c);
+		// }
 		timer.flag_end_time("update tables");
 	}
 
 	std::vector<double> log_derivative() {
 		std::vector<double> result;
-		if (jdens_flag) {
-			result.push_back(jdens.log_derivative());
-		}
+		// if (jdens_flag) {
+		// 	result.push_back(jdens.log_derivative());
+		// }
 		for (int j = 0; j < jastrows.size(); ++j) {
 			result.push_back(jastrows[j].log_derivative());
 		}
@@ -197,9 +191,9 @@ public:
 
 	std::vector<double> greedy_log_derivative(std::vector<int>& conf) {
 		std::vector<double> result;
-		if (jdens_flag) {
-			result.push_back(jdens.greedy_log_derivative(conf));
-		}
+		// if (jdens_flag) {
+		// 	result.push_back(jdens.greedy_log_derivative(conf));
+		// }
 		for (int j = 0; j < jastrows.size(); ++j) {
 			result.push_back(jastrows[j].greedy_log_derivative(conf));
 		}
@@ -208,9 +202,9 @@ public:
 
 	std::vector<double> get_params() {
 		std::vector<double> result;
-		if (jdens_flag) {
-			result.push_back(jdens.get_param());
-		}
+		// if (jdens_flag) {
+		// 	result.push_back(jdens.get_param());
+		// }
 		for (int j = 0; j < jastrows.size(); ++j) {
 			result.push_back(jastrows[j].get_param());
 		}
@@ -218,12 +212,12 @@ public:
 	}
 
 	void set_params(std::vector<double> params_) {
-		assert(params_.size() == jastrows.size() + jdens_flag);
-		if (jdens_flag) {
-			jdens.set_param(params_[0]);
-		}
-		for (int i = jdens_flag; i < params_.size(); ++i) {
-			jastrows[i-jdens_flag].set_param(params_[i]);
+		assert(params_.size() == jastrows.size());
+		// if (jdens_flag) {
+		// 	jdens.set_param(params_[0]);
+		// }
+		for (int i = 0; i < params_.size(); ++i) {
+			jastrows[i].set_param(params_[i]);
 		}
 	}
 

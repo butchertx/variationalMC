@@ -55,6 +55,7 @@ int main(int argc, char* argv[]) {
     ProjectedState wf(*mf_ansatz, r);
     std::vector<int> flips({0, 1});
     wf.update(flips);
+    wf.print_matrix("Winv");
 
     timer.flag_end_time("Total Program Time");
     timer.print_timers();
