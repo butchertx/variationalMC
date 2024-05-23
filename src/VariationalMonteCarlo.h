@@ -212,7 +212,4 @@ public:
 
 	//find the error via the bin technique using a specified number of bins
 	double error(std::vector<double>::iterator, std::vector<double>::iterator, double mean, int bins);
-	//double error(std::vector<std::complex<double>>::iterator, std::vector<std::complex<double>>::iterator, std::complex<double> mean, int bins);
-
-	//double bootstrap(std::vector<double>, int, std::string);
 };

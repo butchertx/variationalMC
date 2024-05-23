@@ -24,9 +24,15 @@ add_library(WAVEFUNCTION
 add_library(PROJECTED_STATE
     ProjectedState.cpp
 )
+add_library(VMC_RUNNER
+    VariationalMonteCarlo.cpp
+)
+add_library(VMC_NUMERICAL
+    vmc_numerical.cpp
+)
 
 # Set compile and link flags
-set(COMPILE_FLAGS "-Wall")
+set(COMPILE_FLAGS "-Wall --std=c++17")
 set(LINK_FLAGS "-v")
 
 # To compile in a single command:
@@ -39,4 +45,4 @@ set_target_properties(${TARGET_NAME} PROPERTIES COMPILE_FLAGS "${COMPILE_FLAGS}"
 set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS "${LINK_FLAGS}")
 add_custom_target(cpu-gpu DEPENDS ${TARGET_NAME})
 
-target_link_libraries(${TARGET_NAME} VMC_IO VMC_TYPE LATTICE MEAN_FIELD_ANSATZ PROJECTED_STATE WAVEFUNCTION $<LINK_ONLY:MKL::MKL>)
+target_link_libraries(${TARGET_NAME} VMC_IO VMC_TYPE LATTICE MEAN_FIELD_ANSATZ PROJECTED_STATE WAVEFUNCTION VMC_RUNNER VMC_NUMERICAL $<LINK_ONLY:MKL::MKL>)

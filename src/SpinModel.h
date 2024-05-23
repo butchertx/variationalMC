@@ -22,7 +22,7 @@ public:
 
 };
 
-static class FlipListDiag : public FlipList {
+class FlipListDiag : public FlipList {
 
 	//dummy FlipList object that doesn't have off-diagonal terms
 
@@ -55,7 +55,7 @@ class SwapExchange : public Interaction {
 public:
 
 	SwapExchange(int i_in, int j_in, double coefficient_)
-		: Interaction(coefficient), i(i_in), j(j_in) {
+		: Interaction(coefficient_), i(i_in), j(j_in) {
 		flip_buffer.multipliers.push_back(coefficient_);
 		flip_buffer.flips.push_back({ i,j });
 		flip_buffer.new_sz.push_back({ 0, 0 });

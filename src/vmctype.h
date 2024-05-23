@@ -252,7 +252,6 @@ namespace vmctype {
 		std::vector<TrilinearOptions> ring3_terms;
 
 		std::vector<double> get_su2_terms(std::string j_or_k) {
-			assert(model_type.compare("blbq") == 0);
 			assert((j_or_k.compare("K") == 0) || (j_or_k.compare("J") == 0));
 			//first find max neighbor index
 			int max_neighbor = 0;

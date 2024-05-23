@@ -46,7 +46,7 @@
 // };
 
 class JastrowFactor {
-	
+
 	bool sz2 = false; // true if the jastrow factor couples to (S^z)^2
 	double strength = 0.0;
 	std::vector<std::vector<int>> neighbor_table;
@@ -199,19 +199,6 @@ public:
 
 };
 
-//template <class T>
-//class GreedyJastrow : public Jastrow<T> {
-//
-//public:
-//
-//	GreedyJastrow() {}
-//
-//	void f() {}
-//
-//};
-
-
-
 class Wavefunction {
 	//A Wavefunction's main role is to define how to calculate matrix elements and correlations
 	//Defined on a Lattice, has a set of basis states (usually Sz eigenstates?), calculates overlaps and matrix elements for basis states
@@ -237,8 +224,6 @@ public:
 
 	virtual void update_parameters(std::vector<double>) {};
 	virtual std::vector<double> get_parameters() { return {}; };
-
-	
 
 	//virtual void write_amplitudes(std::ofstream*) = 0;
 	virtual void write_configuration(std::ofstream*) = 0;
