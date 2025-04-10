@@ -56,3 +56,45 @@ unzip googletest-main.zip -d .
 ```
 
 - The result should be the following directory structure: `thirdparty/googletest-main/...`, where `...` are the files in the root directory of the `googletest` repository.
+
+### Optional: Set up VS Code as your IDE
+
+This is the recommended IDE setup because it comes with extension support for CMake, testing, and C++ language features. It also has a RemoteSSH extension that will allow you to work through the same interface on a remote host (compute cluster). With the `variationalMC` directory open in VS Code, do the following:
+
+Install the following extensions:
+
+- C/C++
+- CMake Tools
+
+#### Configuration
+
+1. Configure the CMake extension settings. You can get the `cmake` path by typing `which cmake` in the terminal. If `.vscode/settings.json` does not exist, create it and populate it with the following:
+
+    ``` json
+    {
+        "cmake.cmakePath": "/usr/bin/cmake",
+        "cmake.configureOnOpen": true,
+        "cmake.buildDirectory": "${workspaceFolder}/build",
+        "cmake.debugConfig": {
+            "MIMode": "gdb",
+            "miDebuggerPath": " /opt/intel/oneapi/debugger/2025.1/bin/gdb-oneapi"
+        }
+    }
+    ```
+
+    If the `settings.json` file already exists, just add the above options alongside any other options already in there.
+
+1. Press Ctrl+Shift+P and Select "Edit User-Local CMake kits" (start typing it and VSCode will search for it). Add the following configuration to the resulting .json file:
+
+    ``` json
+    {
+      "name": "Intel oneAPI",
+      "compilers": {
+      "C": "/opt/intel/oneapi/compiler/2025.1/bin/icx",
+      "CXX": "/opt/intel/oneapi/compiler/2025.1/bin/icpx"
+      },
+      "isTrusted": true
+    }
+    ```
+
+    Optional: delete the default configuration(s) that was already in this file.
