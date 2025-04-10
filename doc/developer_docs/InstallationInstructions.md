@@ -42,4 +42,13 @@ sudo apt -y install cmake pkg-config build-essential
 
 - download the `googletest` repository from git: 
   - recommended method is navigate to https://github.com/google/googletest, click "Code" in the top right, and choose "Download Zip"
-- unzip into `thirdparty/googletest-main`
+- On WSL:Ubuntu, I run the following commands to pull in the .zip from the default download location and unzip it:
+
+```
+cd ~/projects/variationalMC
+mkdir -p thirdparty
+cd thirdparty
+cp /mnt/c/Users/Matthew/Downloads/googletest-main.zip .
+unzip googletest-main.zip -d .
+```
+- The result should be the following directory structure: `thirdparty/googletest-main/...`, where `...` are the files in the root directory of the `googletest` repository.
