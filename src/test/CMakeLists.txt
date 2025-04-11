@@ -1,4 +1,6 @@
-enable_testing()
+
+
+include(Dart)
 
 # To allow type definitions for VSCode debugging
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG")
