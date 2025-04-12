@@ -416,3 +416,5 @@ public:
 		return couplings[name_in];
 	}
 };
+
+SpinModel create_su2_Hamiltonian(Lattice l, std::vector<double> J, vmctype::Spin_t spin_val);
