@@ -11,8 +11,11 @@ add_definitions(-DEXAMPLES_PATH="${PROJECT_SOURCE_DIR}/examples/")
 # UNIT TESTS
 
 # Set executable
-set(SOURCE_FILE unit_test.cpp)
-set(TARGET_NAME unit_test)
+set(UNIT_TEST_SOURCE UnitTest.cpp)
+set(UNIT_TEST_TARGET unit_test)
+
+set(EXAMPLE_TEST_SOURCE ExampleTest.cpp)
+set(EXAMPLE_TEST_TARGET example_test)
 
 # Set compile and link flags
 set(COMPILE_FLAGS "-Wall --std=c++17" )
@@ -23,11 +26,13 @@ set(vmc_src
   )
 include_directories(${vmc_src})
 
-add_executable(${TARGET_NAME} ${SOURCE_FILE})
-set_target_properties(${TARGET_NAME} PROPERTIES COMPILE_FLAGS "${COMPILE_FLAGS}")
-set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS "${LINK_FLAGS}")
+# Set executables
+
+add_executable(${UNIT_TEST_TARGET} ${UNIT_TEST_SOURCE})
+set_target_properties(${UNIT_TEST_TARGET} PROPERTIES COMPILE_FLAGS "${COMPILE_FLAGS}")
+set_target_properties(${UNIT_TEST_TARGET} PROPERTIES LINK_FLAGS "${LINK_FLAGS}")
 target_link_libraries(
-    unit_test
+    ${UNIT_TEST_TARGET}
     GTest::gtest_main
     VMC_IO
     VMC_TYPE
@@ -38,30 +43,28 @@ target_link_libraries(
     $<LINK_ONLY:MKL::MKL>
 )
 
+add_executable(${EXAMPLE_TEST_TARGET} ${EXAMPLE_TEST_SOURCE})
+set_target_properties(${EXAMPLE_TEST_TARGET} PROPERTIES COMPILE_FLAGS "${COMPILE_FLAGS}")
+set_target_properties(${EXAMPLE_TEST_TARGET} PROPERTIES LINK_FLAGS "${LINK_FLAGS}")
+target_link_libraries(
+    ${EXAMPLE_TEST_TARGET}
+    GTest::gtest_main
+    VMC_DRIVER
+    VMC_IO
+    VMC_TYPE
+    LATTICE
+    MEAN_FIELD_ANSATZ
+    PROJECTED_STATE
+    WAVEFUNCTION
+    SPIN_MODEL
+    VMC_RUNNER
+    VMC_NUMERICAL
+    VMC_RESULTS
+    $<LINK_ONLY:MKL::MKL>
+)
 
-# BENCHMARKS
-
-
-# # Set executable
-# set(SOURCE_FILE benchmark.cpp)
-# set(TARGET_NAME benchmark)
-
-# # Set compile and link flags
-# set(COMPILE_FLAGS "-Wall")
-# set(LINK_FLAGS "-v")
-
-# add_executable(${TARGET_NAME} ${SOURCE_FILE})
-# set_target_properties(${TARGET_NAME} PROPERTIES COMPILE_FLAGS "${COMPILE_FLAGS}")
-# set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS "${LINK_FLAGS}")
-# target_link_libraries(${TARGET_NAME} GTest::gtest_main VMC_TYPE LATTICE)
-
-# target_link_libraries(
-#     benchmark
-#     GTest::gtest_main
-#     VMC_TYPE
-#     LATTICE
-# )
+# Discover tests
 
 include(GoogleTest)
 gtest_discover_tests(unit_test)
-# gtest_discover_tests(benchmark)
+gtest_discover_tests(example_test)
