@@ -31,6 +31,7 @@ class MonteCarloEngine {
 	std::vector<std::string> observable_function_names;
 
 	Wavefunction& WF;
+	bool conserve_sz2 = false; // get this from the wavefunction
 
 	Lattice& lat;
 
@@ -49,8 +50,9 @@ class MonteCarloEngine {
 	std::vector<std::vector<double>> v_params_record;
 	std::vector<double> E_bins_record;
 
-	std::pair<std::vector<int>, std::vector<int>> step_su2();
-	std::vector<int> step_su3(int num_swap);
+	std::vector<int> step_two_site_swap();
+	std::vector<int> step_ring_swap(int num_swap);
+	std::pair<std::vector<int>, std::vector<int>> step_spin1_su2();
 	void measure_energy();
 	void measure_obs_functions();
 
@@ -58,6 +60,8 @@ public:
 	
 	MonteCarloEngine(SpinModel& H_in, Wavefunction& WF_in, Lattice& lat_in, RandomEngine& rand_in, VMCOptions params_in)
 		: H(H_in), WF(WF_in), lat(lat_in), rand(rand_in), params(params_in) {
+
+		conserve_sz2 = WF.get_conserve_sz2();
 
 		for (std::string term_name : H.get_terms()) {
 			observable_measures.insert(std::pair<std::string, std::vector<std::complex<double>>> (term_name, std::vector<std::complex<double>>({})));
@@ -81,11 +85,11 @@ public:
 		for (int m = 0; m < params.num_measures; ++m) {
 			timer.flag_start_time("Steps");
 			for (int s = 0; s < params.steps_per_measure; ++s) {
-				if (params.su3) {
-					step_su3(2);
+				if (conserve_sz2) {
+					step_two_site_swap();
 				}
 				else {
-					step_su2();
+					step_spin1_su2();
 				}
 			}
 			timer.flag_end_time("Steps");

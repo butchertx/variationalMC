@@ -30,14 +30,16 @@ void ProjectedState::print_matrix(std::string name){
 // constructors
 
 ProjectedState::ProjectedState(MeanFieldAnsatz& M_, RandomEngine& rand_)
-	: ansatz(M_), rand(rand_), N(ansatz.get_N()), DIM(ansatz.get_dim()) {
+	: ansatz(M_), rand(rand_), N(ansatz.get_N()), DIM(ansatz.get_dim()){
+	conserve_sz2 = M_.get_conserve_sz2();
 	malloc_matrices();
 	clear_matrices();
 	initialize_configuration();
 }
 
 ProjectedState::ProjectedState(MeanFieldAnsatz& M_, RandomEngine& rand_, JastrowTable jastrow_)
-	: ProjectedState(M_, rand_) {
+	: ProjectedState(M_, rand_){
+	conserve_sz2 = M_.get_conserve_sz2();
 	jastrow = jastrow_;
 	jastrow.initialize_tables(configuration);
 }

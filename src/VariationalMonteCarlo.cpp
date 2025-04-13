@@ -23,8 +23,25 @@ std::vector<double> vec_i(std::vector<std::complex<double>> cvec) {
 	return result;
 }
 
+std::vector<int> MonteCarloEngine::step_two_site_swap() {
+	//Propose swap move
+	std::vector<int> swaplist(2);
+	int site = rand.get_rand_site();
+	int neigh = lat.get_neighbors(site, 0)[rand.get_rand_neighbor()];
+	swaplist = { site, neigh };
 
-std::pair<std::vector<int>, std::vector<int>> MonteCarloEngine::step_su2() {
+	std::complex<double> sqrt_p = WF.psi_over_psi(swaplist);
+	if (rand.get_rand_prob() < std::abs(sqrt_p) * std::abs(sqrt_p)) {
+		WF.update(swaplist);
+		return swaplist;
+	}
+	else {
+		return {};
+	}
+}
+
+std::pair<std::vector<int>, std::vector<int>> MonteCarloEngine::step_spin1_su2() {
+	// This was written specifically for spin-1, and does not work for spin-1/2
 
 	//Propose move
 	std::vector<int> sites(2, 0), spins(2, 0);
@@ -87,7 +104,7 @@ std::pair<std::vector<int>, std::vector<int>> MonteCarloEngine::step_su2() {
 	
 }
 
-std::vector<int> MonteCarloEngine::step_su3(int num_site) {
+std::vector<int> MonteCarloEngine::step_ring_swap(int num_site) {
 
 	std::vector<int> swaplist(num_site);
 	if (num_site == 3) {
@@ -104,9 +121,7 @@ std::vector<int> MonteCarloEngine::step_su3(int num_site) {
 	}
 	else if (num_site == 2) {
 		//Propose swap move
-		int site = rand.get_rand_site();
-		int neigh = lat.get_neighbors(site, 0)[rand.get_rand_neighbor()];
-		swaplist = { site, neigh };
+		return step_two_site_swap();
 	}
 
 	std::complex<double> sqrt_p = WF.psi_over_psi(swaplist);

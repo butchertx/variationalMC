@@ -152,9 +152,11 @@ WavefunctionOptions read_json_wavefunction(json j) {
 		if (j["wavefunction"].contains("num spin-orbit")) {
 			wf_opt.other_options.num_spin_orbit = j["wavefunction"]["num spin-orbit"];
 		}
-		if (j["wavefunction"].contains("su3_symmetry")) {
-			wf_opt.other_options.su3_symmetry = j["wavefunction"]["su3_symmetry"];
+		if (j["wavefunction"].contains("conserve_sz2")) {
+			wf_opt.conserve_sz2 = j["wavefunction"]["conserve_sz2"];
 		}
+		// override this for spin-1/2 (always conserve sz^2)
+		wf_opt.conserve_sz2 = (wf_opt.other_options.spin == vmctype::Spin_t::HALF) || wf_opt.conserve_sz2;
 
 		// Set hopping, LRO, and jastrow
 		if (j["wavefunction"].contains("hopping")) {
@@ -277,14 +279,6 @@ VMCOptions read_json_vmc(json j) {
 	}
 	else {
 		vmc_opt.optimization = false;
-	}
-
-	// Maintain SU(3) symmetry
-	if (j["vmc"].contains("su3")) {
-		vmc_opt.su3 = j["vmc"]["su3"].get<bool>();
-	}
-	else {
-		vmc_opt.su3 = true;
 	}
 	
 	// Markov chain

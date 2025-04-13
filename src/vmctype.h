@@ -221,7 +221,6 @@ namespace vmctype {
 		int num_spin_orbit = 0;
 		double field = 0.0;
 		double mu_z = 0.0;
-		bool su3_symmetry = false;
 		std::vector<vmctype::HoppingTerm> hopping_list;
 		QuadrupoleOrder directors;
 		bool use_jastrow = false;
@@ -235,6 +234,7 @@ namespace vmctype {
 		std::string wf_type;
 		int inequivalent_sites = 1;
 		bool match_lattice_pbc = true;
+		bool conserve_sz2 = false;
 		std::vector<vec3<int>> basis = std::vector<vec3<int>>({vec3<int>()}); // default is {{0,0,0}}
 
 		// https://en.wikipedia.org/wiki/Strategy_pattern
@@ -273,7 +273,7 @@ namespace vmctype {
 
 	struct VMCOptions {
 		int steps_per_measure, num_measures, throwaway_measures;
-		bool su3 = true, optimization = false, search = false;
+		bool optimization = false, search = false;
 
 		struct sr_options {
 			int bins;

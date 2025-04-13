@@ -16,7 +16,7 @@
     ],
     "spin": 1,
     "match lattice pbc": true,
-    "su3_symmetry": true,
+    "conserve_sz2": true,
     "num hop": 1,
     "field": 1.0,
     "num spin-orbit": 0,

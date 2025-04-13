@@ -100,6 +100,7 @@ MeanFieldAnsatz_HALF::MeanFieldAnsatz_HALF(WavefunctionOptions& mf_in, Lattice& 
 	assert(mf_in.other_options.spin == vmctype::Spin_t::HALF);
 
 	SPIN_TYPE = vmctype::Spin_t::HALF;
+	conserve_sz2 = true; // spin-1/2 always conserves Sz^2
 	DIM = 2 * lat_in.get_N();
 	double t;
 	int origin, neighbor;
@@ -183,6 +184,7 @@ MeanFieldAnsatz_ONE::MeanFieldAnsatz_ONE(WavefunctionOptions& mf_in, Lattice& la
 	assert(mf_in.other_options.spin == vmctype::Spin_t::ONE);
 
 	SPIN_TYPE = vmctype::Spin_t::ONE;
+	conserve_sz2 = mf_in.conserve_sz2;
 	DIM = 3 * lat_in.get_N();
 	double tz, txy;
 	int origin, neighbor;
