@@ -103,10 +103,6 @@ public:
 
 	//Additional Functions
 
-	std::vector<int>& state_ref() {
-		return configuration;
-	}
-
 	std::complex<double> basis_element(int site, int sz) {
 		return { 1.0, 0.0 };
 	}	

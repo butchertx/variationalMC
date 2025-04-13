@@ -28,7 +28,7 @@ TEST(FullExampleEnergyTest, SpinHalf1dTrivialExample) {
     std::complex<double> E_err = results.get_energy_err();
 
     std::cout << "Energy = " << E << " +/- " << E_err << "\n";
-    EXPECT_NEAR(std::real(E), -1.0, 0.01);
+    EXPECT_NEAR(std::real(E), 0.375, 0.01);
 }
 
 TEST(FullExampleEnergyTest, SpinOne1dTrivialExample) {

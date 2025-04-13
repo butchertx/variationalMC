@@ -217,7 +217,7 @@ public:
 	virtual void update(std::vector<int>&, std::vector<int>&) = 0;
 	virtual void update(std::vector<int>&) = 0;
 
-	const std::vector<int>& conf_ref() { return configuration; }
+	const std::vector<int>& get_configuration() { return configuration; }
 
 	virtual std::vector<double> greedy_log_derivative() { return { 0.0 }; }
 	virtual std::vector<double> log_derivative() { return { 0.0 }; }

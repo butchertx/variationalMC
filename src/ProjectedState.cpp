@@ -66,7 +66,6 @@ void ProjectedState::initialize_configuration(){
 		det = { 0, 0 };
 		++config_attempt;
 	}
-	std::cout << "Starting with psi = " << det << "\n";
 }
 
 bool ProjectedState::try_configuration() {
