@@ -76,7 +76,7 @@ template <>
 void vmc_io::print_matrix(const char* desc, int m, int n, std::complex<double>* a, int lda){
 	std::cout << desc << ":\n";
 	// this is gross but I don't know how else to format print a complex number
-	int WIDTH = 30;
+	int WIDTH = 16;
 	int token_width = 0;
 	int num_spaces = 0;
 	std::stringstream ss;

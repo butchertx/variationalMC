@@ -85,11 +85,27 @@ public:
 class HeisenbergExchange : public Interaction {
 	int i, j;
 	double S;
+	double alpha; // clebsch-gordan coefficient for S^+S^- (needs to be adapted for spins other than 1/2 and 1)
+	int m_scale; // this is 2m for spin-half, m for spin-integer
+	bool half_integer; // for m->m+1 or m->m-1 we need to account for this because states are stored as ints
+
+	bool is_half_integer(double S) {
+		int S2 = 2 * S;
+		return S2 % 2 == 1;
+	}
 
 public:
 
 	HeisenbergExchange(int i_in, int j_in, double S_in, double coefficient_)
-		: Interaction(coefficient_), i(i_in), j(j_in), S(S_in) {
+		: Interaction(coefficient_), i(i_in), j(j_in), S(S_in), half_integer(is_half_integer(S_in)) {
+		if (half_integer) {
+			m_scale = 2;
+			alpha = 0.5;
+		}
+		else {
+			alpha = 1.0;
+			m_scale = 1;
+		}
 		flip_buffer.multipliers.push_back(coefficient_);
 		flip_buffer.multipliers.push_back(coefficient_);
 		flip_buffer.flips.push_back({ i, j });
@@ -105,15 +121,27 @@ public:
 	FlipList& off_diag(const std::vector<int>& state) {
 		flip_buffer.multipliers[0] = std::complex<double>{ 0.0, 0.0 };
 		flip_buffer.multipliers[1] = std::complex<double>{ 0.0, 0.0 };
-		if (state[i] != -S && state[j] != S) {
-			flip_buffer.multipliers[0] = coefficient;
-			flip_buffer.new_sz[0][0] = state[i] - 1;
-			flip_buffer.new_sz[0][1] = state[j] + 1;
+		if (state[i] != -S*m_scale && state[j] != S*m_scale) {
+			flip_buffer.multipliers[0] = alpha * coefficient;
+			if (half_integer) {
+				flip_buffer.new_sz[0][0] = state[i] - 2;
+				flip_buffer.new_sz[0][1] = state[j] + 2;
+			}
+			else {
+				flip_buffer.new_sz[0][0] = state[i] - 1;
+				flip_buffer.new_sz[0][1] = state[j] + 1;
+			}
 		}
-		if (state[i] != S && state[j] != -S) {
-			flip_buffer.multipliers[1] = coefficient;
-			flip_buffer.new_sz[1][0] = state[i] + 1;
-			flip_buffer.new_sz[1][1] = state[j] - 1;
+		if (state[i] != S*m_scale && state[j] != -S*m_scale) {
+			flip_buffer.multipliers[1] = alpha * coefficient;
+			if (half_integer) {
+				flip_buffer.new_sz[1][0] = state[i] + 2;
+				flip_buffer.new_sz[1][1] = state[j] - 2;
+			}
+			else {
+				flip_buffer.new_sz[1][0] = state[i] + 1;
+				flip_buffer.new_sz[1][1] = state[j] - 1;
+			}
 		}
 
 		return flip_buffer;

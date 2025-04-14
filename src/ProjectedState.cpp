@@ -25,6 +25,12 @@ void ProjectedState::print_matrix(std::string name){
 	else if (std::strcmp(name.c_str(), "ipiv") == 0){
 		vmc_io::print_matrix("ipiv", N, N, ipiv, N);
 	}
+	else if (std::strcmp(name.c_str(), "Phi") == 0){
+		vmc_io::print_matrix("Phi", DIM, DIM, ansatz.get_Phi(), DIM);
+	}
+	else {
+		std::cerr << "Matrix name " << name << " not recognized.\n";
+	}
 }
 
 // constructors
@@ -116,8 +122,8 @@ void ProjectedState::set_configuration(std::vector<int> conf) {
 	if (info == 0) {
 		info = LAPACKE_zgetri(LAPACK_ROW_MAJOR, N, Slater, N, ipiv);
 		// zgemm3m("N", "N", &DIM, &N, &N, &alpha, phi, &N, Slater, &N, &beta, Winv, &N);
-		// cblas_zgemm3m(CblasRowMajor, CblasNoTrans, CblasNoTrans, DIM, N, N, &alpha, phi, N, Slater, N, &beta, Winv, N);
-		cblas_zgemm3m_64(CblasRowMajor, CblasNoTrans, CblasNoTrans, DIM_64, N_64, N_64, &alpha, phi, N_64, Slater, N_64, &beta, Winv, N_64);
+		cblas_zgemm3m(CblasRowMajor, CblasNoTrans, CblasNoTrans, DIM, N, N, &alpha, phi, DIM, Slater, N, &beta, Winv, N);
+		// cblas_zgemm3m_64(CblasRowMajor, CblasNoTrans, CblasNoTrans, DIM_64, N_64, N_64, &alpha, phi, DIM_64, Slater, N_64, &beta, Winv, N_64);
 	}
 	det = calc_det();
 }
