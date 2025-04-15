@@ -1,6 +1,7 @@
 
 
 include(Dart)
+set(CTEST_OUTPUT_ON_FAILURE 1)
 
 # To allow type definitions for VSCode debugging
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG")
@@ -18,7 +19,7 @@ set(EXAMPLE_TEST_SOURCE ExampleTest.cpp)
 set(EXAMPLE_TEST_TARGET example_test)
 
 # Set compile and link flags
-set(COMPILE_FLAGS "-Wall --std=c++17" )
+set(COMPILE_FLAGS "-Wall --std=c++17 -DMKL_ILP64")
 set(LINK_FLAGS "-v")
 
 set(vmc_src
@@ -36,6 +37,7 @@ target_link_libraries(
     GTest::gtest_main
     VMC_IO
     VMC_TYPE
+    MATRIX
     LATTICE
     MEAN_FIELD_ANSATZ
     PROJECTED_STATE

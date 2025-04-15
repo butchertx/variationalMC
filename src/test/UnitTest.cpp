@@ -6,6 +6,7 @@
 #include <MeanFieldAnsatz.h>
 #include <ProjectedState.h>
 #include "mkl_types.h"
+#include <Matrix.h>
 
 // Global Variables
 
@@ -33,6 +34,38 @@ TEST(HelloTest, BasicAssertions2) {
     EXPECT_EQ(7 * 8, 56);
 }
 
+// Matrix Tests
+
+TEST(MatrixTest, CreateMatrix) {
+    Matrix<double> m(2, 2);
+    m(0, 0) = 1.0;
+    m(1, 1) = 2.0;
+    EXPECT_EQ(m(0, 0), 1.0);
+    EXPECT_EQ(m(1, 1), 2.0);
+}
+
+TEST(MatrixTest, MatrixMultiplication) {
+    ComplexDoubleMatrix<std::complex<double>> m1(2, 2);
+    ComplexDoubleMatrix<std::complex<double>> m2(2, 2);
+    m1(0, 0) = {1.0, 0.0};
+    m1(0, 1) = {2.0, 0.0};
+    m1(1, 0) = {3.0, 0.0};
+    m1(1, 1) = {4.0, 0.0};
+
+    m2(0, 0) = {5.0, 0.0};
+    m2(0, 1) = {6.0, 0.0};
+    m2(1, 0) = {7.0, 0.0};
+    m2(1, 1) = {8.0, 0.0};
+
+    ComplexDoubleMatrix<std::complex<double>> result(2, 2);
+    result(0, 0) = {19.0, 0.0};
+    result(0, 1) = {22.0, 0.0};
+    result(1, 0) = {43.0, 0.0};
+    result(1, 1) = {50.0, 0.0};
+
+    EXPECT_EQ(m1 * m2, result);
+}
+
 // Lattice Tests
 
 TEST(LatticeTest, CreateBasicLattices) {
@@ -58,10 +91,6 @@ TEST_F(MFAnsatzTest, CheckFixture) {
     EXPECT_EQ(chainLatticeHalf.get_N(), 2);
     EXPECT_EQ(chainLatticeOne.get_N(), 3);
 }
-
-// TEST_F(MFAnsatzTest, SpinOneChain) {
-//     mf_ansatz = MeanFieldAnsatz_ONE()
-// }
 
 // ProjectedState Tests
 
@@ -114,6 +143,8 @@ TEST_F(ProjectedStateTest, CheckFixture) {
 	std::cout << "Starting with psi = " << wf_one.get_det() << "\n";
     std::cout << "ratio = " << wf_one.psi_over_psi(flips1) << "\n";
     wf_one.update(flips1);
+	std::cout << "After update psi = " << wf_one.get_det() << "\n";
+    std::cout << "configuration = " << vec2str(wf_one.get_configuration()) << "\n";
     wf_one.print_matrix("Slater");
     wf_one.print_matrix("LU");
     wf_one.print_matrix("Winv");

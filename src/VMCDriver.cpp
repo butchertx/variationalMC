@@ -32,14 +32,6 @@ VMCResults VMCDriver::run() {
 
     RandomEngine r(-1, lattice.get_N(), lattice.get_neighbor_counts()[0]);
     ProjectedState wf(*mf_ansatz, r);
-    wf.print_matrix("Phi");
-    wf.print_matrix("Slater");
-    wf.print_matrix("LU");
-    wf.print_matrix("Winv");
-    wf.print_matrix("UP1");
-    wf.print_matrix("UP2");
-    wf.print_matrix("UP3");
-    wf.print_matrix("ipiv");
 
     SpinModel Ham = create_su2_Hamiltonian(lattice, mdl_options.get_su2_terms("J"), wf_options.other_options.spin);
     MonteCarloEngine sampler(Ham, wf, lattice, r, mc_options);

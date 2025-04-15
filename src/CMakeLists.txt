@@ -12,6 +12,9 @@ add_library(VMC_IO
 add_library(VMC_TYPE
     vmctype.cpp
 )
+add_library(MATRIX
+    Matrix.cpp
+)
 add_library(LATTICE
     Lattice.cpp
 )
@@ -41,7 +44,7 @@ add_library(VMC_NUMERICAL
 )
 
 # Set compile and link flags
-set(COMPILE_FLAGS "-Wall --std=c++17")
+set(COMPILE_FLAGS "-Wall --std=c++17 -DMKL_ILP64")
 set(LINK_FLAGS "-v")
 
 # To compile in a single command:
@@ -59,6 +62,7 @@ target_link_libraries(
     VMC_DRIVER
     VMC_IO
     VMC_TYPE
+    MATRIX
     LATTICE
     MEAN_FIELD_ANSATZ
     PROJECTED_STATE
