@@ -12,9 +12,6 @@
     #include <direct.h> //mkdir
 #endif
 #include "mkl.h"
-#ifndef MKL_Complex16
-#define MKL_Complex16 std::complex<double>
-#endif // !MKL_Complex16
 
 // for convenience
 using json = nlohmann::json;

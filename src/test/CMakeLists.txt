@@ -18,6 +18,9 @@ set(UNIT_TEST_TARGET unit_test)
 set(EXAMPLE_TEST_SOURCE ExampleTest.cpp)
 set(EXAMPLE_TEST_TARGET example_test)
 
+set(zheev_TEST_SOURCE test_zheev.cpp)
+set(zheev_TEST_TARGET test_zheev)
+
 # Set compile and link flags
 set(COMPILE_FLAGS "-Wall --std=c++17 -DMKL_ILP64")
 set(LINK_FLAGS "-v")
@@ -39,9 +42,9 @@ target_link_libraries(
     VMC_TYPE
     MATRIX
     LATTICE
-    MEAN_FIELD_ANSATZ
-    PROJECTED_STATE
-    WAVEFUNCTION
+    # MEAN_FIELD_ANSATZ
+    # PROJECTED_STATE
+    # WAVEFUNCTION
     $<LINK_ONLY:MKL::MKL>
 )
 
@@ -62,6 +65,15 @@ target_link_libraries(
     VMC_RUNNER
     VMC_NUMERICAL
     VMC_RESULTS
+    $<LINK_ONLY:MKL::MKL>
+)
+
+add_executable(${zheev_TEST_TARGET} ${zheev_TEST_SOURCE})
+set_target_properties(${zheev_TEST_TARGET} PROPERTIES COMPILE_FLAGS "${COMPILE_FLAGS}")
+set_target_properties(${zheev_TEST_TARGET} PROPERTIES LINK_FLAGS "${LINK_FLAGS}")
+target_link_libraries(
+    ${zheev_TEST_TARGET}
+    MATRIX
     $<LINK_ONLY:MKL::MKL>
 )
 
