@@ -81,6 +81,23 @@ TEST(MatrixTest, MatrixDiagonalize){
     EXPECT_EQ(eigensystem.second, result);
 }
 
+TEST(MatrixTest, MatrixNorm){
+    ComplexDoubleMatrix<MKL_Complex16> m(3, 3);
+    m(0, 0) = {1.0, 0.0}, m(0, 1) = {2.0, 0.0}, m(0, 2) = {3.0, 0.0};
+    m(1, 0) = {4.0, 0.0}, m(1, 1) = {5.0, 0.0}, m(1, 2) = {6.0, 0.0};
+    m(2, 0) = {7.0, 0.0}, m(2, 1) = {8.0, 0.0}, m(2, 2) = {9.0, 0.0};
+
+    Matrix<double> result = m.vector_norm();
+    EXPECT_EQ(result(0, 0), sqrt(66.0));
+    EXPECT_EQ(result(0, 1), sqrt(93.0));
+    EXPECT_EQ(result(0, 2), sqrt(126.0));
+
+    Matrix<double> result2 = m.vector_norm(0, 2);
+    EXPECT_EQ(result2(0, 0), sqrt(17.0));
+    EXPECT_EQ(result2(0, 1), sqrt(29.0));
+    EXPECT_EQ(result2(0, 2), sqrt(45.0));
+}
+
 // Lattice Tests
 
 TEST(LatticeTest, CreateBasicLattices) {
