@@ -42,7 +42,7 @@ target_link_libraries(
     VMC_TYPE
     MATRIX
     LATTICE
-    # MEAN_FIELD_ANSATZ
+    MEAN_FIELD_ANSATZ
     # PROJECTED_STATE
     # WAVEFUNCTION
     $<LINK_ONLY:MKL::MKL>

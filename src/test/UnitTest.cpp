@@ -4,7 +4,7 @@
 #include <vmc_io.h>
 #include <Matrix.h>
 #include <Lattice.h>
-// #include <MeanFieldAnsatz.h>
+#include <MeanFieldAnsatz.h>
 // #include <ProjectedState.h>
 #include "mkl_types.h"
 
@@ -91,21 +91,21 @@ TEST(LatticeTest, CreateBasicLattices) {
 
 // MFAnsatz Tests
 
-// class MFAnsatzTest : public ::testing::Test {
+class MFAnsatzTest : public ::testing::Test {
 
-// protected:
-//     void SetUp() override {
-//         chainLatticeHalf = Lattice(Lattice_type_t::CHAIN, vec3<int>(2, 1, 1), vec3<int>(0, 0, 0));
-//         chainLatticeOne = Lattice(Lattice_type_t::CHAIN, vec3<int>(3, 1, 1), vec3<int>(1, 0, 0));
-//     }
+protected:
+    void SetUp() override {
+        chainLatticeHalf = Lattice(Lattice_type_t::CHAIN, vec3<int>(2, 1, 1), vec3<int>(0, 0, 0));
+        chainLatticeOne = Lattice(Lattice_type_t::CHAIN, vec3<int>(3, 1, 1), vec3<int>(1, 0, 0));
+    }
 
-//     Lattice chainLatticeHalf, chainLatticeOne;
-// };
+    Lattice chainLatticeHalf, chainLatticeOne;
+};
 
-// TEST_F(MFAnsatzTest, CheckFixture) {
-//     EXPECT_EQ(chainLatticeHalf.get_N(), 2);
-//     EXPECT_EQ(chainLatticeOne.get_N(), 3);
-// }
+TEST_F(MFAnsatzTest, CheckFixture) {
+    EXPECT_EQ(chainLatticeHalf.get_N(), 2);
+    EXPECT_EQ(chainLatticeOne.get_N(), 3);
+}
 
 // // ProjectedState Tests
 

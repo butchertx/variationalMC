@@ -12,6 +12,18 @@ bool operator==(const MKL_Complex16& base, const MKL_Complex16& other) {
     return (base.real == other.real && base.imag == other.imag);
 }
 
+MKL_Complex16& operator+=(MKL_Complex16& base, const MKL_Complex16& other) {
+    base.real += other.real;
+    base.imag += other.imag;
+    return base;
+}
+
+MKL_Complex16& operator-=(MKL_Complex16& base, const MKL_Complex16& other) {
+    base.real -= other.real;
+    base.imag -= other.imag;
+    return base;
+}
+
 template<typename T>
 class Matrix {
 
@@ -83,14 +95,28 @@ public:
 
     ~ComplexDoubleMatrix() { /* Destructor will automatically call the base class destructor */ }
 
-    ComplexDoubleMatrix<T> operator*(const ComplexDoubleMatrix<T>& other) {
-        assert(this->cols_ == other.rows_);
-        ComplexDoubleMatrix<T> result(this->rows_, other.cols_);
-        MKL_Complex16 alpha = { 1.0, 0.0 }, beta = { 0.0, 0.0 };
-        cblas_zgemm3m_64(CblasRowMajor, CblasNoTrans, CblasNoTrans, this->rows_, other.cols_, this->cols_,
-                    &alpha, this->data_, this->cols_, other.data_, other.cols_, &beta, result.data_, result.cols_);
+    // cblas routines
+
+    Matrix<double> vector_norm(int row_start, int row_end) {
+        // computes the vector norm of each column, but only for a range of rows
+        // this is used to compute the occupation number of single particle orbitals
+        // row_end is exclusive
+        assert(row_start >= 0 && row_end <= this->rows_);
+        assert(row_start < row_end);
+        Matrix<double> result(1, this->cols_);
+        for (int i = 0; i < this->cols_; ++i) {
+            result(0, i) = cblas_dznrm2(row_end - row_start, &(this->data_[row_start * this->cols_ + i]), this->cols_);
+        }
         return result;
     }
+
+    Matrix<double> vector_norm() {
+        // computes the vector norm of each column
+        // returns a row vector of the norms
+        return this->vector_norm(0, this->rows_);
+    }
+
+    // lapack routines
 
     std::pair<ComplexDoubleMatrix<T>, Matrix<double>> hermitian_diagonalize() {
         MKL_INT info;
@@ -102,5 +128,14 @@ public:
             std::cerr << "Error in diagonalization: " << info << std::endl;
         }
         return std::pair<ComplexDoubleMatrix<T>, Matrix<double>>(result, eigenvalues);
+    }
+
+    ComplexDoubleMatrix<T> operator*(const ComplexDoubleMatrix<T>& other) {
+        assert(this->cols_ == other.rows_);
+        ComplexDoubleMatrix<T> result(this->rows_, other.cols_);
+        MKL_Complex16 alpha = { 1.0, 0.0 }, beta = { 0.0, 0.0 };
+        cblas_zgemm3m_64(CblasRowMajor, CblasNoTrans, CblasNoTrans, this->rows_, other.cols_, this->cols_,
+                    &alpha, this->data_, this->cols_, other.data_, other.cols_, &beta, result.data_, result.cols_);
+        return result;
     }
 };
