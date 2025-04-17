@@ -6,12 +6,29 @@
 variationalMC documentation
 ===========================
 
-Add your content using ``reStructuredText`` syntax. See the
-`reStructuredText <https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html>`_
-documentation for details.
+``variationalMC`` is a C++ library for performing variational Monte Carlo
+simulations. It is primarily designed for studying the spin-1/2 and spin-1
+Heisenberg models in one, two, and three dimensions. It uses Slater-Jastrow
+wavefunctions with an exact Gutzwiller projection, and Stochastic Reconfiguration
+for variational parameter optimization. However, the Monte Carlo and optimization
+routines are general, and the library can be easily extended to be used with
+addiitonal wavefunction types.
 
+- To get started with installation, see :ref:`installation`.
+- To learn about what the library can do, see :ref:`overview`.
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Full Table of Contents:
 
+   installation/index
+   overview/index
+   examples/index
+   lattices/index
+   wavefunctions/index
+   models/index
+   montecarlo/index
+   project_spec/index
+   testing/index
+   contributing/index
+   references/index
