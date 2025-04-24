@@ -12,7 +12,7 @@
     "basis": [],
     "spin": 1,
     "match lattice pbc": true,
-    "su3_symmetry": false,
+    "conserve_sz2": false,
     "num hop": 1,
     "field": 1.0,
     "mu_z":  0.0,

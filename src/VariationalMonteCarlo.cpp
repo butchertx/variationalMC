@@ -23,12 +23,29 @@ std::vector<double> vec_i(std::vector<std::complex<double>> cvec) {
 	return result;
 }
 
+std::vector<int> MonteCarloEngine::step_two_site_swap() {
+	//Propose swap move
+	std::vector<int> swaplist(2);
+	int site = rand.get_rand_site();
+	int neigh = lat.get_neighbors(site, 0)[rand.get_rand_neighbor()];
+	swaplist = { site, neigh };
 
-std::pair<std::vector<int>, std::vector<int>> MonteCarloEngine::step_su2() {
+	std::complex<double> sqrt_p = WF.psi_over_psi(swaplist);
+	if (rand.get_rand_prob() < std::abs(sqrt_p) * std::abs(sqrt_p)) {
+		WF.update(swaplist);
+		return swaplist;
+	}
+	else {
+		return {};
+	}
+}
+
+std::pair<std::vector<int>, std::vector<int>> MonteCarloEngine::step_spin1_su2() {
+	// This was written specifically for spin-1, and does not work for spin-1/2
 
 	//Propose move
 	std::vector<int> sites(2, 0), spins(2, 0);
-	auto wf_conf = WF.conf_ref();
+	auto wf_conf = WF.get_configuration();
 	int tempspin = 0;
 
 	//swap spins at two sites or change Nz-sector according to Bieri(2012) app. C
@@ -87,7 +104,7 @@ std::pair<std::vector<int>, std::vector<int>> MonteCarloEngine::step_su2() {
 	
 }
 
-std::vector<int> MonteCarloEngine::step_su3(int num_site) {
+std::vector<int> MonteCarloEngine::step_ring_swap(int num_site) {
 
 	std::vector<int> swaplist(num_site);
 	if (num_site == 3) {
@@ -104,9 +121,7 @@ std::vector<int> MonteCarloEngine::step_su3(int num_site) {
 	}
 	else if (num_site == 2) {
 		//Propose swap move
-		int site = rand.get_rand_site();
-		int neigh = lat.get_neighbors(site, 0)[rand.get_rand_neighbor()];
-		swaplist = { site, neigh };
+		return step_two_site_swap();
 	}
 
 	std::complex<double> sqrt_p = WF.psi_over_psi(swaplist);
@@ -132,13 +147,13 @@ void MonteCarloEngine::measure_energy() {
 		for (auto interaction = interaction_list.begin(); interaction != interaction_list.end(); ++interaction) {
 
 			timer.flag_start_time("Energy diag");
-			temp_E_val = (*interaction)->diag(WF.conf_ref());
+			temp_E_val = (*interaction)->diag(WF.get_configuration());
 			temp_O_val += temp_E_val;
 			energy += H.get_coupling(term_name) * temp_E_val;
 			timer.flag_end_time("Energy diag");
 
 			//get flips
-			f = (*interaction)->off_diag(WF.conf_ref());
+			f = (*interaction)->off_diag(WF.get_configuration());
 
 			timer.flag_start_time("Energy fliplist iteration");
 			//iterate through flips
@@ -162,7 +177,7 @@ void MonteCarloEngine::measure_energy() {
 
 	//if (!params.su3) {
 	//	double nz_val = 0.0;
-	//	auto conf = WF.conf_ref();
+	//	auto conf = WF.get_configuration();
 	//	for (int i = 0; i < conf.size(); ++i) {
 	//		nz_val += (1 - conf[i]*conf[i]);
 	//	}
@@ -194,10 +209,10 @@ void MonteCarloEngine::measure_obs_functions() {
 
 			for (auto interaction = interaction_list.begin(); interaction != interaction_list.end(); ++interaction) {
 
-				temp_O_val += (*interaction)->diag(WF.conf_ref());
+				temp_O_val += (*interaction)->diag(WF.get_configuration());
 
 				//get flips
-				f = (*interaction)->off_diag(WF.conf_ref());
+				f = (*interaction)->off_diag(WF.get_configuration());
 
 				//iterate through flips
 				for (int i = 0; i < f.multipliers.size(); ++i) {

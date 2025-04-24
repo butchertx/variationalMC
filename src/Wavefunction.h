@@ -202,8 +202,10 @@ public:
 class Wavefunction {
 	//A Wavefunction's main role is to define how to calculate matrix elements and correlations
 	//Defined on a Lattice, has a set of basis states (usually Sz eigenstates?), calculates overlaps and matrix elements for basis states
+
 protected:
 	std::vector<int> configuration;
+	bool conserve_sz2 = false; // true if the wavefunction conserves its total Sz^2
 
 public:
 
@@ -217,8 +219,6 @@ public:
 	virtual void update(std::vector<int>&, std::vector<int>&) = 0;
 	virtual void update(std::vector<int>&) = 0;
 
-	const std::vector<int>& conf_ref() { return configuration; }
-
 	virtual std::vector<double> greedy_log_derivative() { return { 0.0 }; }
 	virtual std::vector<double> log_derivative() { return { 0.0 }; }
 
@@ -227,6 +227,9 @@ public:
 
 	//virtual void write_amplitudes(std::ofstream*) = 0;
 	virtual void write_configuration(std::ofstream*) = 0;
+
+	const bool get_conserve_sz2() { return conserve_sz2; }
+	const std::vector<int>& get_configuration() { return configuration; }
 
 };
 

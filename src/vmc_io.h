@@ -12,9 +12,6 @@
     #include <direct.h> //mkdir
 #endif
 #include "mkl.h"
-#ifndef MKL_Complex16
-#define MKL_Complex16 std::complex<double>
-#endif // !MKL_Complex16
 
 // for convenience
 using json = nlohmann::json;
@@ -52,9 +49,21 @@ namespace vmc_io {
 	template <class T>
 	void print_matrix(const char* desc, int m, int n, T* a, int lda){
 		std::cout << desc << ":\n";
+		// this is gross but I don't know how else to format print a complex number
+		int WIDTH = 20;
+		int token_width = 0;
+		int num_spaces = 0;
+		std::stringstream ss;
 		for (int i = 0; i < m; ++i) {
 			for (int j = 0; j < n-1; ++j) {
-				std::cout << a[i * lda + j] << ",";
+				ss.str("");
+				ss << a[i * lda + j];
+				token_width = ss.str().length();
+				num_spaces = WIDTH - token_width;
+				if (num_spaces < 1) {
+					num_spaces = 1;
+				}
+				std::cout << std::string(num_spaces, ' ') << a[i * lda + j] << ",";
 			}
 			std::cout << a[i * lda + n - 1] << "\n";
 		}

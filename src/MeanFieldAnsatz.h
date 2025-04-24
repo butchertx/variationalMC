@@ -1,16 +1,11 @@
 #pragma once
-#ifndef _USE_MATH_DEFINES
-#define _USE_MATH_DEFINES
-#endif // !_USE_MATH_DEFINES
 #include <cmath>
 #include <vector>
 #include <complex>
-#ifndef MKL_Complex16
-#define MKL_Complex16 std::complex<double>
-#endif // !MKL_Complex16
 #include "mkl.h"
 #include <assert.h>
 #include "vmctype.h"
+#include "Matrix.h"
 
 using namespace vmctype;
 
@@ -167,12 +162,11 @@ protected:
 
 	int N, DIM = 0, info, fermi_surface_start, fermi_surface_end;
 	vmctype::Spin_t SPIN_TYPE;
+	bool conserve_sz2;
 	double field;
-	lapack_complex_double *HMF, *Phi; // , * Pair_Eig, * PhiR;
-	std::vector<lapack_complex_double*> del_H; //each element corresponds to dH for a given variational param
-	double *Energy;
+	ComplexDoubleMatrix<MKL_Complex16> HMeanField, SingleParticleOrbitals;
+	Matrix<double> SingleParticleEnergies;
 	std::vector<std::vector<std::shared_ptr<TightBindingSitePair>>> site_pair_list;//each hopping vmc param has its own vector of site pairs
-	std::vector<std::vector<std::complex<double>>> mean_field_hamiltonian;
 	FermiSurface fermi;
 
 	virtual void set_hamiltonian() = 0;
@@ -185,25 +179,21 @@ public:
 	MeanFieldAnsatz(int N_in, double field_in) : N(N_in), field(field_in) {};
 
 	~MeanFieldAnsatz() {
-		mkl_free(HMF);
-		mkl_free(Phi);
-		mkl_free(Energy);
-		for (auto p : del_H) {
-			mkl_free(p);
-		}
 	}
 
-	lapack_complex_double* get_H() { return HMF; }
+	ComplexDoubleMatrix<MKL_Complex16>& get_H() { return HMeanField; }
 
-	lapack_complex_double* get_Phi() { return Phi; }
+	ComplexDoubleMatrix<MKL_Complex16>& get_Phi() { return SingleParticleOrbitals; }
 
-	double* get_Energy() { return Energy; }
+	Matrix<double>& get_Energy() { return SingleParticleEnergies; }
 
 	int get_N() { return N; }
 	
 	int get_dim() { return DIM; }
 
 	vmctype::Spin_t get_spin_type() { return SPIN_TYPE; }
+
+	bool get_conserve_sz2() { return conserve_sz2; }
 
 	int get_num_hop_classes() { return site_pair_list.size(); }
 
@@ -255,7 +245,7 @@ public:
 	void write_directors(std::ofstream* f);
 	void set_fermi_surface();
 
-	void shuffle_FS(int n0, int n1, RandomEngine* rand);
+	// void shuffle_FS(int n0, int n1, RandomEngine* rand);
 
 	bool check_orbital_overlap(int fs_index, int sz) {
 		return std::abs(fermi.get_orbital(fs_index).get_overlap(sz)) > EPSILON;
@@ -266,7 +256,7 @@ public:
 	}
 
 	int get_N0F() override {
-		if (opts.su3_symmetry) {
+		if (conserve_sz2) {
 			assert(3 * (N / 3) == N);
 			return N/3;
 		}

@@ -86,8 +86,9 @@ std::string MeanFieldAnsatz::get_tb_string() {
 }
 
 void MeanFieldAnsatz::diagonalize_hamiltonian() {
-	std::memcpy(Phi, HMF, DIM * DIM * sizeof(lapack_complex_double));
-	info = LAPACKE_zheev(LAPACK_ROW_MAJOR, 'V', 'U', DIM, Phi, DIM, Energy);
+	auto eigensystem = HMeanField.hermitian_diagonalize();
+	SingleParticleOrbitals = eigensystem.first;
+	SingleParticleEnergies = eigensystem.second;
 }
 
 MeanFieldAnsatz_HALF::MeanFieldAnsatz_HALF(WavefunctionOptions& mf_in, Lattice& lat_in) 
@@ -100,6 +101,7 @@ MeanFieldAnsatz_HALF::MeanFieldAnsatz_HALF(WavefunctionOptions& mf_in, Lattice& 
 	assert(mf_in.other_options.spin == vmctype::Spin_t::HALF);
 
 	SPIN_TYPE = vmctype::Spin_t::HALF;
+	conserve_sz2 = true; // spin-1/2 always conserves Sz^2
 	DIM = 2 * lat_in.get_N();
 	double t;
 	int origin, neighbor;
@@ -126,19 +128,14 @@ MeanFieldAnsatz_HALF::MeanFieldAnsatz_HALF(WavefunctionOptions& mf_in, Lattice& 
 
 	}
 
-	HMF = (lapack_complex_double *)mkl_malloc(DIM * DIM * sizeof(lapack_complex_double), 64);
-	Phi = (lapack_complex_double *)mkl_malloc(DIM * DIM * sizeof(lapack_complex_double), 64);
-	Energy = (double *)mkl_malloc(DIM * sizeof(double), 64);
+	HMeanField = ComplexDoubleMatrix<MKL_Complex16>(DIM, DIM);
+	SingleParticleOrbitals= ComplexDoubleMatrix<MKL_Complex16>(DIM, DIM);
+	SingleParticleEnergies = Matrix<double>(DIM, 1);
 	set_hamiltonian();
 	diagonalize_hamiltonian();
 }
 
 void MeanFieldAnsatz_HALF::set_hamiltonian() {
-	//Use row major form (n = row*num_cols + col)
-	//initialize to zero
-	for (int i = 0; i < DIM * DIM; ++i) {
-		HMF[i] = { 0.0, 0.0 };
-	}
 
 	//iterate TB pairs and add upper triangle values
 	int row, col;
@@ -148,8 +145,9 @@ void MeanFieldAnsatz_HALF::set_hamiltonian() {
 			tb_pair->get_sites(row, col);
 			if (row <= col) {
 				tb_pair->get_couplings(tr, ti);
-				HMF[row*DIM + col] -= std::complex<double>(tr, ti);
-				HMF[(row + N)*DIM + col + N] -= std::complex<double>(tr, ti);
+
+				HMeanField(row, col) -= MKL_Complex16({tr, ti});
+				HMeanField(row+N, col+N) -= MKL_Complex16({tr, ti});
 			}
 		}
 	}
@@ -162,10 +160,13 @@ void MeanFieldAnsatz_HALF::print_levels(bool print_all = false) {
 		n1_tot = 0, n_1_tot = 0;
 	std::cout << "\nEnergies and Occupation numbers of Single-Particle Orbitals\n";
 	int loop_limit = print_all ? DIM : N+1;
+	Matrix<double> occupations_up = SingleParticleOrbitals.vector_norm(0, N);
+	Matrix<double> occupations_down = SingleParticleOrbitals.vector_norm(N, 2*N);
 	for (i = 0; i < loop_limit; i++) {
-		E = Energy[i];
-		n1 = cblas_dznrm2(N, &(Phi[i]), DIM);
-		n_1 = cblas_dznrm2(N, &(Phi[i+DIM*N]), DIM);
+		E = SingleParticleEnergies(i, 0);
+		n1 = occupations_up(0, i);
+		n_1 = occupations_down(0, i);
+
 		n1_tot += n1*n1;
 		n_1_tot += n_1*n_1;
 		printf(" (%6.2f,%6.2f,%6.2f)", E, n1_tot, n_1_tot);
@@ -183,6 +184,7 @@ MeanFieldAnsatz_ONE::MeanFieldAnsatz_ONE(WavefunctionOptions& mf_in, Lattice& la
 	assert(mf_in.other_options.spin == vmctype::Spin_t::ONE);
 
 	SPIN_TYPE = vmctype::Spin_t::ONE;
+	conserve_sz2 = mf_in.conserve_sz2;
 	DIM = 3 * lat_in.get_N();
 	double tz, txy;
 	int origin, neighbor;
@@ -219,20 +221,15 @@ MeanFieldAnsatz_ONE::MeanFieldAnsatz_ONE(WavefunctionOptions& mf_in, Lattice& la
 		}
 	}
 
-	HMF = (lapack_complex_double *)mkl_malloc(DIM * DIM * sizeof(lapack_complex_double), 64);
-	Phi = (lapack_complex_double *)mkl_malloc(DIM * DIM * sizeof(lapack_complex_double), 64);
-	Energy = (double *)mkl_malloc(DIM * sizeof(double), 64);
+	HMeanField = ComplexDoubleMatrix<MKL_Complex16>(DIM, DIM);
+	SingleParticleOrbitals = ComplexDoubleMatrix<MKL_Complex16>(DIM, DIM);
+	SingleParticleEnergies= Matrix<double>(DIM, 1);
 	set_hamiltonian();
 	diagonalize_hamiltonian();
 	set_fermi_surface();
 }
 
 void MeanFieldAnsatz_ONE::set_hamiltonian() {
-	//Use row major form (n = row*num_cols + col)
-	//initialize to zero
-	for (int i = 0; i < DIM * DIM; ++i) {
-		HMF[i] = { 0.0, 0.0 };
-	}
 
 	//iterate TB pairs and add upper triangle values
 	int row, col;
@@ -242,14 +239,16 @@ void MeanFieldAnsatz_ONE::set_hamiltonian() {
 			tb_pair->get_sites(row, col);
 			if (row <= col) {
 				tb_pair->get_couplings(tzr, tzi, txyr, txyi);
-				HMF[row*DIM + col] -= std::complex<double>(txyr, txyi);
-				HMF[(row + N)*DIM + col + N] -= std::complex<double>(tzr, tzi);
-				HMF[(row + 2 * N)*DIM + col + 2 * N] -= std::complex<double>(txyr,txyi);
+
+				HMeanField(row, col) -= MKL_Complex16({txyr, txyi});
+				HMeanField(row+N, col+N) -= MKL_Complex16({tzr, tzi});
+				HMeanField(row+2*N, col+2*N) -= MKL_Complex16({txyr, txyi});
 			}
 		}
 	}
 
 	//add director terms
+	std::complex<double> tmpDirector;
 	if (directors.size() > 0) {
 		for (int i = 0; i < N; ++i) {
 			for (int m1 = 0; m1 < 3; ++m1) {
@@ -257,9 +256,10 @@ void MeanFieldAnsatz_ONE::set_hamiltonian() {
 					row = i + m1 * N;
 					col = i + m2 * N;
 					if (row <= col) {
-						HMF[row*DIM + col] -= field * get_director_element(directors[i], m1, m2);
+						tmpDirector = field * get_director_element(directors[i], m1, m2);
+						HMeanField(row, col) -= MKL_Complex16({tmpDirector.real(), tmpDirector.imag()});
 						if (m1 == 1 && m2 == 1) {
-							HMF[row * DIM + col] -= opts.mu_z;
+							HMeanField(row, col) -= MKL_Complex16({opts.mu_z, 0.0});
 						}
 					}
 				}
@@ -329,12 +329,16 @@ void MeanFieldAnsatz_ONE::print_levels(bool print_all = false) {
 	double E, n1 = 0, n0 = 0, n_1 = 0,
 		n1_tot = 0, n0_tot = 0, n_1_tot = 0;
 	std::cout << "\nEnergies and Occupation numbers of Single-Particle Orbitals\n";
+	Matrix<double> occupations_up = SingleParticleOrbitals.vector_norm(0, N);
+	Matrix<double> occupations_0 = SingleParticleOrbitals.vector_norm(N, 2*N);
+	Matrix<double> occupations_down = SingleParticleOrbitals.vector_norm(2*N, 3*N);
+
 	int loop_limit = print_all ? DIM : N+1;
 	for (i = 0; i < loop_limit; i++) {
-		E = Energy[i];
-		n1 = cblas_dznrm2(N, &(Phi[i]), DIM);
-		n0 = cblas_dznrm2(N, &(Phi[i+DIM*N]), DIM);
-		n_1 = cblas_dznrm2(N, &(Phi[i+DIM*2*N]), DIM);
+		E = SingleParticleEnergies(i, 0);
+		n1 = occupations_up(0, i);
+		n0 = occupations_0(0, i);
+		n_1 = occupations_down(0, i);
 		n1_tot += n1*n1;
 		n0_tot += n0*n0;
 		n_1_tot += n_1*n_1;
@@ -349,20 +353,23 @@ void MeanFieldAnsatz_ONE::print_levels(bool print_all = false) {
 void MeanFieldAnsatz_ONE::print_fermi_level() {
 	MKL_INT i;
 	double E, n1 = 0, n0 = 0, n_1 = 0,
-		n1_tot = 0, n0_tot = 0, n_1_tot = 0, Ef = Energy[N-1];
+		n1_tot = 0, n0_tot = 0, n_1_tot = 0, Ef = SingleParticleEnergies(N-1, 0);
 	bool subsurface = true, endsurface = true;
+	Matrix<double> occupations_up = SingleParticleOrbitals.vector_norm(0, N);
+	Matrix<double> occupations_0 = SingleParticleOrbitals.vector_norm(N, 2*N);
+	Matrix<double> occupations_down = SingleParticleOrbitals.vector_norm(2*N, 3*N);
 	printf("\n %s\n", "Energies and Occupation numbers of Single-Particle Orbitals At the Fermi Level");
 	for (i = 0; i < 2*N; i++) {
-		E = Energy[i];
-		n1 = cblas_dznrm2(N, &(Phi[i]), 3 * N);
-		n0 = cblas_dznrm2(N, &(Phi[i + 3 * N*N]), 3 * N);
-		n_1 = cblas_dznrm2(N, &(Phi[i + 6 * N*N]), 3 * N);
+		E = SingleParticleEnergies(i, 0);
+		n1 = occupations_up(0, i);
+		n0 = occupations_0(0, i);
+		n_1 = occupations_down(0, i);
 		n1_tot += n1*n1;
 		n0_tot += n0*n0;
 		n_1_tot += n_1*n_1;
 		if (std::abs(E - Ef) < EPSILON || i == N) {
 			if (subsurface) {
-				printf(" (%6d, %6.2f,%6.2f,%6.2f,%6.2f)", i, Energy[i-1], n1_tot - n1 * n1, n0_tot - n0 * n0, n_1_tot - n_1 * n_1);
+				printf(" (%6d, %6.2f,%6.2f,%6.2f,%6.2f)", i, SingleParticleEnergies(i-1, 0), n1_tot - n1 * n1, n0_tot - n0 * n0, n_1_tot - n_1 * n_1);
 				printf("\n");
 				std::cout << "------------- FS starts here\n";
 				subsurface = false;
@@ -386,13 +393,16 @@ void MeanFieldAnsatz_ONE::print_fermi_level() {
 void MeanFieldAnsatz_ONE::set_fermi_surface() {
 	MKL_INT i;
 	double E, n1 = 0, n0 = 0, n_1 = 0,
-		n1_tot = 0, n0_tot = 0, n_1_tot = 0, Ef = Energy[N - 1];
+		n1_tot = 0, n0_tot = 0, n_1_tot = 0, Ef = SingleParticleEnergies(N-1, 0);
 	bool subsurface = true, endsurface = true;
-	for (i = 0; i < 2 * N; i++) {
-		E = Energy[i];
-		n1 = cblas_dznrm2(N, &(Phi[i]), 3 * N);
-		n0 = cblas_dznrm2(N, &(Phi[i + 3 * N * N]), 3 * N);
-		n_1 = cblas_dznrm2(N, &(Phi[i + 6 * N * N]), 3 * N);
+	Matrix<double> occupations_up = SingleParticleOrbitals.vector_norm(0, N);
+	Matrix<double> occupations_0 = SingleParticleOrbitals.vector_norm(N, 2*N);
+	Matrix<double> occupations_down = SingleParticleOrbitals.vector_norm(2*N, 3*N);
+	for (i = 0; i < 2*N; i++) {
+		E = SingleParticleEnergies(i, 0);
+		n1 = occupations_up(0, i);
+		n0 = occupations_0(0, i);
+		n_1 = occupations_down(0, i);
 		n1_tot += n1 * n1;
 		n0_tot += n0 * n0;
 		n_1_tot += n_1 * n_1;
@@ -408,72 +418,72 @@ void MeanFieldAnsatz_ONE::set_fermi_surface() {
 				n0_F = std::round(n0_tot);
 			}
 		}
-		if (E - Ef > EPSILON&& endsurface) {
+		if (E - Ef > EPSILON && endsurface) {
 			fermi_surface_end = i;//index of first gapped orbital
 			endsurface = false;
 		}
 	}
 }
 
-void MeanFieldAnsatz_ONE::shuffle_FS(int n0, int n1, RandomEngine* rand) {
-	if (fermi_surface_end != n0 + 2 * n1) {
-		lapack_complex_double* fs_temp_matrix = (lapack_complex_double*)mkl_malloc(3 * N * (fermi.get_size()) * sizeof(lapack_complex_double), 64);
-		double n0fermi = n0 - fermi.get_inner_shell_count(0), n1fermi = n1 - fermi.get_inner_shell_count(1), n_1fermi = n1fermi;
-		int fermisize = fermi.get_size();
+// void MeanFieldAnsatz_ONE::shuffle_FS(int n0, int n1, RandomEngine* rand) {
+// 	if (fermi_surface_end != n0 + 2 * n1) {
+// 		lapack_complex_double* fs_temp_matrix = (lapack_complex_double*)mkl_malloc(3 * N * (fermi.get_size()) * sizeof(lapack_complex_double), 64);
+// 		double n0fermi = n0 - fermi.get_inner_shell_count(0), n1fermi = n1 - fermi.get_inner_shell_count(1), n_1fermi = n1fermi;
+// 		int fermisize = fermi.get_size();
 
-		std::vector<int> fs_indices(fermi.get_size());
-		for (int i = 0; i < fs_indices.size(); ++i) {
-			fs_indices[i] = i;
-		}
+// 		std::vector<int> fs_indices(fermi.get_size());
+// 		for (int i = 0; i < fs_indices.size(); ++i) {
+// 			fs_indices[i] = i;
+// 		}
 
-		std::vector<int> occ_indices;
-		int temp_orb_index = 0;
-		Orbital temp_orb;
+// 		std::vector<int> occ_indices;
+// 		int temp_orb_index = 0;
+// 		Orbital temp_orb;
 
-		//select random orbitals from FS until all number requirements are met
-		while (n0fermi + n1fermi + n_1fermi > EPSILON) {
-			temp_orb_index = rand->get_rand_in_range(fs_indices.size());
-			temp_orb = fermi.get_orbital(temp_orb_index);
+// 		//select random orbitals from FS until all number requirements are met
+// 		while (n0fermi + n1fermi + n_1fermi > EPSILON) {
+// 			temp_orb_index = rand->get_rand_in_range(fs_indices.size());
+// 			temp_orb = fermi.get_orbital(temp_orb_index);
 
-			if (n1fermi - temp_orb.get_overlap(1) > -EPSILON
-				&& n0fermi - temp_orb.get_overlap(0) > -EPSILON
-				&& n_1fermi - temp_orb.get_overlap(-1) > -EPSILON) {
+// 			if (n1fermi - temp_orb.get_overlap(1) > -EPSILON
+// 				&& n0fermi - temp_orb.get_overlap(0) > -EPSILON
+// 				&& n_1fermi - temp_orb.get_overlap(-1) > -EPSILON) {
 
-				occ_indices.push_back(temp_orb.get_index());
-				fs_indices.erase(fs_indices.begin() + temp_orb_index);
-				n1fermi -= temp_orb.get_overlap(1);
-				n0fermi -= temp_orb.get_overlap(0);
-				n_1fermi -= temp_orb.get_overlap(-1);
-			}
-		}
+// 				occ_indices.push_back(temp_orb.get_index());
+// 				fs_indices.erase(fs_indices.begin() + temp_orb_index);
+// 				n1fermi -= temp_orb.get_overlap(1);
+// 				n0fermi -= temp_orb.get_overlap(0);
+// 				n_1fermi -= temp_orb.get_overlap(-1);
+// 			}
+// 		}
 
-		assert(fermisize == fs_indices.size() + occ_indices.size());
-		//copy selected columns (occ_indices) of phi into first columns of fs_temp_matrix and update orbitals
-		for (int fs_index = 0; fs_index < occ_indices.size(); ++fs_index) {
-			for (int row = 0; row < 3 * N; ++row) {
-				fs_temp_matrix[row * fermisize + fs_index] = Phi[row * 3 * N + occ_indices[fs_index]];
-			}
-			fermi.update_index(fs_index, fermi_surface_start + fs_index);
-		}
+// 		assert(fermisize == fs_indices.size() + occ_indices.size());
+// 		//copy selected columns (occ_indices) of phi into first columns of fs_temp_matrix and update orbitals
+// 		for (int fs_index = 0; fs_index < occ_indices.size(); ++fs_index) {
+// 			for (int row = 0; row < 3 * N; ++row) {
+// 				fs_temp_matrix[row * fermisize + fs_index] = Phi[row * 3 * N + occ_indices[fs_index]];
+// 			}
+// 			fermi.update_index(fs_index, fermi_surface_start + fs_index);
+// 		}
 
-		//copy remaining fs_indices into remaining columns of fs_temp_matrix and update orbitals
-		for (int fs_index = occ_indices.size(); fs_index < fs_indices.size() + occ_indices.size(); ++fs_index) {
-			for (int row = 0; row < 3 * N; ++row) {
-				fs_temp_matrix[row * fermisize + fs_index] = Phi[row * 3 * N + fs_indices[fs_index - occ_indices.size()]];
-			}
-			fermi.update_index(fs_index, fermi_surface_start + fs_index);
-		}
+// 		//copy remaining fs_indices into remaining columns of fs_temp_matrix and update orbitals
+// 		for (int fs_index = occ_indices.size(); fs_index < fs_indices.size() + occ_indices.size(); ++fs_index) {
+// 			for (int row = 0; row < 3 * N; ++row) {
+// 				fs_temp_matrix[row * fermisize + fs_index] = Phi[row * 3 * N + fs_indices[fs_index - occ_indices.size()]];
+// 			}
+// 			fermi.update_index(fs_index, fermi_surface_start + fs_index);
+// 		}
 
-		//copy columns of fs_temp_matrix back into corresponding columns of phi
-		for (int row = 0; row < 3 * N; ++row) {
-			std::memcpy(&(Phi[row * 3 * N + fermi_surface_start]), &(fs_temp_matrix[row * fermisize]), fermisize * sizeof(lapack_complex_double));
-		}
+// 		//copy columns of fs_temp_matrix back into corresponding columns of phi
+// 		for (int row = 0; row < 3 * N; ++row) {
+// 			std::memcpy(&(Phi[row * 3 * N + fermi_surface_start]), &(fs_temp_matrix[row * fermisize]), fermisize * sizeof(lapack_complex_double));
+// 		}
 
 
 
-		mkl_free(fs_temp_matrix);
-	}
-}
+// 		mkl_free(fs_temp_matrix);
+// 	}
+// }
 
 void MeanFieldAnsatz_ONE::write_levels(std::ofstream *f) {
 	MKL_INT i;
@@ -481,11 +491,15 @@ void MeanFieldAnsatz_ONE::write_levels(std::ofstream *f) {
 		n1_tot = 0, n0_tot = 0, n_1_tot = 0;
 	*f << "Band Energy, Total N, cumul. N_-1, cumul. N_0, cumul. N_1, N_-1, N_0, N_1\n";
 	char buf[1024];
+	Matrix<double> occupations_up = SingleParticleOrbitals.vector_norm(0, N);
+	Matrix<double> occupations_0 = SingleParticleOrbitals.vector_norm(N, 2*N);
+	Matrix<double> occupations_down = SingleParticleOrbitals.vector_norm(2*N, 3*N);
+
 	for (i = 0; i < N + 1; i++) {
-		E = Energy[i];
-		n1 = cblas_dznrm2(N, &(Phi[i]), 3 * N);
-		n0 = cblas_dznrm2(N, &(Phi[i + 3 * N * N]), 3 * N);
-		n_1 = cblas_dznrm2(N, &(Phi[i + 6 * N * N]), 3 * N);
+		E = SingleParticleEnergies(i, 0);
+		n1 = occupations_up(0, i);
+		n0 = occupations_0(0, i);
+		n_1 = occupations_down(0, i);
 		n1_tot += n1 * n1;
 		n0_tot += n0 * n0;
 		n_1_tot += n_1 * n_1;
@@ -496,6 +510,7 @@ void MeanFieldAnsatz_ONE::write_levels(std::ofstream *f) {
 		*f << std::string(buf) << "\n";
 	}
 }
+
 void MeanFieldAnsatz_ONE::write_directors(std::ofstream* f) {
 	*f << "site, ux, uy, uz, vx, vy, vz\n";
 	for (auto site = 0; site < directors.size(); ++site) {

@@ -72,6 +72,29 @@ bool makePath(const std::string& path)
 	}
 }
 
+template <>
+void vmc_io::print_matrix(const char* desc, int m, int n, std::complex<double>* a, int lda){
+	std::cout << desc << ":\n";
+	// this is gross but I don't know how else to format print a complex number
+	int WIDTH = 16;
+	int token_width = 0;
+	int num_spaces = 0;
+	std::stringstream ss;
+	for (int i = 0; i < m; ++i) {
+		for (int j = 0; j < n-1; ++j) {
+			ss.str("");
+			ss << a[i * lda + j];
+			token_width = ss.str().length();
+			num_spaces = WIDTH - token_width;
+			if (num_spaces < 1) {
+				num_spaces = 1;
+			}
+			std::cout << std::string(num_spaces, ' ') << a[i * lda + j] << ",";
+		}
+		std::cout << a[i * lda + n - 1] << "\n";
+	}
+}
+
 LatticeOptions read_json_lattice(json j) {
 	LatticeOptions lat_opt;
 	lat_opt.type = j["lattice"]["type"].get<std::string>();
@@ -129,9 +152,11 @@ WavefunctionOptions read_json_wavefunction(json j) {
 		if (j["wavefunction"].contains("num spin-orbit")) {
 			wf_opt.other_options.num_spin_orbit = j["wavefunction"]["num spin-orbit"];
 		}
-		if (j["wavefunction"].contains("su3_symmetry")) {
-			wf_opt.other_options.su3_symmetry = j["wavefunction"]["su3_symmetry"];
+		if (j["wavefunction"].contains("conserve_sz2")) {
+			wf_opt.conserve_sz2 = j["wavefunction"]["conserve_sz2"];
 		}
+		// override this for spin-1/2 (always conserve sz^2)
+		wf_opt.conserve_sz2 = (wf_opt.other_options.spin == vmctype::Spin_t::HALF) || wf_opt.conserve_sz2;
 
 		// Set hopping, LRO, and jastrow
 		if (j["wavefunction"].contains("hopping")) {
@@ -254,14 +279,6 @@ VMCOptions read_json_vmc(json j) {
 	}
 	else {
 		vmc_opt.optimization = false;
-	}
-
-	// Maintain SU(3) symmetry
-	if (j["vmc"].contains("su3")) {
-		vmc_opt.su3 = j["vmc"]["su3"].get<bool>();
-	}
-	else {
-		vmc_opt.su3 = true;
 	}
 	
 	// Markov chain
