@@ -17,12 +17,14 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",
     "sphinx_rtd_theme",
+    "breathe"
 ]
 
 templates_path = ['_templates']
 exclude_patterns = []
 
-
+# Breathe Configuration
+breathe_default_project = "variationalMC"
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output

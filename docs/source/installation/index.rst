@@ -35,15 +35,22 @@ If using a different version of the oneAPI toolkit, be sure to replace the "2025
     
     ls /opt/intel/oneapi
 
-Set up CMake
+Install the build dependencies via conda
 -------------------------------------------
 
-CMake is installed as part of the oneAPI configuration, so it should already be available on your system. Check this by running ``which cmake``, and if it returns a path then cmake is already available. If it is not, run the following (Ubuntu):
+The build system uses ``cmake``, and the documentation is built using sphinx and doxygen. To install all of the build dependencies together, it is easiest to use conda. If you have conda installed, the recommended way to do this is to create a new conda environment. This conda environment is specified in the ``doc/conda.yml`` file (from the root directory of the repository). To create the conda environment, run the following command from the root of the repository in the terminal:
 
 .. code-block:: bash
     
-    sudo apt update
-    sudo apt -y install cmake pkg-config build-essential
+    conda env create -f doc/conda.yml
+
+Then, activate the environment with:
+
+.. code-block:: bash
+    
+    conda activate vmc_build
+
+If this doesn't work, you can also try building an environment manually using ``doc/requirements.txt``.
 
 Pull in Gtest for testing
 -------------------------------------------
@@ -105,3 +112,7 @@ Configuration
         }
 
     Optional: delete the default configuration(s) that was already in this file.
+
+
+(Optional) Set up SSH for remote development
+-------------------------------------------

@@ -1,6 +1,6 @@
 
 
-include(Dart)
+include(CTest)
 set(CTEST_OUTPUT_ON_FAILURE 1)
 
 # To allow type definitions for VSCode debugging

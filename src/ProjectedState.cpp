@@ -37,6 +37,8 @@ void ProjectedState::print_matrix(std::string name){
 
 ProjectedState::ProjectedState(MeanFieldAnsatz& M_, RandomEngine& rand_)
 	: ansatz(M_), rand(rand_), N(ansatz.get_N()), DIM(ansatz.get_dim()){
+	// initialize the Slater-Jastrow state
+
 	conserve_sz2 = M_.get_conserve_sz2();
 	malloc_matrices();
 	clear_matrices();

@@ -90,8 +90,14 @@ Lattice::Lattice() {}
 
 Lattice::~Lattice() {}
 
+/**
+ * This is the comment above the Lattice constructor
+ */
 Lattice::Lattice(Lattice_type_t lat_type_in, vec3<int> L_in, vec3<int> pbc_in)
 	: lat_type(lat_type_in), L(L_in), pbc_signs(pbc_in) {
+	/**
+	 * This is the comment inside the Lattice constructor
+	 */
 
 	if (!inputIsValid(lat_type_in, L_in, pbc_in)){
 		throw std::invalid_argument("Lattice input is invalid");

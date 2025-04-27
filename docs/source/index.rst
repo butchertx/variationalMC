@@ -16,6 +16,7 @@ addiitonal wavefunction types.
 
 - To get started with installation, see :doc:`the Installation Guide </installation/index>`.
 - To learn about what the library can do, see :doc:`the Project Overview </overview/index>`.
+- To read about the work that precipitated the need for this software, see Chapters 3 and 6 of `my thesis <https://repository.rice.edu/items/b1646003-2c86-44d0-a61e-e2fe3007b9e3>`_.
 
 .. toctree::
    :maxdepth: 2

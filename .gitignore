@@ -40,9 +40,9 @@ projects/
 
 # Build files
 build/**
-doc/build/**
-doc/html/**
-doc/latex/**
+docs/build/**
+docs/html/**
+docs/latex/**
 
 # Third-Party libraries
 thirdparty/**
