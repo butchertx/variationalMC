@@ -41,6 +41,8 @@ projects/
 # Build files
 build/**
 doc/build/**
+doc/html/**
+doc/latex/**
 
 # Third-Party libraries
 thirdparty/**
