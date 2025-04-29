@@ -11,9 +11,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniconda-version: "latest"
+          activate-environment: vmc_build
       - name: Install dependencies
         run: |
-          pip install sphinx sphinx_rtd_theme myst_parser doxygen cmake breathe 
+          conda install sphinx sphinx_rtd_theme myst_parser doxygen cmake breathe 
       - name: Sphinx build
         run: |
           cmake --build build --target Doxygen -j 6 --
