@@ -13,7 +13,7 @@ jobs:
       - uses: actions/setup-python@v5
       - name: Install dependencies
         run: |
-          pip install sphinx sphinx_rtd_theme myst_parser cmake breathe doxygen
+          pip install sphinx sphinx_rtd_theme myst_parser doxygen cmake breathe 
       - name: Sphinx build
         run: |
           cmake --build build --target Doxygen -j 6 --
