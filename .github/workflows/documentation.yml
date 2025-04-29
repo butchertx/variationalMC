@@ -18,7 +18,7 @@ jobs:
       - name: Install dependencies
         run: |
           conda config --add channels conda-forge
-          conda install sphinx sphinx_rtd_theme myst_parser doxygen cmake breathe 
+          conda install sphinx sphinx_rtd_theme doxygen cmake breathe 
       - name: Sphinx build
         run: |
           cmake --build build --target Doxygen -j 6 --
