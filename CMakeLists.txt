@@ -1,10 +1,3 @@
-if(UNIX)
-    # Direct CMake to use icpx rather than the default C++ compiler/linker
-    set(CMAKE_CXX_COMPILER icpx)
-else() # Windows
-    # not implemented
-endif()
-
 cmake_minimum_required (VERSION 4.0)
 
 # GoogleTest requires at least C++14
