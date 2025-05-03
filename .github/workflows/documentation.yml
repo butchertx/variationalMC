@@ -21,12 +21,15 @@ jobs:
           conda install sphinx sphinx_rtd_theme doxygen "cmake>=4.0" breathe
           conda list
           cmake --version
+          conda env export
           conda env export > conda.yml
       - name: Sphinx build
         run: |
-          conda list
+          conda env export
+          conda init
           cmake --version
           conda activate vmc_build
+          conda env export
           cmake --version
           mkdir build
           cmake .
