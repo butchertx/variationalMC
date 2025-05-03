@@ -19,18 +19,11 @@ jobs:
         run: |
           conda config --add channels conda-forge
           conda install sphinx sphinx_rtd_theme doxygen "cmake>=4.0" breathe
-          conda list
-          cmake --version
-          conda env export
-          conda env export > conda.yml
       - name: Sphinx build
         run: |
-          conda env export
-          conda init
-          cmake --version
-          conda activate vmc_build
-          conda env export
-          cmake --version
+          CONDA_BASE=$(conda info --base)
+          source $CONDA_BASE/etc/profile.d/conda.sh
+          conda activate
           mkdir build
           cmake .
           cmake --build build --target Doxygen -j 6 --
