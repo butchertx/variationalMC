@@ -18,7 +18,7 @@ jobs:
       - name: Install dependencies
         run: |
           conda config --add channels conda-forge
-          conda install sphinx sphinx_rtd_theme doxygen cmake>=4.0 breathe 
+          conda install sphinx sphinx_rtd_theme doxygen "cmake>=4.0" breathe 
       - name: Sphinx build
         run: |
           mkdir build
