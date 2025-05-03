@@ -22,6 +22,7 @@ jobs:
       - name: Sphinx build
         run: |
           mkdir build
+          cmake .
           cmake --build build --target Doxygen -j 6 --
           cmake --build build --target Sphinx -j 6 --
       - name: Deploy to GitHub Pages
