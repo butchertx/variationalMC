@@ -80,5 +80,5 @@ if (MKL_FOUND)
         $<LINK_ONLY:MKL::MKL>
     )
 else()
-    message("MKL not found. Please set MKLROOT environment variable. Only building docs.")
+    message(FATAL_ERROR "MKL not found. Please set MKLROOT environment variable.")
 endif()

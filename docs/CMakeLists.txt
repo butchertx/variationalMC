@@ -1,7 +1,7 @@
 # See https://devblogs.microsoft.com/cppblog/clear-functional-c-documentation-with-sphinx-breathe-doxygen-cmake/
 # for a tutorial on how to combine Doxygen, sphinx, and CMake
 
-set(TARGET_NAME docs)
+set(TARGET_NAME run_example)
 find_package(Doxygen REQUIRED)
 find_package(Sphinx REQUIRED)
 
