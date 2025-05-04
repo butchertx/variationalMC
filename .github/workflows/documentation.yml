@@ -25,7 +25,7 @@ jobs:
           source $CONDA_BASE/etc/profile.d/conda.sh
           conda activate
           mkdir build
-          cmake .
+          cmake . 
           cmake --build build --target Doxygen -j 6 --
           cmake --build build --target Sphinx -j 6 --
       - name: Deploy to GitHub Pages
