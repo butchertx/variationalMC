@@ -6,8 +6,13 @@ find_package(Doxygen REQUIRED)
 find_package(Sphinx REQUIRED)
 
 # Find all the public headers
-get_target_property(VMC_PUBLIC_HEADER_DIR ${TARGET_NAME} INTERFACE_INCLUDE_DIRECTORIES)
-file(GLOB_RECURSE VMC_PUBLIC_HEADERS ${VMC_PUBLIC_HEADER_DIR}/*.h)
+if(NOT TARGET ${TARGET_NAME})
+  # If we are not building the example, we need to find the headers here
+  file(GLOB_RECURSE VMC_PUBLIC_HEADERS ../src/*.h)
+else()
+  get_target_property(VMC_PUBLIC_HEADER_DIR ${TARGET_NAME} INTERFACE_INCLUDE_DIRECTORIES)
+  file(GLOB_RECURSE VMC_PUBLIC_HEADERS ${VMC_PUBLIC_HEADER_DIR}/*.h)
+endif()
 
 ######################################
 # Doxygen

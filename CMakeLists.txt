@@ -14,9 +14,13 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 # Add source files
-add_subdirectory (docs)
-add_subdirectory (src)
-add_subdirectory (thirdparty/googletest-main EXCLUDE_FROM_ALL)
-add_subdirectory (src/test EXCLUDE_FROM_ALL)
+if (DEFINED DOCS_ONLY)
+    add_subdirectory (docs)
+else()
+    add_subdirectory (docs)
+    add_subdirectory (src)
+    add_subdirectory (thirdparty/googletest-main EXCLUDE_FROM_ALL)
+    add_subdirectory (src/test EXCLUDE_FROM_ALL)
+endif()
 
 enable_testing()
