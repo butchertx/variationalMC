@@ -25,9 +25,10 @@ jobs:
           source $CONDA_BASE/etc/profile.d/conda.sh
           conda activate
           mkdir build
-          cmake . 
-          cmake --build build --target Doxygen -j 6 --
-          cmake --build build --target Sphinx -j 6 --
+          cd build
+          cmake -DDOCS_ONLY:BOOL=TRUE .. 
+          cmake --build . --target Doxygen -j 6 --
+          cmake --build . --target Sphinx -j 6 --
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/dev' }}
