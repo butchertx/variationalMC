@@ -26,7 +26,7 @@ jobs:
           conda activate
           mkdir build
           cd build
-          cmake -DDOCS_ONLY:BOOL=TRUE .. 
+          cmake -DDOCS_ONLY:BOOL=TRUE ..
           cmake --build . --target Doxygen -j 6 --
           cmake --build . --target Sphinx -j 6 --
       - name: Deploy to GitHub Pages

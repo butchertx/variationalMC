@@ -8,3 +8,4 @@ In Variational Monte Carlo, the ``Wavefunction`` is the object that controls the
 .. toctree::
 
     slater_jastrow
+    mean_field
