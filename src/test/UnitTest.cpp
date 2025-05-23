@@ -16,6 +16,18 @@
     const std::string EXAMPLES_DIR = std::filesystem::absolute("../../examples/");
 #endif
 
+// Custom Assertions
+
+inline void AssertMKLComplexEqual__(const MKL_Complex16& base, const MKL_Complex16& other)
+{
+    ASSERT_DOUBLE_EQ(base.real, other.real);
+    ASSERT_DOUBLE_EQ(base.imag, other.imag);
+}
+
+#define ASSERT_COMPLEX_EQUAL(base__, other__)  \
+    SCOPED_TRACE("Complex values don't match"); \
+    AssertMKLComplexEqual__(base__, other__)
+
 // Hello World Tests
 
 // Demonstrate some basic assertions.
@@ -133,33 +145,26 @@ TEST(MatrixTest, MatrixCopyRow2) {
     EXPECT_EQ(m2(1, 1), m1(0, 1));
 }
 
-// TEST(MatrixTest, MatrixCopyRow2) {
-//     ComplexDoubleMatrix<MKL_Complex16> m1(2, 2);
-//     ComplexDoubleMatrix<MKL_Complex16> m2(2, 2);
-//     m1(0, 0) = {1.0, 0.0};
-//     m1(0, 1) = {2.0, 0.0};
-//     m1(1, 0) = {3.0, 0.0};
-//     m1(1, 1) = {4.0, 0.0};
+TEST(MatrixTest, MatrixInverse) {
+    ComplexDoubleMatrix<MKL_Complex16> m(2, 2);
+    m(0, 0) = {1.0, 0.0};
+    m(0, 1) = {2.0, 0.0};
+    m(1, 0) = {3.0, 0.0};
+    m(1, 1) = {4.0, 0.0};
 
-//     m2.copy_row(m1, 0, 1);
-
-//     EXPECT_EQ(m2(1, 0), m1(0, 0));
-//     EXPECT_EQ(m2(1, 1), m1(0, 1));
-// }
-
-// TEST(MatrixTest, MatrixCopyRow3) {
-//     ComplexDoubleMatrix<MKL_Complex16> m1(2, 2);
-//     ComplexDoubleMatrix<MKL_Complex16> m2(2, 2);
-//     m1(0, 0) = {1.0, 0.0};
-//     m1(0, 1) = {2.0, 0.0};
-//     m1(1, 0) = {3.0, 0.0};
-//     m1(1, 1) = {4.0, 0.0};
-
-//     m2.copy_row(m1, 1, 1);
-
-//     EXPECT_EQ(m2(1, 0), m1(1, 0));
-//     EXPECT_EQ(m2(1, 1), m1(1, 1));
-// }
+    ComplexDoubleMatrix<MKL_Complex16> inv = m.compute_inverse();
+    std::cout << "Inverse matrix:\n";   
+    for (int i = 0; i < 2; ++i) {
+        for (int j = 0; j < 2; ++j) {
+            std::cout << inv(i, j).real << " ";
+        }
+        std::cout << "\n";
+    }
+    ASSERT_COMPLEX_EQUAL(inv(0, 0), MKL_Complex16({-2.0, 0.0}));
+    ASSERT_COMPLEX_EQUAL(inv(0, 1), MKL_Complex16({1.0, 0.0}));
+    ASSERT_COMPLEX_EQUAL(inv(1, 0), MKL_Complex16({1.5, 0.0}));
+    ASSERT_COMPLEX_EQUAL(inv(1, 1), MKL_Complex16({-0.5, 0.0}));
+}
 
 // Lattice Tests
 

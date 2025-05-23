@@ -1,38 +1,6 @@
 #include "ProjectedState.h"
 #include "mkl_types.h"
 
-// printing
-
-void ProjectedState::print_matrix(std::string name){
-	if (std::strcmp(name.c_str(), "Slater") == 0){
-		vmc_io::print_matrix("Slater", N, N, Slater, N);
-	}
-	else if (std::strcmp(name.c_str(), "LU") == 0){
-		vmc_io::print_matrix("LU", N, N, LU, N);
-	}
-	else if (std::strcmp(name.c_str(), "Winv") == 0){
-		vmc_io::print_matrix("Winv", DIM, N, Winv, N);
-	}
-	else if (std::strcmp(name.c_str(), "UP1") == 0){
-		vmc_io::print_matrix("UP1", DIM, 2, UP1, 2);
-	}
-	else if (std::strcmp(name.c_str(), "UP2") == 0){
-		vmc_io::print_matrix("UP2", 2, N, UP2, N);
-	}
-	else if (std::strcmp(name.c_str(), "UP3") == 0){
-		vmc_io::print_matrix("UP3", 2, N, UP3, N);
-	}
-	else if (std::strcmp(name.c_str(), "ipiv") == 0){
-		vmc_io::print_matrix("ipiv", N, N, ipiv, N);
-	}
-	else if (std::strcmp(name.c_str(), "Phi") == 0){
-		vmc_io::print_matrix("Phi", DIM, DIM, ansatz.get_Phi(), DIM);
-	}
-	else {
-		std::cerr << "Matrix name " << name << " not recognized.\n";
-	}
-}
-
 // constructors
 
 ProjectedState::ProjectedState(MeanFieldAnsatz& M_, RandomEngine& rand_)
@@ -53,14 +21,8 @@ ProjectedState::ProjectedState(MeanFieldAnsatz& M_, RandomEngine& rand_, Jastrow
 }
 
 void ProjectedState::clear_matrices(){
-	for (int i = 0; i < N * N; ++i) {
-		Slater[i] = { 0,0 };
-		LU[i] = { 0,0 };
-		ipiv[i] = 0;
-	}
-	for (int i = 0; i < DIM * N; ++i) {
-		Winv[i] = { 0,0 };
-	}
+	Slater.clear_matrix();
+	Winv.clear_matrix();
 	for (int i = 0; i < 2 * DIM; ++i) {
 		UP1[i] = { 0.0, 0.0 };
 		if (i < 2 * N) {
@@ -109,9 +71,6 @@ void ProjectedState::set_configuration(std::vector<int> conf) {
 	int row = 0;
 	auto phi = ansatz.get_Phi();
 	parton_labels.clear();
-	int info;
-	MKL_Complex16 alpha = { 1.0, 0.0 }, beta = { 0.0, 0.0 };
-	MKL_INT64 N_64 = N, DIM_64 = DIM; // needed for use with intel ilp64 interface / libraries
 
 	// move the relevant rows of Phi into Slater
 	for (int i = 0; i < N; ++i) {
@@ -119,40 +78,35 @@ void ProjectedState::set_configuration(std::vector<int> conf) {
 		row = Spin_t_to_row(configuration[i]) + i;
 		Slater.copy_row(Slater, phi, parton_labels[i], row, N);
 	}
-	info = LAPACKE_zgetrf(LAPACK_ROW_MAJOR, N, N, Slater, N, ipiv);
-	std::memcpy(LU, Slater, N * N * sizeof(lapack_complex_double));
-	if (info == 0) {
-		info = LAPACKE_zgetri(LAPACK_ROW_MAJOR, N, Slater, N, ipiv);
-		// zgemm3m("N", "N", &DIM, &N, &N, &alpha, phi, &N, Slater, &N, &beta, Winv, &N);
-		cblas_zgemm3m(CblasRowMajor, CblasNoTrans, CblasNoTrans, DIM, N, N, &alpha, phi, DIM, Slater, N, &beta, Winv, N);
-		// cblas_zgemm3m_64(CblasRowMajor, CblasNoTrans, CblasNoTrans, DIM_64, N_64, N_64, &alpha, phi, DIM_64, Slater, N_64, &beta, Winv, N_64);
-	}
-	det = calc_det();
+
+	// invert Slater matrix
+	auto Slater_inverse = Slater.compute_inverse();
+
+	// Multiply phi into Slater^{-1}
+	Winv = phi.get_slice(0, phi.rows(), 0, N) * Slater_inverse;
+
 }
 
-std::complex<double> ProjectedState::calc_det() {
-	std::complex<double> result = { 1.0, 0.0 };
-	for (int i = 0; i < N; ++i) {
-		result *= LU[i*N + i];
-	}
-	return result;
+MKL_Complex16 ProjectedState::calc_det() {
+	return Slater.determinant();
 }
 
 void ProjectedState::upinvhop2(int rowk, int colk, int rowl, int coll) {
 	//perform the update of Winv according to the Woodbury Matrix identity
-	//Winv' = Winv - Winv * U (I_k + V A^-1 U)^-1 V A^-1
+	//Winv' = Phi * I_{dNxN} * A^{-1} * U (I_k + V A^-1 U)^-1 V A^-1
+	//      = (Winv * U) * (I_k + V A^-1 U)^-1 * UP2
 	//where U and V are defined so A' = A + UV (A is the Slater matrix)
 	//UP1 is Winv * U; the i and j columns of Winv where i and j are the sites to update
 	//UP2 is V A^-1 (which can be computed easily from rows of Winv)
 	//UP3 is (I_k + V A^-1 U)^-1 (2x2) times UP2 (2xN)
 
-	std::complex<double>
-		c11 = Winv[rowl * N + coll],
-		c22 = Winv[rowk * N + colk],
-		c12 = -Winv[rowk * N + coll],
-		c21 = -Winv[rowl * N + colk];
+	MKL_Complex16 c11, c12, c21, c22;
+	c11 = Winv(rowl, coll);
+	c22 = Winv(rowk, colk);
+	c12 = - Winv(rowk, coll);
+	c21 = - Winv(rowl, colk);
 
-	std::complex<double> g = c11 * c22 - c12 * c21, beta = { 1.0, 0.0 };
+	MKL_Complex16 g = c11 * c22 - c12 * c21, beta = { 1.0, 0.0 };
 
 	cblas_zcopy(DIM, &(Winv[colk]), N, UP1, 2);
 	cblas_zcopy(DIM, &(Winv[coll]), N, &(UP1[1]), 2);
@@ -176,14 +130,14 @@ void ProjectedState::upinvhop2(int rowk, int colk, int rowl, int coll) {
 /// PRIVATE MATRIX ELEMENTS
 
 // swap 2 sites with specified sz values, with jastrow
-std::complex<double> ProjectedState::psi_over_psi2(int site1, int site2, int new_sz1, int new_sz2) {
+MKL_Complex16 ProjectedState::psi_over_psi2(int site1, int site2, int new_sz1, int new_sz2) {
 	MKL_Complex16 result;
 	//new_sz1 = configuration[site2], new_sz2 = configuration[site1];
 
 	int spin_row1 = Spin_t_to_row(new_sz1), spin_row2 = Spin_t_to_row(new_sz2);
 
-	result = Winv[(site1 + spin_row1) * N + parton_labels[site1]] * Winv[(site2 + spin_row2) * N + parton_labels[site2]]
-		- Winv[(site1 + spin_row1) * N + parton_labels[site2]] * Winv[(site2 + spin_row2) * N + parton_labels[site1]];
+	result = Winv((site1 + spin_row1), parton_labels[site1]) * Winv((site2 + spin_row2),  parton_labels[site2])
+				- Winv((site1 + spin_row1), parton_labels[site2]) * Winv((site2 + spin_row2), parton_labels[site1]);
 
 	std::vector<int> flip_sites = { site1, site2 }, new_sz = { new_sz1, new_sz2 };
 	return result * jastrow.lazy_eval(flip_sites, new_sz, configuration);
@@ -337,6 +291,7 @@ void ProjectedState::update(std::vector<int>& flips, std::vector<int>& new_sz) {
 
 //Tests
 
+/** 
 bool ProjectedState::test_2_spin_swap_pop(bool output) {
 	assert(!jastrow.exist()); //test jastrow separately
 	bool success = false;
@@ -439,3 +394,5 @@ bool ProjectedState::test_3_spin_swap_pop(bool output) {
 
 	return success;
 }
+
+*/

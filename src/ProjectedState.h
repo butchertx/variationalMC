@@ -17,9 +17,8 @@ class ProjectedState : public Wavefunction {
 	JastrowTable jastrow;
 	int N, DIM; // number of sites/particles, and state space dimension
 	std::vector<int> parton_labels;
-	lapack_complex_double *Slater, *LU, *Winv, *UP1, *UP2, *UP3;
-	int *ipiv;
-	std::complex<double> det;
+	ComplexDoubleMatrix<MKL_Complex16> Slater, Winv;
+	lapack_complex_double *UP1, *UP2, *UP3;
 	static const int CONFIG_ATTEMPTS = 50;
 
 	// helpers
@@ -27,19 +26,15 @@ class ProjectedState : public Wavefunction {
 
 	// initialization
 	void malloc_matrices() {
-		Slater = (lapack_complex_double*)mkl_malloc(N * N * sizeof(lapack_complex_double), 64);
-		LU = (lapack_complex_double*)mkl_malloc(N * N * sizeof(lapack_complex_double), 64);
-		Winv = (lapack_complex_double*)mkl_malloc(DIM * N * sizeof(lapack_complex_double), 64);
 		UP1 = (lapack_complex_double*)mkl_malloc(DIM * 2 * sizeof(lapack_complex_double), 64);
 		UP2 = (lapack_complex_double*)mkl_malloc(N * 2 * sizeof(lapack_complex_double), 64);
 		UP3 = (lapack_complex_double*)mkl_malloc(N * 2 * sizeof(lapack_complex_double), 64);
-		ipiv = (int *)mkl_malloc(N * N * sizeof(int), 64);
 	}
 	void clear_matrices();
 	void initialize_configuration();
 	bool try_configuration();
 	void set_configuration(std::vector<int> conf);
-	std::complex<double> calc_det();
+	MKL_Complex16 calc_det();
 
 	// updates
 	void update(std::vector<int>& flips, std::vector<int>& new_sz, std::complex<double> pop);
@@ -57,9 +52,6 @@ public:
 	ProjectedState(MeanFieldAnsatz& M, RandomEngine& rand_in, JastrowTable jastrow_in);
 
 	~ProjectedState() {
-		mkl_free(Slater);
-		mkl_free(LU);
-		mkl_free(Winv);
 		mkl_free(UP1);
 		mkl_free(UP2);
 		mkl_free(UP3);

@@ -12,6 +12,12 @@ bool operator==(const MKL_Complex16& base, const MKL_Complex16& other) {
     return (base.real == other.real && base.imag == other.imag);
 }
 
+MKL_Complex16& operator*=(MKL_Complex16& base, const MKL_Complex16& other) {
+    base.real = base.real * other.real - base.imag * other.imag;
+    base.imag = base.real * other.imag + base.imag * other.real;
+    return base;
+}
+
 MKL_Complex16& operator+=(MKL_Complex16& base, const MKL_Complex16& other) {
     base.real += other.real;
     base.imag += other.imag;
@@ -22,6 +28,24 @@ MKL_Complex16& operator-=(MKL_Complex16& base, const MKL_Complex16& other) {
     base.real -= other.real;
     base.imag -= other.imag;
     return base;
+}
+
+MKL_Complex16 operator+(const MKL_Complex16& base, const MKL_Complex16& other) {
+    return {base.real + other.real, base.imag + other.imag};
+}
+
+MKL_Complex16 operator-(const MKL_Complex16& base, const MKL_Complex16& other) {
+    return {base.real - other.real, base.imag - other.imag};
+}
+
+MKL_Complex16 operator-(const MKL_Complex16& base) {
+    return {-base.real, -base.imag};
+}
+
+MKL_Complex16& operator*(MKL_Complex16& base, const MKL_Complex16& other) {
+    MKL_Complex16 result = {base.real * other.real - base.imag * other.imag,
+                            base.imag = base.real * other.imag + base.imag * other.real};
+    return result;
 }
 
 template<typename T>
@@ -49,6 +73,20 @@ public:
 
     ~Matrix() {
 		mkl_free(data_);
+    }
+
+    void clear_matrix() {
+        for (int i = 0; i < rows_ * cols_; ++i) {
+            data_[i] = T(0);
+        }
+    }
+
+    MKL_INT64 rows() const {
+        return rows_;
+    }
+
+    MKL_INT64 cols() const {
+        return cols_;
     }
 
     static void copy_row(Matrix<T>& dest, const Matrix<T>& src, int row_idx_dest, int row_idx_src, int column_boundary = -1) {
@@ -91,6 +129,19 @@ public:
 template<typename T>
 class ComplexDoubleMatrix : public Matrix<T> {
 
+protected:
+
+    // MKL_Complex16* data_;
+    // MKL_INT64 rows_;
+    // MKL_INT64 cols_;
+
+    // data needed for inverse and determinant
+    bool LU_decomposed_ = false; // flag to check if LU decomposition is done
+    bool determinant_computed_ = false; // flag to check if determinant is computed
+    T* LU_ = nullptr;
+    MKL_INT* ipiv_ = nullptr;
+    T determinant_ = {0, 0}; // determinant of the matrix
+
 public:
 
     ComplexDoubleMatrix() : Matrix<T>() {}
@@ -104,7 +155,27 @@ public:
     }
     ComplexDoubleMatrix(const ComplexDoubleMatrix<T>& other) : Matrix<T>(other) {}
 
-    ~ComplexDoubleMatrix() { /* Destructor will automatically call the base class destructor */ }
+    ~ComplexDoubleMatrix() { /* Destructor will automatically call the base class destructor */ 
+        if (LU_decomposed_) {
+            mkl_free(LU_);
+            mkl_free(ipiv_);
+        }
+    }
+
+    ComplexDoubleMatrix<T> get_slice(int row_start, int row_end, int col_start, int col_end) {
+        // returns a slice of the matrix
+        assert(row_start >= 0 && row_end <= this->rows_);
+        assert(col_start >= 0 && col_end <= this->cols_);
+        assert(row_start < row_end);
+        assert(col_start < col_end);
+        ComplexDoubleMatrix<T> result(row_end - row_start, col_end - col_start);
+        for (int i = row_start; i < row_end; ++i) {
+            for (int j = col_start; j < col_end; ++j) {
+                result(i - row_start, j - col_start) = this->data_[i * this->cols_ + j];
+            }
+        }
+        return result;
+    }
 
     // cblas routines
 
@@ -125,6 +196,72 @@ public:
         // computes the vector norm of each column
         // returns a row vector of the norms
         return this->vector_norm(0, this->rows_);
+    }
+
+    void populate_LU() {
+        // LU decomposition of the matrix. This is needed for the inverse and determinant
+        // matrix should be square
+        // we want to allocate LU_ and ipiv_ only once
+        if (LU_decomposed_) {
+            return;
+        }
+        LU_ = (T*) mkl_malloc(this->rows_ * this->cols_ * sizeof(T), 64);
+        ipiv_ = (MKL_INT*) mkl_malloc(this->rows_ * this->cols_ * sizeof(MKL_INT), 64);
+        std::memcpy(LU_, this->data_, this->rows_ * this->cols_ * sizeof(T));
+        for (int i = 0; i < this->rows_ * this->cols_; ++i) {
+            ipiv_[i] = 0;
+        }
+        MKL_INT info;
+        info = LAPACKE_zgetrf(LAPACK_ROW_MAJOR, this->rows_, this->cols_, this->LU_, this->cols_, ipiv_);
+        if (info != 0) {
+            std::cerr << "Error in LU decomposition: " << info << std::endl;
+            exit(1);
+        }
+        this->LU_decomposed_ = true;
+        this->compute_determinant();
+    }
+
+    ComplexDoubleMatrix<T> compute_inverse() {
+        // computes the inverse of the matrix
+        // matrix should be square
+        if (!LU_decomposed_) {
+            populate_LU();
+        }
+        MKL_INT info;
+        T* result_data = (T*) mkl_malloc(this->rows_ * this->cols_ * sizeof(T), 64);
+        std::memcpy(result_data, this->LU_, this->rows_ * this->cols_ * sizeof(T));
+        info = LAPACKE_zgetri(LAPACK_ROW_MAJOR, this->rows_, result_data, this->rows_, this->ipiv_);
+        if (info != 0) {
+            std::cerr << "Error in matrix inversion: " << info << std::endl;
+            exit(1);
+        }
+        ComplexDoubleMatrix<T> result(this->rows_, this->cols_);
+        std::memcpy(result.data_, result_data, this->rows_ * this->cols_ * sizeof(T));
+        mkl_free(result_data);
+        return result;
+    }
+
+    T compute_determinant() {
+        // computes the determinant of the matrix
+        // matrix should be square
+        if (!LU_decomposed_) {
+            populate_LU();
+        }
+        T result = {1.0, 0.0};
+        for (int i = 0; i < this->rows_; ++i) {
+            result *= this->LU_[i * this->cols_ + i];
+        }
+        this->determinant_ = result;
+        this->determinant_computed_ = true;
+        return result;
+    }
+
+    T determinant() {
+        // returns the determinant of the matrix
+        if (!determinant_computed_) {
+            return compute_determinant();
+        }
+        return this->determinant_;
     }
 
     // lapack routines
