@@ -107,7 +107,7 @@ int ProjectedState::Spin_t_to_row(int spin_idx){
 void ProjectedState::set_configuration(std::vector<int> conf) {
 	configuration = conf;
 	int row = 0;
-	lapack_complex_double* phi = ansatz.get_Phi();
+	auto phi = ansatz.get_Phi();
 	parton_labels.clear();
 	int info;
 	MKL_Complex16 alpha = { 1.0, 0.0 }, beta = { 0.0, 0.0 };
@@ -117,7 +117,7 @@ void ProjectedState::set_configuration(std::vector<int> conf) {
 	for (int i = 0; i < N; ++i) {
 		parton_labels.push_back(i);
 		row = Spin_t_to_row(configuration[i]) + i;
-		std::memcpy(&(Slater[parton_labels[i] * N]), &(phi[row * DIM]), N * sizeof(lapack_complex_double));
+		Slater.copy_row(Slater, phi, parton_labels[i], row, N);
 	}
 	info = LAPACKE_zgetrf(LAPACK_ROW_MAJOR, N, N, Slater, N, ipiv);
 	std::memcpy(LU, Slater, N * N * sizeof(lapack_complex_double));

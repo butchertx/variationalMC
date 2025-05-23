@@ -51,6 +51,17 @@ public:
 		mkl_free(data_);
     }
 
+    static void copy_row(Matrix<T>& dest, const Matrix<T>& src, int row_idx_dest, int row_idx_src, int column_boundary = -1) {
+        assert(row_idx_src >= 0 && row_idx_src < src.rows_);
+        assert(row_idx_dest >= 0 && row_idx_dest < dest.rows_);
+        assert(src.cols_ >= column_boundary);
+        if (column_boundary == -1) {
+            column_boundary = src.cols_;
+        }
+        assert(dest.cols_ >= column_boundary);
+        std::memcpy(&(dest.data_[row_idx_dest * dest.cols_]), &(src.data_[row_idx_src * src.cols_]), dest.cols_ * sizeof(T));
+    }
+
     T& operator()(int row, int col) {
         assert(row >= 0 && row < rows_);
         assert(col >= 0 && col < cols_);

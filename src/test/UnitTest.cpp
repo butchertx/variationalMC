@@ -98,6 +98,69 @@ TEST(MatrixTest, MatrixNorm){
     EXPECT_EQ(result2(0, 2), sqrt(45.0));
 }
 
+TEST(MatrixTest, MatrixCopyRow) {
+    ComplexDoubleMatrix<MKL_Complex16> m1(2, 2);
+    ComplexDoubleMatrix<MKL_Complex16> m2(2, 2);
+    m1(0, 0) = {1.0, 0.0};
+    m1(0, 1) = {2.0, 0.0};
+    m1(1, 0) = {3.0, 0.0};
+    m1(1, 1) = {4.0, 0.0};
+
+    // copy row 0 of m1 to row 1 of m2
+    m2.copy_row(m2, m1, 1, 0);
+
+    EXPECT_EQ(m2(1, 0), m1(0, 0));
+    EXPECT_EQ(m2(1, 1), m1(0, 1));
+}
+
+TEST(MatrixTest, MatrixCopyRow2) {
+    ComplexDoubleMatrix<MKL_Complex16> m1(4, 4);
+    ComplexDoubleMatrix<MKL_Complex16> m2(2, 2);
+    m1(0, 0) = {1.0, 0.0};
+    m1(0, 1) = {2.0, 0.0};
+    m1(0, 2) = {3.0, 0.0};
+    m1(0, 3) = {4.0, 0.0};
+    m1(1, 0) = {3.0, 0.0};
+    m1(1, 1) = {4.0, 0.0};
+    m1(1, 2) = {5.0, 0.0};
+    m1(1, 3) = {6.0, 0.0};
+
+    // copy row 0 of m1 to row 1 of m2
+    // only first two columns
+    m2.copy_row(m2, m1, 1, 0, 2);
+
+    EXPECT_EQ(m2(1, 0), m1(0, 0));
+    EXPECT_EQ(m2(1, 1), m1(0, 1));
+}
+
+// TEST(MatrixTest, MatrixCopyRow2) {
+//     ComplexDoubleMatrix<MKL_Complex16> m1(2, 2);
+//     ComplexDoubleMatrix<MKL_Complex16> m2(2, 2);
+//     m1(0, 0) = {1.0, 0.0};
+//     m1(0, 1) = {2.0, 0.0};
+//     m1(1, 0) = {3.0, 0.0};
+//     m1(1, 1) = {4.0, 0.0};
+
+//     m2.copy_row(m1, 0, 1);
+
+//     EXPECT_EQ(m2(1, 0), m1(0, 0));
+//     EXPECT_EQ(m2(1, 1), m1(0, 1));
+// }
+
+// TEST(MatrixTest, MatrixCopyRow3) {
+//     ComplexDoubleMatrix<MKL_Complex16> m1(2, 2);
+//     ComplexDoubleMatrix<MKL_Complex16> m2(2, 2);
+//     m1(0, 0) = {1.0, 0.0};
+//     m1(0, 1) = {2.0, 0.0};
+//     m1(1, 0) = {3.0, 0.0};
+//     m1(1, 1) = {4.0, 0.0};
+
+//     m2.copy_row(m1, 1, 1);
+
+//     EXPECT_EQ(m2(1, 0), m1(1, 0));
+//     EXPECT_EQ(m2(1, 1), m1(1, 1));
+// }
+
 // Lattice Tests
 
 TEST(LatticeTest, CreateBasicLattices) {
