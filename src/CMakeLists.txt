@@ -1,4 +1,4 @@
-
+message(STATUS "Search for MKL...")
 find_package(MKL CONFIG REQUIRED PATHS $ENV{MKLROOT})
 
 if (MKL_FOUND)

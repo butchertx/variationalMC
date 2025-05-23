@@ -7,12 +7,16 @@ find_package(Sphinx REQUIRED)
 
 # Find all the public headers
 if(NOT TARGET ${TARGET_NAME})
+  message(STATUS "No target ${TARGET_NAME} found, assuming we are building all the docs")
   # If we are not building the example, we need to find the headers here
   file(GLOB_RECURSE VMC_PUBLIC_HEADERS ../src/*.h)
 else()
+  message(STATUS "target ${TARGET_NAME} found")
   get_target_property(VMC_PUBLIC_HEADER_DIR ${TARGET_NAME} INTERFACE_INCLUDE_DIRECTORIES)
   file(GLOB_RECURSE VMC_PUBLIC_HEADERS ${VMC_PUBLIC_HEADER_DIR}/*.h)
 endif()
+
+message(STATUS "Found public headers: ${VMC_PUBLIC_HEADERS}")
 
 ######################################
 # Doxygen
@@ -76,3 +80,5 @@ add_custom_target(Sphinx ALL DEPENDS ${SPHINX_INDEX_FILE})
 include(GNUInstallDirs)
 install(DIRECTORY ${SPHINX_BUILD}
 DESTINATION ${CMAKE_INSTALL_DOCDIR})
+
+message(STATUS "Doxygen output dir: ${DOXYGEN_OUTPUT_DIR}")
