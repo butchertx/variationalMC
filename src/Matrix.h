@@ -44,7 +44,15 @@ MKL_Complex16 operator-(const MKL_Complex16& base) {
 
 MKL_Complex16& operator*(MKL_Complex16& base, const MKL_Complex16& other) {
     MKL_Complex16 result = {base.real * other.real - base.imag * other.imag,
-                            base.imag = base.real * other.imag + base.imag * other.real};
+                           base.real * other.imag + base.imag * other.real};
+    return result;
+}
+
+// template MKL_Complex operators
+
+template<typename T>
+MKL_Complex16& operator*(MKL_Complex16& base, const T& other) {
+    MKL_Complex16 result = {base.real * other, base.imag * other};
     return result;
 }
 
@@ -75,7 +83,7 @@ public:
 		mkl_free(data_);
     }
 
-    void clear_matrix() {
+    virtual void clear_matrix() {
         for (int i = 0; i < rows_ * cols_; ++i) {
             data_[i] = T(0);
         }
@@ -162,6 +170,22 @@ public:
         }
     }
 
+    virtual void clear_matrix() override {
+        // clear the matrix
+        for (int i = 0; i < this->rows_ * this->cols_; ++i) {
+            this->data_[i] = T({0, 0});
+        }
+        if (LU_decomposed_) {
+            mkl_free(LU_);
+            mkl_free(ipiv_);
+            LU_decomposed_ = false;
+            determinant_computed_ = false;
+            determinant_ = {0, 0};
+            LU_ = nullptr;
+            ipiv_ = nullptr;
+        }
+    }
+
     ComplexDoubleMatrix<T> get_slice(int row_start, int row_end, int col_start, int col_end) {
         // returns a slice of the matrix
         assert(row_start >= 0 && row_end <= this->rows_);
@@ -177,7 +201,23 @@ public:
         return result;
     }
 
+    static ComplexDoubleMatrix<T> identity(int size) {
+        // returns an identity matrix of given size
+        ComplexDoubleMatrix<T> result(size, size);
+        for (int i = 0; i < size; ++i) {
+            result(i, i) = T({1.0, 0.0});
+        }
+        return result;
+    }
+
     // cblas routines
+
+    void copy_column(const ComplexDoubleMatrix<T>& other, int src_col, int dest_col) {
+        assert(src_col >= 0 && src_col < other.cols_);
+        assert(dest_col >= 0 && dest_col < this->cols_);
+        assert(other.rows_ == this->rows_);
+        cblas_zcopy(other.rows_, &(other.data_[src_col]), other.cols_, &(this->data_[dest_col]), this->cols_);
+    }
 
     Matrix<double> vector_norm(int row_start, int row_end) {
         // computes the vector norm of each column, but only for a range of rows
@@ -284,6 +324,18 @@ public:
         MKL_Complex16 alpha = { 1.0, 0.0 }, beta = { 0.0, 0.0 };
         cblas_zgemm3m_64(CblasRowMajor, CblasNoTrans, CblasNoTrans, this->rows_, other.cols_, this->cols_,
                     &alpha, this->data_, this->cols_, other.data_, other.cols_, &beta, result.data_, result.cols_);
+        return result;
+    }
+
+    // other operators
+
+    ComplexDoubleMatrix<T> operator-(const ComplexDoubleMatrix<T>& other) {
+        assert(this->rows_ == other.rows_);
+        assert(this->cols_ == other.cols_);
+        ComplexDoubleMatrix<T> result(this->rows_, this->cols_);
+        for (int i = 0; i < this->rows_ * this->cols_; ++i) {
+            result.data_[i] = this->data_[i] - other.data_[i];
+        }
         return result;
     }
 };

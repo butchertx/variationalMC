@@ -23,13 +23,6 @@ ProjectedState::ProjectedState(MeanFieldAnsatz& M_, RandomEngine& rand_, Jastrow
 void ProjectedState::clear_matrices(){
 	Slater.clear_matrix();
 	Winv.clear_matrix();
-	for (int i = 0; i < 2 * DIM; ++i) {
-		UP1[i] = { 0.0, 0.0 };
-		if (i < 2 * N) {
-			UP2[i] = { 0.0, 0.0 };
-			UP3[i] = { 0.0, 0.0 };
-		}
-	}
 }
 
 void ProjectedState::initialize_configuration(){
@@ -91,40 +84,30 @@ MKL_Complex16 ProjectedState::calc_det() {
 	return Slater.determinant();
 }
 
-void ProjectedState::upinvhop2(int rowk, int colk, int rowl, int coll) {
+void ProjectedState::updateMatrixInverse(int rowk, int colk, int rowl, int coll) {
 	//perform the update of Winv according to the Woodbury Matrix identity
 	//Winv' = Phi * I_{dNxN} * A^{-1} * U (I_k + V A^-1 U)^-1 V A^-1
-	//      = (Winv * U) * (I_k + V A^-1 U)^-1 * UP2
+	//      = (Winv * U) * (I_k + V A^-1 U)^-1 * RatioDiff
 	//where U and V are defined so A' = A + UV (A is the Slater matrix)
-	//UP1 is Winv * U; the i and j columns of Winv where i and j are the sites to update
-	//UP2 is V A^-1 (which can be computed easily from rows of Winv)
-	//UP3 is (I_k + V A^-1 U)^-1 (2x2) times UP2 (2xN)
+	//WinvU is Winv * U; the i and j columns of Winv where i and j are the sites to update
+	//RatioDiff is V A^-1 (which can be computed easily from rows of Winv)
+	//WoodburyDiff is (I_k + V A^-1 U)^-1 (2x2) times RatioDiff (2xN)
 
-	MKL_Complex16 c11, c12, c21, c22;
-	c11 = Winv(rowl, coll);
-	c22 = Winv(rowk, colk);
-	c12 = - Winv(rowk, coll);
-	c21 = - Winv(rowl, colk);
+	ComplexDoubleMatrix<MKL_Complex16> U(2, N);
+	U(colk, 0) = MKL_Complex16({1.0, 0.0});
+	U(coll, 1) = MKL_Complex16({1.0, 0.0});
+	ComplexDoubleMatrix<MKL_Complex16> WinvU = Winv * U;
 
-	MKL_Complex16 g = c11 * c22 - c12 * c21, beta = { 1.0, 0.0 };
+	ComplexDoubleMatrix<MKL_Complex16> RatioDiff(2, N);
+	RatioDiff.copy_row(RatioDiff, WinvU, rowk, 0);
+	RatioDiff.copy_row(RatioDiff, WinvU, rowl, 0);
+	RatioDiff(0, colk) = RatioDiff(0, colk) - MKL_Complex16({1.0, 0.0});
+	RatioDiff(1, coll) = RatioDiff(1, coll) - MKL_Complex16({1.0, 0.0});
 
-	cblas_zcopy(DIM, &(Winv[colk]), N, UP1, 2);
-	cblas_zcopy(DIM, &(Winv[coll]), N, &(UP1[1]), 2);
-	cblas_zcopy(N, &(Winv[rowk * N]), 1, UP2, 1);
-	UP2[colk] -= std::complex<double>(1.0, 0.0);
-	cblas_zcopy(N, &(Winv[rowl * N]), 1, &(UP2[N]), 1);
-	UP2[N + coll] -= std::complex<double>(1.0, 0.0);
+	ComplexDoubleMatrix<MKL_Complex16> Woodbury = ComplexDoubleMatrix<MKL_Complex16>::identity(2) - RatioDiff * U;
+	Woodbury = Woodbury.compute_inverse();
 
-	g = std::complex<double>(-1.0, 0.0) / g;
-
-	for (int i = 0; i < N; ++i) {
-		UP3[i] = c11 * UP2[i] + c12 * UP2[N + i];
-		UP3[N + i] = c21 * UP2[i] + c22 * UP2[N + i];
-	}
-
-	MKL_INT64 N_64 = N, DIM_64 = DIM; // needed for use with intel ilp64 interface / libraries
-	cblas_zgemm3m_64(CblasRowMajor, CblasNoTrans, CblasNoTrans, DIM_64, N_64, 2, &g, UP1, 2, UP3, N_64, &beta, Winv, N_64);
-	// cblas_zgemm3m(CblasRowMajor, CblasNoTrans, CblasNoTrans, DIM, N, 2, &g, UP1, 2, UP3, N, &beta, Winv, N);
+	Winv = WinvU * Woodbury * RatioDiff;
 }
 
 /// PRIVATE MATRIX ELEMENTS
@@ -144,12 +127,12 @@ MKL_Complex16 ProjectedState::psi_over_psi2(int site1, int site2, int new_sz1, i
 }
 
 // 3-site ring exchange, with jastrow
-std::complex<double> ProjectedState::psi_over_psi_swap(int site1, int site2, int site3) {
+MKL_Complex16 ProjectedState::psi_over_psi_swap(int site1, int site2, int site3) {
 	MKL_Complex16 result;
 	int new_sz1 = configuration[site2], new_sz2 = configuration[site3], new_sz3 = configuration[site1];
 	int spin_row1 = Spin_t_to_row(new_sz1), spin_row2 = Spin_t_to_row(new_sz2), spin_row3 = Spin_t_to_row(new_sz3);
 
-	std::complex<double> 
+	MKL_Complex16 
 		row1_1 = Winv[(site1 + spin_row1) * N + parton_labels[site1]],
 		row1_2 = Winv[(site1 + spin_row1) * N + parton_labels[site2]],
 		row1_3 = Winv[(site1 + spin_row1) * N + parton_labels[site3]];
@@ -168,7 +151,7 @@ std::complex<double> ProjectedState::psi_over_psi_swap(int site1, int site2, int
 /// OVERRIDE MATRIX ELEMENTS
 
 // can swap spins at 2 or 3 sites given in ring_swap
-std::complex<double> ProjectedState::psi_over_psi(std::vector<int>& ring_swap) {
+MKL_Complex16 ProjectedState::psi_over_psi(std::vector<int>& ring_swap) {
 		std::vector<int> sz(ring_swap.size());
 		for (int i = 0; i < ring_swap.size(); ++i) {
 			if (i == ring_swap.size() - 1) {
@@ -182,9 +165,9 @@ std::complex<double> ProjectedState::psi_over_psi(std::vector<int>& ring_swap) {
 	}
 
 // chooses a ring swap or a 2-site swap, potentially with an additional spin flip for the 2-site swap
-std::complex<double> ProjectedState::psi_over_psi(std::vector<int>& flips, std::vector<int>& new_sz) {
+MKL_Complex16 ProjectedState::psi_over_psi(std::vector<int>& flips, std::vector<int>& new_sz) {
 
-	std::complex<double> result(1.0, 0.0);
+	MKL_Complex16 result({1.0, 0.0});
 	if (flips.size() == 2) {
 		result *= psi_over_psi2(flips[0], flips[1], new_sz[0], new_sz[1]);
 	}
@@ -200,14 +183,14 @@ std::complex<double> ProjectedState::psi_over_psi(std::vector<int>& flips, std::
 
 /// PRIVATE UPDATES - ACTUAL CALLERS
 
-void ProjectedState::update(int site1, int site2, std::complex<double> psioverpsi) {
+void ProjectedState::update(int site1, int site2, MKL_Complex16 psioverpsi) {
 	//only for swapping spins at two different sites
 
 	if (configuration[site1] < configuration[site2]) {
-		upinvhop2((site1 + Spin_t_to_row(configuration[site2])), parton_labels[site2], (site2 + Spin_t_to_row(configuration[site1])), parton_labels[site1]);
+		updateMatrixInverse((site1 + Spin_t_to_row(configuration[site2])), parton_labels[site2], (site2 + Spin_t_to_row(configuration[site1])), parton_labels[site1]);
 	}
 	else {
-		upinvhop2((site2 + Spin_t_to_row(configuration[site1])), parton_labels[site1], (site1 + Spin_t_to_row(configuration[site2])), parton_labels[site2]);
+		updateMatrixInverse((site2 + Spin_t_to_row(configuration[site1])), parton_labels[site1], (site1 + Spin_t_to_row(configuration[site2])), parton_labels[site2]);
 	}
 	//std::cout << "labels: " << vec2str(parton_labels) << "\n";
 	int templabel = parton_labels[site1];
@@ -219,16 +202,16 @@ void ProjectedState::update(int site1, int site2, std::complex<double> psioverps
 	det *= psioverpsi;
 }
 
-void ProjectedState::update(std::vector<int>& sites, std::vector<int>& new_sz, std::complex<double> psioverpsi) {
+void ProjectedState::update(std::vector<int>& sites, std::vector<int>& new_sz, MKL_Complex16 psioverpsi) {
 
 	assert(sites.size() == 2);
 	assert(new_sz.size() == 2);
 
 	if (configuration[sites[0]] < configuration[sites[1]]) {
-		upinvhop2((sites[0] + Spin_t_to_row(new_sz[0])), parton_labels[sites[0]], (sites[1] + Spin_t_to_row(new_sz[1])), parton_labels[sites[1]]);
+		updateMatrixInverse((sites[0] + Spin_t_to_row(new_sz[0])), parton_labels[sites[0]], (sites[1] + Spin_t_to_row(new_sz[1])), parton_labels[sites[1]]);
 	}
 	else {
-		upinvhop2((sites[1] + Spin_t_to_row(new_sz[1])), parton_labels[sites[1]], (sites[0] + Spin_t_to_row(new_sz[0])), parton_labels[sites[0]]);
+		updateMatrixInverse((sites[1] + Spin_t_to_row(new_sz[1])), parton_labels[sites[1]], (sites[0] + Spin_t_to_row(new_sz[0])), parton_labels[sites[0]]);
 	}
 
 	configuration[sites[0]] = new_sz[0];
@@ -253,7 +236,7 @@ void ProjectedState::update(std::vector<int>& ring_swap) {
 }
 
 void ProjectedState::update(std::vector<int>& flips, std::vector<int>& new_sz) {
-	std::complex<double> pop;
+	MKL_Complex16 pop;
 
 	if (flips.size() == 2) {
 		jastrow.update_tables(flips, new_sz, configuration);
@@ -301,7 +284,7 @@ bool ProjectedState::test_2_spin_swap_pop(bool output) {
 	std::vector<int> new_sz = { configuration[flips[1]], configuration[flips[0]] };
 
 	//Calculate psi fast and slow
-	std::complex<double> pfast, pslow, oldpsi = calc_det();
+	MKL_Complex16 pfast, pslow, oldpsi = calc_det();
 	//fast
 	pfast = psi_over_psi2(flips[0], flips[1], configuration[flips[1]], configuration[flips[0]]);
 	//slow
@@ -331,7 +314,7 @@ bool ProjectedState::test_2_spin_flip_pop(std::vector<int>& flips, std::vector<i
 	std::vector<int> old_sz = { configuration[flips[0]], configuration[flips[1]] };
 
 	//Calculate psi fast and slow
-	std::complex<double> pfast, pslow, oldpsi = calc_det();
+	MKL_Complex16 pfast, pslow, oldpsi = calc_det();
 	//fast
 	pfast = psi_over_psi(flips, new_sz);
 	//slow
@@ -371,7 +354,7 @@ bool ProjectedState::test_3_spin_swap_pop(bool output) {
 	std::vector<int> new_sz = { configuration[flips[1]], configuration[flips[2]], configuration[flips[0]] };
 
 	//Calculate psi fast and slow
-	std::complex<double> pfast, pslow, oldpsi = calc_det();
+	MKL_Complex16 pfast, pslow, oldpsi = calc_det();
 	//fast
 	pfast = psi_over_psi_swap(flips[0], flips[1], flips[2]);
 

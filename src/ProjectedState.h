@@ -37,13 +37,13 @@ class ProjectedState : public Wavefunction {
 	MKL_Complex16 calc_det();
 
 	// updates
-	void update(std::vector<int>& flips, std::vector<int>& new_sz, std::complex<double> pop);
-	void update(int site1, int site2, std::complex<double> pop);
-	void upinvhop2(int, int, int, int);
+	void update(std::vector<int>& flips, std::vector<int>& new_sz, MKL_Complex16 pop);
+	void update(int site1, int site2, MKL_Complex16 pop);
+	void updateMatrixInverse(int, int, int, int);
 
 	// matrix elements
-	std::complex<double> psi_over_psi2(int site1, int site2, int new_sz1, int new_sz2); // swap 2 sites with specified sz values, with jastrow
-	std::complex<double> psi_over_psi_swap(int site1, int site2, int site3); // 3-site ring exchange, with jastrow
+	MKL_Complex16 psi_over_psi2(int site1, int site2, int new_sz1, int new_sz2); // swap 2 sites with specified sz values, with jastrow
+	MKL_Complex16 psi_over_psi_swap(int site1, int site2, int site3); // 3-site ring exchange, with jastrow
 
 public:
 
@@ -51,12 +51,7 @@ public:
 
 	ProjectedState(MeanFieldAnsatz& M, RandomEngine& rand_in, JastrowTable jastrow_in);
 
-	~ProjectedState() {
-		mkl_free(UP1);
-		mkl_free(UP2);
-		mkl_free(UP3);
-		mkl_free(ipiv);
-	}
+	~ProjectedState() {};
 
 	// printing
 	void print_matrix(std::string name);
@@ -70,12 +65,12 @@ public:
 	// Override Parent Virtual Functions
 	
 	void f() override {};
-	std::complex<double> basis_element(const std::vector<int>&) override { return { 0.0, 0.0 }; }
+	MKL_Complex16 basis_element(const std::vector<int>&) override { return { 0.0, 0.0 }; }
 
 	// can swap spins at 2 or 3 sites given in ring_swap
-	std::complex<double> psi_over_psi(std::vector<int>& ring_swap) override;
+	MKL_Complex16 psi_over_psi(std::vector<int>& ring_swap) override;
 	// chooses a ring swap or a 2-site swap, potentially with an additional spin flip for the 2-site swap
-	std::complex<double> psi_over_psi(std::vector<int>& flips, std::vector<int>& new_sz) override;
+	MKL_Complex16 psi_over_psi(std::vector<int>& flips, std::vector<int>& new_sz) override;
 
 	void update(std::vector<int>& ring_swap) override;
 	void update(std::vector<int>& flips, std::vector<int>& new_sz) override;	
@@ -95,11 +90,11 @@ public:
 
 	//Additional Functions
 
-	std::complex<double> basis_element(int site, int sz) {
+	MKL_Complex16 basis_element(int site, int sz) {
 		return { 1.0, 0.0 };
 	}	
 
-	std::complex<double> get_det() {
+	MKL_Complex16 get_det() {
 		return det;
 	}
 
