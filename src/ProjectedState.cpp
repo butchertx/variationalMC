@@ -8,7 +8,6 @@ ProjectedState::ProjectedState(MeanFieldAnsatz& M_, RandomEngine& rand_)
 	// initialize the Slater-Jastrow state
 
 	conserve_sz2 = M_.get_conserve_sz2();
-	malloc_matrices();
 	clear_matrices();
 	initialize_configuration();
 }
@@ -28,22 +27,20 @@ void ProjectedState::clear_matrices(){
 void ProjectedState::initialize_configuration(){
 	int config_attempt = 0;
 	while (!try_configuration() && config_attempt < CONFIG_ATTEMPTS) {
-		det = { 0, 0 };
 		++config_attempt;
 	}
 }
 
 bool ProjectedState::try_configuration() {
 	// TODO: do this in a more robust manner, maybe type checking on initialization
+	// return True if we have a valid configuration, False otherwise
 	int N0 = ansatz.get_N0F();
 	if (2 * ((N - N0) / 2) != N - N0) {
 		N0 += 1;
 	}
 	set_configuration(rand.get_rand_spin_state(std::vector<int>{ (N - N0) / 2, N0, (N - N0) / 2 }, N));
-	
-	CBLAS_INDEX low = 0;
-	low = cblas_izamin(N, LU, N+1);
-	return (cblas_dcabs1(&(LU[low*(N+1)])) > 10e-10);
+
+	return !(Winv.is_determinant_zero());
 }
 
 // TODO: this implementation can be sped up with a lookup table
@@ -133,16 +130,16 @@ MKL_Complex16 ProjectedState::psi_over_psi_swap(int site1, int site2, int site3)
 	int spin_row1 = Spin_t_to_row(new_sz1), spin_row2 = Spin_t_to_row(new_sz2), spin_row3 = Spin_t_to_row(new_sz3);
 
 	MKL_Complex16 
-		row1_1 = Winv[(site1 + spin_row1) * N + parton_labels[site1]],
-		row1_2 = Winv[(site1 + spin_row1) * N + parton_labels[site2]],
-		row1_3 = Winv[(site1 + spin_row1) * N + parton_labels[site3]];
+		row1_1 = Winv((site1 + spin_row1), parton_labels[site1]),
+		row1_2 = Winv((site1 + spin_row1), parton_labels[site2]),
+		row1_3 = Winv((site1 + spin_row1), parton_labels[site3]);
 
-	result = row1_1 * (Winv[(site2 + spin_row2) * N + parton_labels[site2]] * Winv[(site3 + spin_row3) * N + parton_labels[site3]]
-					 - Winv[(site3 + spin_row3) * N + parton_labels[site2]] * Winv[(site2 + spin_row2) * N + parton_labels[site3]])
-		- row1_2 * (Winv[(site2 + spin_row2) * N + parton_labels[site1]] * Winv[(site3 + spin_row3) * N + parton_labels[site3]]
-				- Winv[(site3 + spin_row3) * N + parton_labels[site1]] * Winv[(site2 + spin_row2) * N + parton_labels[site3]])
-		+ row1_3 * (Winv[(site2 + spin_row2) * N + parton_labels[site1]] * Winv[(site3 + spin_row3) * N + parton_labels[site2]]
-				- Winv[(site3 + spin_row3) * N + parton_labels[site1]] * Winv[(site2 + spin_row2) * N + parton_labels[site2]]);
+	result = row1_1 * (Winv((site2 + spin_row2), parton_labels[site2]) * Winv((site3 + spin_row3), parton_labels[site3])
+					 - Winv((site3 + spin_row3), parton_labels[site2]) * Winv((site2 + spin_row2), parton_labels[site3]))
+		- row1_2 * (Winv((site2 + spin_row2), parton_labels[site1]) * Winv((site3 + spin_row3), parton_labels[site3])
+				- Winv((site3 + spin_row3),  parton_labels[site1]) * Winv((site2 + spin_row2), parton_labels[site3]))
+		+ row1_3 * (Winv((site2 + spin_row2), parton_labels[site1]) * Winv((site3 + spin_row3), parton_labels[site2])
+				- Winv((site3 + spin_row3), parton_labels[site1]) * Winv((site2 + spin_row2), parton_labels[site2]));
 
 	std::vector<int> flip_sites = { site1, site2, site3 }, new_sz = { new_sz1, new_sz2, new_sz3 };
 	return result * jastrow.lazy_eval(flip_sites, new_sz, configuration);

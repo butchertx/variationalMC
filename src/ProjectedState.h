@@ -18,18 +18,12 @@ class ProjectedState : public Wavefunction {
 	int N, DIM; // number of sites/particles, and state space dimension
 	std::vector<int> parton_labels;
 	ComplexDoubleMatrix<MKL_Complex16> Slater, Winv;
-	lapack_complex_double *UP1, *UP2, *UP3;
 	static const int CONFIG_ATTEMPTS = 50;
 
 	// helpers
 	int Spin_t_to_row(int spin_idx);
 
 	// initialization
-	void malloc_matrices() {
-		UP1 = (lapack_complex_double*)mkl_malloc(DIM * 2 * sizeof(lapack_complex_double), 64);
-		UP2 = (lapack_complex_double*)mkl_malloc(N * 2 * sizeof(lapack_complex_double), 64);
-		UP3 = (lapack_complex_double*)mkl_malloc(N * 2 * sizeof(lapack_complex_double), 64);
-	}
 	void clear_matrices();
 	void initialize_configuration();
 	bool try_configuration();
@@ -65,12 +59,12 @@ public:
 	// Override Parent Virtual Functions
 	
 	void f() override {};
-	MKL_Complex16 basis_element(const std::vector<int>&) override { return { 0.0, 0.0 }; }
+	std::complex<double> basis_element(const std::vector<int>&) override { return { 0.0, 0.0 }; }
 
 	// can swap spins at 2 or 3 sites given in ring_swap
-	MKL_Complex16 psi_over_psi(std::vector<int>& ring_swap) override;
+	std::complex<double> psi_over_psi(std::vector<int>& ring_swap) override;
 	// chooses a ring swap or a 2-site swap, potentially with an additional spin flip for the 2-site swap
-	MKL_Complex16 psi_over_psi(std::vector<int>& flips, std::vector<int>& new_sz) override;
+	std::complex<double> psi_over_psi(std::vector<int>& flips, std::vector<int>& new_sz) override;
 
 	void update(std::vector<int>& ring_swap) override;
 	void update(std::vector<int>& flips, std::vector<int>& new_sz) override;	
@@ -95,7 +89,7 @@ public:
 	}	
 
 	MKL_Complex16 get_det() {
-		return det;
+		return Winv.determinant();
 	}
 
 	//Tests

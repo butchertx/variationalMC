@@ -304,6 +304,35 @@ public:
         return this->determinant_;
     }
 
+    bool is_determinant_zero() {
+        // checks if the determinant is zero
+        // we need this because the absolute value of the determinant can be very small
+        if (!determinant_computed_) {
+            compute_determinant();
+        }
+        for (int i = 0; i < this->rows_; ++i) {
+            if (std::abs(this->data_(i, i)) < 1e-10) {
+                return true;
+            }
+        }
+        return false;
+
+    }
+
+    T subdeterminant(std::vector<int>& rows, std::vector<int>& cols) {
+        // computes the subdeterminant of the matrix
+        // rows and cols should be of the same size
+        assert(rows.size() == cols.size());
+        assert(rows.size() <= this->rows_ && cols.size() <= this->cols_);
+        ComplexDoubleMatrix<T> submatrix(rows.size(), cols.size());
+        for (size_t i = 0; i < rows.size(); ++i) {
+            for (size_t j = 0; j < cols.size(); ++j) {
+                submatrix(i, j) = this->data_[rows[i] * this->cols_ + cols[j]];
+            }
+        }
+        return submatrix.determinant();
+    }
+
     // lapack routines
 
     std::pair<ComplexDoubleMatrix<T>, Matrix<double>> hermitian_diagonalize() {
