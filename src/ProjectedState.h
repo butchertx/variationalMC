@@ -33,7 +33,7 @@ class ProjectedState : public Wavefunction {
 	void set_configuration(std::vector<int> conf);
 
 	// updates
-	void update(std::vector<int>& flips, std::vector<int>& new_sz);
+	void update_(std::vector<int>& flips, std::vector<int>& new_sz);
 	void update(int site1, int site2);
 	void updateMatrixInverse(int, int, int, int);
 

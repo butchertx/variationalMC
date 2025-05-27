@@ -194,7 +194,7 @@ void ProjectedState::update(int site1, int site2) {
 	configuration[site2] = templabel;
 }
 
-void ProjectedState::update(std::vector<int>& sites, std::vector<int>& new_sz) {
+void ProjectedState::update_(std::vector<int>& sites, std::vector<int>& new_sz) {
 
 	assert(sites.size() == 2);
 	assert(new_sz.size() == 2);
@@ -234,7 +234,7 @@ void ProjectedState::update(std::vector<int>& flips, std::vector<int>& new_sz) {
 			update(flips[0], flips[1]);
 		}
 		else {
-			update(flips, new_sz);
+			update_(flips, new_sz);
 		}
 	}
 	else if (flips.size() == 3) {
