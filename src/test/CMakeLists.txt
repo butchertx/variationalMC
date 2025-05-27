@@ -57,6 +57,7 @@ target_link_libraries(
     VMC_DRIVER
     VMC_IO
     VMC_TYPE
+    MATRIX
     LATTICE
     MEAN_FIELD_ANSATZ
     PROJECTED_STATE

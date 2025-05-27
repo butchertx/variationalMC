@@ -9,45 +9,46 @@
 #include "mkl_types.h"
 
 // convert MKL_Complex16 to std::complex<double>
+// convert MKL_Complex16 to std::complex<double>
 inline std::complex<double> to_std_complex(const MKL_Complex16& c) {
     return std::complex<double>(c.real, c.imag);
 }
 
-bool operator==(const MKL_Complex16& base, const MKL_Complex16& other) {
+inline bool operator==(const MKL_Complex16& base, const MKL_Complex16& other) {
     return (base.real == other.real && base.imag == other.imag);
 }
 
-MKL_Complex16& operator*=(MKL_Complex16& base, const MKL_Complex16& other) {
+inline MKL_Complex16& operator*=(MKL_Complex16& base, const MKL_Complex16& other) {
     base.real = base.real * other.real - base.imag * other.imag;
     base.imag = base.real * other.imag + base.imag * other.real;
     return base;
 }
 
-MKL_Complex16& operator+=(MKL_Complex16& base, const MKL_Complex16& other) {
+inline MKL_Complex16& operator+=(MKL_Complex16& base, const MKL_Complex16& other) {
     base.real += other.real;
     base.imag += other.imag;
     return base;
 }
 
-MKL_Complex16& operator-=(MKL_Complex16& base, const MKL_Complex16& other) {
+inline MKL_Complex16& operator-=(MKL_Complex16& base, const MKL_Complex16& other) {
     base.real -= other.real;
     base.imag -= other.imag;
     return base;
 }
 
-MKL_Complex16 operator+(const MKL_Complex16& base, const MKL_Complex16& other) {
+inline MKL_Complex16 operator+(const MKL_Complex16& base, const MKL_Complex16& other) {
     return {base.real + other.real, base.imag + other.imag};
 }
 
-MKL_Complex16 operator-(const MKL_Complex16& base, const MKL_Complex16& other) {
+inline MKL_Complex16 operator-(const MKL_Complex16& base, const MKL_Complex16& other) {
     return {base.real - other.real, base.imag - other.imag};
 }
 
-MKL_Complex16 operator-(const MKL_Complex16& base) {
+inline MKL_Complex16 operator-(const MKL_Complex16& base) {
     return {-base.real, -base.imag};
 }
 
-MKL_Complex16& operator*(MKL_Complex16& base, const MKL_Complex16& other) {
+inline MKL_Complex16& operator*(MKL_Complex16& base, const MKL_Complex16& other) {
     MKL_Complex16 result = {base.real * other.real - base.imag * other.imag,
                            base.real * other.imag + base.imag * other.real};
     return result;
@@ -88,7 +89,7 @@ public:
 		mkl_free(data_);
     }
 
-    virtual void clear_matrix() {
+    void clear_matrix() {
         for (int i = 0; i < rows_ * cols_; ++i) {
             data_[i] = T(0);
         }
@@ -175,7 +176,7 @@ public:
         }
     }
 
-    virtual void clear_matrix() override {
+    void clear_matrix() {
         // clear the matrix
         for (int i = 0; i < this->rows_ * this->cols_; ++i) {
             this->data_[i] = T({0, 0});
@@ -316,7 +317,7 @@ public:
             compute_determinant();
         }
         for (int i = 0; i < this->rows_; ++i) {
-            if (std::abs(this->data_(i, i)) < 1e-10) {
+            if (std::abs(to_std_complex(this->data_[i*this->cols_ + i])) < 1e-10) {
                 return true;
             }
         }

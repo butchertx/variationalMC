@@ -8,6 +8,8 @@ ProjectedState::ProjectedState(MeanFieldAnsatz& M_, RandomEngine& rand_)
 	// initialize the Slater-Jastrow state
 
 	conserve_sz2 = M_.get_conserve_sz2();
+	Slater = ComplexDoubleMatrix<MKL_Complex16>(N, N);
+	Winv = ComplexDoubleMatrix<MKL_Complex16>(ansatz.get_dim(), N);
 	clear_matrices();
 	initialize_configuration();
 }
@@ -15,6 +17,8 @@ ProjectedState::ProjectedState(MeanFieldAnsatz& M_, RandomEngine& rand_)
 ProjectedState::ProjectedState(MeanFieldAnsatz& M_, RandomEngine& rand_, JastrowTable jastrow_)
 	: ProjectedState(M_, rand_){
 	conserve_sz2 = M_.get_conserve_sz2();
+	Slater = ComplexDoubleMatrix<MKL_Complex16>(N, N);
+	Winv = ComplexDoubleMatrix<MKL_Complex16>(ansatz.get_dim(), N);
 	jastrow = jastrow_;
 	jastrow.initialize_tables(configuration);
 }
