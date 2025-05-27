@@ -12,6 +12,9 @@
 
 class ProjectedState : public Wavefunction {
 
+	// This uses MKL_Complex16 for complex numbers, which is compatible with the Intel MKL library.
+	// The interface converts them back to std::complex<double> when needed for external access.
+
 	MeanFieldAnsatz& ansatz;
 	RandomEngine& rand;
 	JastrowTable jastrow;
@@ -28,11 +31,10 @@ class ProjectedState : public Wavefunction {
 	void initialize_configuration();
 	bool try_configuration();
 	void set_configuration(std::vector<int> conf);
-	MKL_Complex16 calc_det();
 
 	// updates
-	void update(std::vector<int>& flips, std::vector<int>& new_sz, MKL_Complex16 pop);
-	void update(int site1, int site2, MKL_Complex16 pop);
+	void update(std::vector<int>& flips, std::vector<int>& new_sz);
+	void update(int site1, int site2);
 	void updateMatrixInverse(int, int, int, int);
 
 	// matrix elements
@@ -84,12 +86,12 @@ public:
 
 	//Additional Functions
 
-	MKL_Complex16 basis_element(int site, int sz) {
+	std::complex<double> basis_element(int site, int sz) {
+		// to implement this for real, first we retrieve the current determinant
+		// then if conf[site] == sz, we return the current determinant
+		// if conf[site] != sz, compute the ratio of determinants for the swap and
+		// return the ratio times the jastrow factor times the current determinant
 		return { 1.0, 0.0 };
-	}	
-
-	MKL_Complex16 get_det() {
-		return Winv.determinant();
 	}
 
 	//Tests

@@ -77,10 +77,6 @@ void ProjectedState::set_configuration(std::vector<int> conf) {
 
 }
 
-MKL_Complex16 ProjectedState::calc_det() {
-	return Slater.determinant();
-}
-
 void ProjectedState::updateMatrixInverse(int rowk, int colk, int rowl, int coll) {
 	//perform the update of Winv according to the Woodbury Matrix identity
 	//Winv' = Phi * I_{dNxN} * A^{-1} * U (I_k + V A^-1 U)^-1 V A^-1
@@ -148,7 +144,7 @@ MKL_Complex16 ProjectedState::psi_over_psi_swap(int site1, int site2, int site3)
 /// OVERRIDE MATRIX ELEMENTS
 
 // can swap spins at 2 or 3 sites given in ring_swap
-MKL_Complex16 ProjectedState::psi_over_psi(std::vector<int>& ring_swap) {
+std::complex<double> ProjectedState::psi_over_psi(std::vector<int>& ring_swap) {
 		std::vector<int> sz(ring_swap.size());
 		for (int i = 0; i < ring_swap.size(); ++i) {
 			if (i == ring_swap.size() - 1) {
@@ -162,7 +158,7 @@ MKL_Complex16 ProjectedState::psi_over_psi(std::vector<int>& ring_swap) {
 	}
 
 // chooses a ring swap or a 2-site swap, potentially with an additional spin flip for the 2-site swap
-MKL_Complex16 ProjectedState::psi_over_psi(std::vector<int>& flips, std::vector<int>& new_sz) {
+std::complex<double> ProjectedState::psi_over_psi(std::vector<int>& flips, std::vector<int>& new_sz) {
 
 	MKL_Complex16 result({1.0, 0.0});
 	if (flips.size() == 2) {
@@ -174,13 +170,13 @@ MKL_Complex16 ProjectedState::psi_over_psi(std::vector<int>& flips, std::vector<
 	else {
 		assert(flips.size() == 2);
 	}
-	return result;
+	return to_std_complex(result);
 
 }
 
 /// PRIVATE UPDATES - ACTUAL CALLERS
 
-void ProjectedState::update(int site1, int site2, MKL_Complex16 psioverpsi) {
+void ProjectedState::update(int site1, int site2) {
 	//only for swapping spins at two different sites
 
 	if (configuration[site1] < configuration[site2]) {
@@ -196,10 +192,9 @@ void ProjectedState::update(int site1, int site2, MKL_Complex16 psioverpsi) {
 	templabel = configuration[site1];
 	configuration[site1] = configuration[site2];
 	configuration[site2] = templabel;
-	det *= psioverpsi;
 }
 
-void ProjectedState::update(std::vector<int>& sites, std::vector<int>& new_sz, MKL_Complex16 psioverpsi) {
+void ProjectedState::update(std::vector<int>& sites, std::vector<int>& new_sz) {
 
 	assert(sites.size() == 2);
 	assert(new_sz.size() == 2);
@@ -213,7 +208,6 @@ void ProjectedState::update(std::vector<int>& sites, std::vector<int>& new_sz, M
 
 	configuration[sites[0]] = new_sz[0];
 	configuration[sites[1]] = new_sz[1];
-	det *= psioverpsi;
 }
 
 /// OVERRIDE UPDATES - PUBLIC INTERFACE
@@ -233,16 +227,14 @@ void ProjectedState::update(std::vector<int>& ring_swap) {
 }
 
 void ProjectedState::update(std::vector<int>& flips, std::vector<int>& new_sz) {
-	MKL_Complex16 pop;
 
 	if (flips.size() == 2) {
 		jastrow.update_tables(flips, new_sz, configuration);
-		pop = psi_over_psi(flips, new_sz);
 		if (configuration[flips[0]] == new_sz[1] && configuration[flips[1]] == new_sz[0]) {
-			update(flips[0], flips[1], pop);
+			update(flips[0], flips[1]);
 		}
 		else {
-			update(flips, new_sz, pop);
+			update(flips, new_sz);
 		}
 	}
 	else if (flips.size() == 3) {
@@ -250,13 +242,11 @@ void ProjectedState::update(std::vector<int>& flips, std::vector<int>& new_sz) {
 		std::vector<int> fliplist(2), spinlist(2);
 		fliplist = { flips[0], flips[1] };
 		spinlist = { new_sz[0], new_sz[2] };
-		pop = psi_over_psi(fliplist, spinlist);
-		update(flips[0], flips[1], pop);
+		update(flips[0], flips[1]);
 
 		fliplist = { flips[1], flips[2] };
 		spinlist = { new_sz[1], new_sz[2] };
-		pop = psi_over_psi(fliplist, spinlist);
-		update(flips[1], flips[2], pop);
+		update(flips[1], flips[2]);
 	}
 	else {
 		std::stringstream ss;
@@ -268,111 +258,3 @@ void ProjectedState::update(std::vector<int>& flips, std::vector<int>& new_sz) {
 		throw vmctype::NotImplemented(ss.str());
 	}
 }
-
-//Tests
-
-/** 
-bool ProjectedState::test_2_spin_swap_pop(bool output) {
-	assert(!jastrow.exist()); //test jastrow separately
-	bool success = false;
-
-	//Choose two random sites
-	std::vector<int> flips = rand.get_rand_vec_site(2);
-	std::vector<int> new_sz = { configuration[flips[1]], configuration[flips[0]] };
-
-	//Calculate psi fast and slow
-	MKL_Complex16 pfast, pslow, oldpsi = calc_det();
-	//fast
-	pfast = psi_over_psi2(flips[0], flips[1], configuration[flips[1]], configuration[flips[0]]);
-	//slow
-	if (std::abs(pfast) > 1e-10) {
-		update(flips[0], flips[1], pfast);
-		set_configuration(configuration);
-		pslow = calc_det() / oldpsi;
-
-		if (output && std::abs(std::abs(pslow) - std::abs(pfast)) > 1e-8 && std::abs(pfast) > 1e-16) {
-			std::cout << "Test 2 spin swap psi over psi\n";
-			std::cout << "Swap sites " << flips[0] << ", " << flips[1] << "\n";
-			std::cout << "With sz = " << configuration[flips[0]] << ", " << configuration[flips[1]] << "\n";
-			std::cout << "And new_sz = " << new_sz[0] << ", " << new_sz[1] << "\n";
-			std::cout << "psi fast = " << pfast.real() << " + " << pfast.imag() << "i\n";
-			std::cout << "psi slow = " << pslow.real() << " + " << pslow.imag() << "i\n";
-		}
-	}
-
-	
-
-	return success;
-}
-
-bool ProjectedState::test_2_spin_flip_pop(std::vector<int>& flips, std::vector<int>& new_sz) {
-	//std::cout << "Warning: set all Jastrow factors = 0 for accurate results\n";
-	bool success = false;
-	std::vector<int> old_sz = { configuration[flips[0]], configuration[flips[1]] };
-
-	//Calculate psi fast and slow
-	MKL_Complex16 pfast, pslow, oldpsi = calc_det();
-	//fast
-	pfast = psi_over_psi(flips, new_sz);
-	//slow
-	if (std::abs(pfast) > 1e-10) {
-		update(flips, new_sz, pfast);
-		set_configuration(configuration);
-		pslow = calc_det() / oldpsi;
-
-		if (std::abs(std::abs(pslow) - std::abs(pfast)) > 1e-8 && std::abs(pfast) > 1e-16) {
-			std::cout << "Test 2 spin flip psi over psi\n";
-			std::cout << "Swap sites " << flips[0] << ", " << flips[1] << "\n";
-			std::cout << "With sz = " << old_sz[0] << ", " << old_sz[1] << "\n";
-			std::cout << "And new_sz = " << new_sz[0] << ", " << new_sz[1] << "\n";
-			std::cout << "psi fast = " << pfast.real() << " + " << pfast.imag() << "i\n";
-			std::cout << "psi slow = " << pslow.real() << " + " << pslow.imag() << "i\n";
-		}
-	}
-
-
-
-	return success;
-}
-
-bool ProjectedState::test_3_spin_swap_pop(bool output) {
-	assert(!jastrow.exist()); //test jastrow separately
-	int config_attempt = 0;
-	while (!try_configuration() && config_attempt < 50) {
-		det = { 0, 0 };
-		++config_attempt;
-	}
-	assert(config_attempt < 50);
-	bool success = false;
-
-	//Choose three random sites
-	int site = rand.get_rand_site();
-	std::vector<int> flips = { site, (site + 1) % N, (site + 2) % N };
-	std::vector<int> new_sz = { configuration[flips[1]], configuration[flips[2]], configuration[flips[0]] };
-
-	//Calculate psi fast and slow
-	MKL_Complex16 pfast, pslow, oldpsi = calc_det();
-	//fast
-	pfast = psi_over_psi_swap(flips[0], flips[1], flips[2]);
-
-	//slow
-	if (std::abs(pfast) > 1e-10) {
-		update(flips);
-		set_configuration(configuration);
-		pslow = calc_det() / oldpsi;
-
-		if (output && std::abs(std::abs(pslow) - std::abs(pfast)) > 1e-8 && std::abs(pfast) > 1e-16) {
-			std::cout << "Test 3 spin swap psi over psi\n";
-			std::cout << "Starting with psi = " << det << "\n";
-			std::cout << "Swap sites " << flips[0] << ", " << flips[1] << ", " << flips[2] << "\n";
-			std::cout << "With sz = " << configuration[flips[0]] << ", " << configuration[flips[1]] << ", " << configuration[flips[2]] << "\n";
-			std::cout << "And new_sz = " << new_sz[0] << ", " << new_sz[1] << ", " << new_sz[2] << "\n";
-			std::cout << "psi fast = " << pfast.real() << " + " << pfast.imag() << "i\n";
-			std::cout << "psi slow = " << pslow.real() << " + " << pslow.imag() << "i\n";
-		}
-	}
-
-	return success;
-}
-
-*/

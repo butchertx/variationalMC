@@ -8,6 +8,11 @@
 #include "mkl.h"
 #include "mkl_types.h"
 
+// convert MKL_Complex16 to std::complex<double>
+inline std::complex<double> to_std_complex(const MKL_Complex16& c) {
+    return std::complex<double>(c.real, c.imag);
+}
+
 bool operator==(const MKL_Complex16& base, const MKL_Complex16& other) {
     return (base.real == other.real && base.imag == other.imag);
 }
