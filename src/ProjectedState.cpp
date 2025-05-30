@@ -1,6 +1,18 @@
 #include "ProjectedState.h"
 #include "mkl_types.h"
 
+// printers
+
+void ProjectedState::print_matrix(std::string name) {
+	// print the Slater matrix
+	if (strcmp(name.c_str(), "Slater") == 0) {
+		Slater.print_matrix();
+	}
+	else if (strcmp(name.c_str(), "Winv") == 0) {
+		Winv.print_matrix();
+	}
+}
+
 // constructors
 
 ProjectedState::ProjectedState(MeanFieldAnsatz& M_, RandomEngine& rand_)
@@ -42,9 +54,9 @@ bool ProjectedState::try_configuration() {
 	if (2 * ((N - N0) / 2) != N - N0) {
 		N0 += 1;
 	}
-	set_configuration(rand.get_rand_spin_state(std::vector<int>{ (N - N0) / 2, N0, (N - N0) / 2 }, N));
+	bool success = set_configuration(rand.get_rand_spin_state(std::vector<int>{ (N - N0) / 2, N0, (N - N0) / 2 }, N));
 
-	return !(Winv.is_determinant_zero());
+	return success;
 }
 
 // TODO: this implementation can be sped up with a lookup table
@@ -60,7 +72,7 @@ int ProjectedState::Spin_t_to_row(int spin_idx){
 	throw vmctype::NotImplemented("Spins other than 1/2 and 1 not implemented.");
 }
 
-void ProjectedState::set_configuration(std::vector<int> conf) {
+bool ProjectedState::set_configuration(std::vector<int> conf) {
 	configuration = conf;
 	int row = 0;
 	auto phi = ansatz.get_Phi();
@@ -73,11 +85,19 @@ void ProjectedState::set_configuration(std::vector<int> conf) {
 		Slater.copy_row(Slater, phi, parton_labels[i], row, N);
 	}
 
-	// invert Slater matrix
-	auto Slater_inverse = Slater.compute_inverse();
+	try{
+		// invert Slater matrix
+		MKL_Complex16 determinant = Slater.compute_inverse();
+		this->determinant_value = to_std_complex(determinant);
 
-	// Multiply phi into Slater^{-1}
-	Winv = phi.get_slice(0, phi.rows(), 0, N) * Slater_inverse;
+		// Multiply phi into Slater^{-1}
+		Winv = phi.get_slice(0, phi.rows(), 0, N) * Slater;
+
+		return true;
+	} catch( const std::runtime_error& e) {
+		// if the Slater matrix is singular, we cannot set this configuration
+		return false;
+	}
 
 }
 
@@ -96,13 +116,13 @@ void ProjectedState::updateMatrixInverse(int rowk, int colk, int rowl, int coll)
 	ComplexDoubleMatrix<MKL_Complex16> WinvU = Winv * U;
 
 	ComplexDoubleMatrix<MKL_Complex16> RatioDiff(2, N);
-	RatioDiff.copy_row(RatioDiff, WinvU, rowk, 0);
-	RatioDiff.copy_row(RatioDiff, WinvU, rowl, 0);
+	RatioDiff.copy_row(RatioDiff, WinvU, 0, rowk);
+	RatioDiff.copy_row(RatioDiff, WinvU, 1, rowl);
 	RatioDiff(0, colk) = RatioDiff(0, colk) - MKL_Complex16({1.0, 0.0});
 	RatioDiff(1, coll) = RatioDiff(1, coll) - MKL_Complex16({1.0, 0.0});
 
 	ComplexDoubleMatrix<MKL_Complex16> Woodbury = ComplexDoubleMatrix<MKL_Complex16>::identity(2) - RatioDiff * U;
-	Woodbury = Woodbury.compute_inverse();
+	Woodbury.compute_inverse();
 
 	Winv = WinvU * Woodbury * RatioDiff;
 }

@@ -43,8 +43,8 @@ target_link_libraries(
     MATRIX
     LATTICE
     MEAN_FIELD_ANSATZ
-    # PROJECTED_STATE
-    # WAVEFUNCTION
+    PROJECTED_STATE
+    WAVEFUNCTION
     $<LINK_ONLY:MKL::MKL>
 )
 

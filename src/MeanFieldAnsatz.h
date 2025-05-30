@@ -181,11 +181,11 @@ public:
 	~MeanFieldAnsatz() {
 	}
 
-	ComplexDoubleMatrix<MKL_Complex16>& get_H() { return HMeanField; }
+	const ComplexDoubleMatrix<MKL_Complex16>& get_H() { return HMeanField; }
 
-	ComplexDoubleMatrix<MKL_Complex16>& get_Phi() { return SingleParticleOrbitals; }
+	const ComplexDoubleMatrix<MKL_Complex16>& get_Phi() { return SingleParticleOrbitals; }
 
-	Matrix<double>& get_Energy() { return SingleParticleEnergies; }
+	const Matrix<double>& get_Energy() { return SingleParticleEnergies; }
 
 	int get_N() { return N; }
 	

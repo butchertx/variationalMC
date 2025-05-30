@@ -14,6 +14,10 @@ inline std::complex<double> to_std_complex(const MKL_Complex16& c) {
     return std::complex<double>(c.real, c.imag);
 }
 
+inline MKL_Complex16 conjugate(const MKL_Complex16& c) {
+    return MKL_Complex16({c.real, -c.imag});
+}
+
 inline bool operator==(const MKL_Complex16& base, const MKL_Complex16& other) {
     return (base.real == other.real && base.imag == other.imag);
 }
@@ -48,18 +52,16 @@ inline MKL_Complex16 operator-(const MKL_Complex16& base) {
     return {-base.real, -base.imag};
 }
 
-inline MKL_Complex16& operator*(MKL_Complex16& base, const MKL_Complex16& other) {
-    MKL_Complex16 result = {base.real * other.real - base.imag * other.imag,
+inline MKL_Complex16 operator*(const MKL_Complex16& base, const MKL_Complex16& other) {
+    return {base.real * other.real - base.imag * other.imag,
                            base.real * other.imag + base.imag * other.real};
-    return result;
 }
 
 // template MKL_Complex operators
 
 template<typename T>
-MKL_Complex16& operator*(MKL_Complex16& base, const T& other) {
-    MKL_Complex16 result = {base.real * other, base.imag * other};
-    return result;
+MKL_Complex16 operator*(const MKL_Complex16& base, const T& other) {
+    return {base.real * other, base.imag * other};
 }
 
 template<typename T>
@@ -67,7 +69,7 @@ class Matrix {
 
 protected:
 
-    T* data_;
+    T* data_ = nullptr;
     MKL_INT64 rows_;
     MKL_INT64 cols_;
 
@@ -75,18 +77,31 @@ public:
 
     Matrix() : data_(nullptr), rows_(0), cols_(0) {}
     Matrix(int rows, int cols) : rows_(rows), cols_(cols) {
+        if (data_ != nullptr) {
+            mkl_free(data_);
+        }
         data_ = (T*) mkl_malloc(rows * cols * sizeof(T), 64);
         for (int i = 0; i < rows * cols; ++i) {
             data_[i] = T(0);
         }
     }
     Matrix(const Matrix<T>& other) : rows_(other.rows_), cols_(other.cols_) {
+        if (data_ != nullptr) {
+            mkl_free(data_);
+        }
         data_ = (T*) mkl_malloc(rows_ * cols_ * sizeof(T), 64);
 		std::memcpy(data_, other.data_, rows_ * cols_ * sizeof(T));
     }
 
     ~Matrix() {
-		mkl_free(data_);
+		if (data_ != nullptr) {
+            mkl_free(data_);
+        }
+    }
+
+    const T* data_ptr() {
+        // for testing
+        return data_;
     }
 
     void clear_matrix() {
@@ -115,6 +130,7 @@ public:
     }
 
     T& operator()(int row, int col) {
+        // assignment operator
         assert(row >= 0 && row < rows_);
         assert(col >= 0 && col < cols_);
         return data_[row * cols_ + col];
@@ -160,6 +176,9 @@ public:
 
     ComplexDoubleMatrix() : Matrix<T>() {}
     ComplexDoubleMatrix(int rows, int cols) {
+        if (this->data_ != nullptr) {
+            mkl_free(this->data_);
+        }
         this->rows_ = rows;
         this->cols_ = cols;
         this->data_ = (T*) mkl_malloc(rows * cols * sizeof(T), 64);
@@ -169,18 +188,35 @@ public:
     }
     ComplexDoubleMatrix(const ComplexDoubleMatrix<T>& other) : Matrix<T>(other) {}
 
-    ~ComplexDoubleMatrix() { /* Destructor will automatically call the base class destructor */ 
+    ~ComplexDoubleMatrix() {
         if (LU_decomposed_) {
             mkl_free(LU_);
             mkl_free(ipiv_);
         }
     }
 
-    void clear_matrix() {
-        // clear the matrix
-        for (int i = 0; i < this->rows_ * this->cols_; ++i) {
-            this->data_[i] = T({0, 0});
-        }
+    void print_matrix(){
+		// this is gross but I don't know how else to format print a complex number
+		int WIDTH = 50;
+		int token_width = 0;
+		int num_spaces = 0;
+		std::stringstream ss;
+		for (int i = 0; i < this->rows_; ++i) {
+			for (int j = 0; j < this->cols_-1; ++j) {
+				ss.str("");
+				ss << to_std_complex(this->data_[i * this->cols_ + j]);
+				token_width = ss.str().length();
+				num_spaces = WIDTH - token_width;
+				if (num_spaces < 1) {
+					num_spaces = 1;
+				}
+				std::cout << std::string(num_spaces, ' ') << to_std_complex(this->data_[i * this->cols_ + j]) << ",";
+			}
+			std::cout << to_std_complex(this->data_[i * this->cols_ + this->cols_ - 1]) << "\n";
+		}
+	}
+
+    void clear_LU() {
         if (LU_decomposed_) {
             mkl_free(LU_);
             mkl_free(ipiv_);
@@ -190,6 +226,15 @@ public:
             LU_ = nullptr;
             ipiv_ = nullptr;
         }
+    }
+
+    void clear_matrix() {
+        // clear the matrix
+        for (int i = 0; i < this->rows_ * this->cols_; ++i) {
+            this->data_[i] = T({0, 0});
+        }
+        clear_LU();
+        
     }
 
     ComplexDoubleMatrix<T> get_slice(int row_start, int row_end, int col_start, int col_end) {
@@ -212,6 +257,17 @@ public:
         ComplexDoubleMatrix<T> result(size, size);
         for (int i = 0; i < size; ++i) {
             result(i, i) = T({1.0, 0.0});
+        }
+        return result;
+    }
+
+    ComplexDoubleMatrix<T> get_conj_transpose() {
+        // returns the conjugate transpose of the matrix
+        ComplexDoubleMatrix<T> result(this->rows_, this->cols_);
+        for (int i = 0; i < this->rows_; ++i) {
+            for (int j = 0; j < this->cols_; ++j) {
+                result(j, i) = conjugate(this->data_[i * this->cols_ + j]);
+            }
         }
         return result;
     }
@@ -261,30 +317,37 @@ public:
         info = LAPACKE_zgetrf(LAPACK_ROW_MAJOR, this->rows_, this->cols_, this->LU_, this->cols_, ipiv_);
         if (info != 0) {
             std::cerr << "Error in LU decomposition: " << info << std::endl;
-            exit(1);
+            clear_LU();
+            throw std::runtime_error("Error in LU decomposition");
         }
         this->LU_decomposed_ = true;
         this->compute_determinant();
     }
 
-    ComplexDoubleMatrix<T> compute_inverse() {
+    T compute_inverse() {
         // computes the inverse of the matrix
         // matrix should be square
-        if (!LU_decomposed_) {
-            populate_LU();
+        // return the determinant since we'll get it for free
+        if (!this->LU_decomposed_) {
+            try {
+                this->populate_LU();
+            }
+            catch( const std::runtime_error& e) {
+                // if the matrix is singular, we cannot invert it
+                std::cerr << "Matrix cannot be inverted: " << e.what() << std::endl;
+                throw e;
+            }
         }
+        T determinant = this->determinant();
         MKL_INT info;
-        T* result_data = (T*) mkl_malloc(this->rows_ * this->cols_ * sizeof(T), 64);
-        std::memcpy(result_data, this->LU_, this->rows_ * this->cols_ * sizeof(T));
-        info = LAPACKE_zgetri(LAPACK_ROW_MAJOR, this->rows_, result_data, this->rows_, this->ipiv_);
+        std::memcpy(this->data_, this->LU_, this->rows_ * this->cols_ * sizeof(T));
+        info = LAPACKE_zgetri(LAPACK_ROW_MAJOR, this->rows_, this->data_, this->cols_, this->ipiv_);
+        clear_LU();
         if (info != 0) {
-            std::cerr << "Error in matrix inversion: " << info << std::endl;
-            exit(1);
+            std::cerr << "Matrix cannot be inverted: " << info << std::endl;
+            throw std::runtime_error("Matrix cannot be inverted");
         }
-        ComplexDoubleMatrix<T> result(this->rows_, this->cols_);
-        std::memcpy(result.data_, result_data, this->rows_ * this->cols_ * sizeof(T));
-        mkl_free(result_data);
-        return result;
+        return determinant;
     }
 
     T compute_determinant() {
@@ -343,7 +406,7 @@ public:
 
     std::pair<ComplexDoubleMatrix<T>, Matrix<double>> hermitian_diagonalize() {
         MKL_INT info;
-        ComplexDoubleMatrix<T> result(*this);
+        ComplexDoubleMatrix<T> result(this->rows_, this->cols_);
         Matrix<double> eigenvalues(this->rows_, 1);
         std::memcpy(result.data_, this->data_, this->rows_ * this->cols_ * sizeof(T));
         info = LAPACKE_zheev_64(LAPACK_ROW_MAJOR, 'V', 'U', result.rows_, result.data_, result.rows_, eigenvalues.data_);

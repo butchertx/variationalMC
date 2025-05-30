@@ -21,6 +21,7 @@ class ProjectedState : public Wavefunction {
 	int N, DIM; // number of sites/particles, and state space dimension
 	std::vector<int> parton_labels;
 	ComplexDoubleMatrix<MKL_Complex16> Slater, Winv;
+	std::complex<double> determinant_value = { 0.0, 0.0 };
 	static const int CONFIG_ATTEMPTS = 50;
 
 	// helpers
@@ -30,7 +31,7 @@ class ProjectedState : public Wavefunction {
 	void clear_matrices();
 	void initialize_configuration();
 	bool try_configuration();
-	void set_configuration(std::vector<int> conf);
+	bool set_configuration(std::vector<int> conf);
 
 	// updates
 	void update_(std::vector<int>& flips, std::vector<int>& new_sz);
@@ -86,6 +87,12 @@ public:
 
 	//Additional Functions
 
+	std::complex<double> determinant() {
+		// returns the determinant of the current configuration
+		// this is the product of the diagonal elements of the Slater matrix
+		return this->determinant_value;
+	}
+
 	std::complex<double> basis_element(int site, int sz) {
 		// to implement this for real, first we retrieve the current determinant
 		// then if conf[site] == sz, we return the current determinant
@@ -93,14 +100,5 @@ public:
 		// return the ratio times the jastrow factor times the current determinant
 		return { 1.0, 0.0 };
 	}
-
-	//Tests
-	// TODO: move these to an appropriate test module
-
-	bool test_2_spin_swap_pop(bool);
-
-	bool test_2_spin_flip_pop(std::vector<int>& flips, std::vector<int>& new_sz);
-
-	bool test_3_spin_swap_pop(bool);
 	
 };

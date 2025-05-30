@@ -72,29 +72,6 @@ bool makePath(const std::string& path)
 	}
 }
 
-template <>
-void vmc_io::print_matrix(const char* desc, int m, int n, std::complex<double>* a, int lda){
-	std::cout << desc << ":\n";
-	// this is gross but I don't know how else to format print a complex number
-	int WIDTH = 16;
-	int token_width = 0;
-	int num_spaces = 0;
-	std::stringstream ss;
-	for (int i = 0; i < m; ++i) {
-		for (int j = 0; j < n-1; ++j) {
-			ss.str("");
-			ss << a[i * lda + j];
-			token_width = ss.str().length();
-			num_spaces = WIDTH - token_width;
-			if (num_spaces < 1) {
-				num_spaces = 1;
-			}
-			std::cout << std::string(num_spaces, ' ') << a[i * lda + j] << ",";
-		}
-		std::cout << a[i * lda + n - 1] << "\n";
-	}
-}
-
 LatticeOptions read_json_lattice(json j) {
 	LatticeOptions lat_opt;
 	lat_opt.type = j["lattice"]["type"].get<std::string>();

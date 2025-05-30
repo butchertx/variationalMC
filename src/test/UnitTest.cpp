@@ -5,7 +5,7 @@
 #include <Matrix.h>
 #include <Lattice.h>
 #include <MeanFieldAnsatz.h>
-// #include <ProjectedState.h>
+#include <ProjectedState.h>
 #include "mkl_types.h"
 
 // Global Variables
@@ -20,8 +20,8 @@
 
 inline void AssertMKLComplexEqual__(const MKL_Complex16& base, const MKL_Complex16& other)
 {
-    ASSERT_DOUBLE_EQ(base.real, other.real);
-    ASSERT_DOUBLE_EQ(base.imag, other.imag);
+    ASSERT_NEAR(base.real, other.real, 1e-12);
+    ASSERT_NEAR(base.imag, other.imag, 1e-12);
 }
 
 #define ASSERT_COMPLEX_EQUAL(base__, other__)  \
@@ -76,6 +76,9 @@ TEST(MatrixTest, MatrixMultiplication) {
     result(1, 1) = {50.0, 0.0};
 
     EXPECT_EQ(m1 * m2, result);
+    EXPECT_EQ(m1.data_ptr(), m1.data_ptr()); // Ensure data pointers are consistent
+    EXPECT_NE(m1.data_ptr(), m2.data_ptr()); // Ensure data pointers are different
+    EXPECT_NE(m1.data_ptr(), result.data_ptr()); // Ensure data pointers are different
 }
 
 TEST(MatrixTest, MatrixDiagonalize){
@@ -91,6 +94,8 @@ TEST(MatrixTest, MatrixDiagonalize){
     result(1, 0) = 1.0;
 
     EXPECT_EQ(eigensystem.second, result);
+    EXPECT_EQ(m.data_ptr(), m.data_ptr()); // Ensure data pointers are consistent
+    EXPECT_NE(m.data_ptr(), eigensystem.first.data_ptr()); // Ensure data pointers are different
 }
 
 TEST(MatrixTest, MatrixNorm){
@@ -108,6 +113,9 @@ TEST(MatrixTest, MatrixNorm){
     EXPECT_EQ(result2(0, 0), sqrt(17.0));
     EXPECT_EQ(result2(0, 1), sqrt(29.0));
     EXPECT_EQ(result2(0, 2), sqrt(45.0));
+
+    EXPECT_EQ(result.data_ptr(), result.data_ptr()); // Ensure data pointers are consistent
+    EXPECT_NE(result.data_ptr(), result2.data_ptr()); // Ensure data pointers are different
 }
 
 TEST(MatrixTest, MatrixCopyRow) {
@@ -123,6 +131,9 @@ TEST(MatrixTest, MatrixCopyRow) {
 
     EXPECT_EQ(m2(1, 0), m1(0, 0));
     EXPECT_EQ(m2(1, 1), m1(0, 1));
+
+    EXPECT_EQ(m1.data_ptr(), m1.data_ptr()); // Ensure data pointers are consistent
+    EXPECT_NE(m1.data_ptr(), m2.data_ptr()); // Ensure data pointers are different
 }
 
 TEST(MatrixTest, MatrixCopyRow2) {
@@ -143,6 +154,9 @@ TEST(MatrixTest, MatrixCopyRow2) {
 
     EXPECT_EQ(m2(1, 0), m1(0, 0));
     EXPECT_EQ(m2(1, 1), m1(0, 1));
+    
+    EXPECT_EQ(m1.data_ptr(), m1.data_ptr()); // Ensure data pointers are consistent
+    EXPECT_NE(m1.data_ptr(), m2.data_ptr()); // Ensure data pointers are different
 }
 
 TEST(MatrixTest, MatrixInverse) {
@@ -152,7 +166,8 @@ TEST(MatrixTest, MatrixInverse) {
     m(1, 0) = {3.0, 0.0};
     m(1, 1) = {4.0, 0.0};
 
-    ComplexDoubleMatrix<MKL_Complex16> inv = m.compute_inverse();
+    ComplexDoubleMatrix<MKL_Complex16> inv(m);
+    inv.compute_inverse();
     std::cout << "Inverse matrix:\n";   
     for (int i = 0; i < 2; ++i) {
         for (int j = 0; j < 2; ++j) {
@@ -164,6 +179,29 @@ TEST(MatrixTest, MatrixInverse) {
     ASSERT_COMPLEX_EQUAL(inv(0, 1), MKL_Complex16({1.0, 0.0}));
     ASSERT_COMPLEX_EQUAL(inv(1, 0), MKL_Complex16({1.5, 0.0}));
     ASSERT_COMPLEX_EQUAL(inv(1, 1), MKL_Complex16({-0.5, 0.0}));
+    
+    EXPECT_EQ(m.data_ptr(), m.data_ptr()); // Ensure data pointers are consistent
+    EXPECT_NE(m.data_ptr(), nullptr); // Ensure data pointers are different
+    EXPECT_NE(m.data_ptr(), inv.data_ptr()); // Ensure data pointers are different
+}
+
+TEST(MatrixTest, MatrixConjugateTranspose) {
+    ComplexDoubleMatrix<MKL_Complex16> m(2, 2);
+    m(0, 0) = {1.0, 0.0};
+    m(0, 1) = {2.0, 1.0};
+    m(1, 0) = {3.0, 0.0};
+    m(1, 1) = {4.0, 1.0};
+
+    ComplexDoubleMatrix<MKL_Complex16> conj_transpose = m.get_conj_transpose();
+
+    ASSERT_COMPLEX_EQUAL(conj_transpose(0, 0), MKL_Complex16({1.0, 0.0}));
+    ASSERT_COMPLEX_EQUAL(conj_transpose(0, 1), MKL_Complex16({3.0, 0.0}));
+    ASSERT_COMPLEX_EQUAL(conj_transpose(1, 0), MKL_Complex16({2.0, -1.0}));
+    ASSERT_COMPLEX_EQUAL(conj_transpose(1, 1), MKL_Complex16({4.0, -1.0}));
+    
+    EXPECT_EQ(m.data_ptr(), m.data_ptr()); // Ensure data pointers are consistent
+    EXPECT_NE(m.data_ptr(), nullptr); // Ensure data pointers are different
+    EXPECT_NE(m.data_ptr(), conj_transpose.data_ptr()); // Ensure data pointers are different
 }
 
 // Lattice Tests
@@ -192,65 +230,90 @@ TEST_F(MFAnsatzTest, CheckFixture) {
     EXPECT_EQ(chainLatticeOne.get_N(), 3);
 }
 
-// // ProjectedState Tests
+// ProjectedState Tests
 
-// class ProjectedStateTest : public ::testing::Test {
+class ProjectedStateTest : public ::testing::Test {
 
-// protected:
-//     void SetUp() override {
-//         chainLatticeHalf = Lattice(Lattice_type_t::CHAIN, vec3<int>(2, 1, 1), vec3<int>(0, 0, 0));
-//         chainLatticeOne = Lattice(Lattice_type_t::CHAIN, vec3<int>(3, 1, 1), vec3<int>(1, 0, 0));
+protected:
+    void SetUp() override {
+        chainLatticeHalf = Lattice(Lattice_type_t::CHAIN, vec3<int>(2, 1, 1), vec3<int>(0, 0, 0));
+        chainLatticeOne = Lattice(Lattice_type_t::CHAIN, vec3<int>(3, 1, 1), vec3<int>(1, 0, 0));
         
-//         chain_half_options = read_json_wavefunction_from_dir(EXAMPLES_DIR + "spin_half/1d/trivial");
-//         chain_one_options = read_json_wavefunction_from_dir(EXAMPLES_DIR + "spin_one/1d/trivial");
+        chain_half_options = read_json_wavefunction_from_dir(EXAMPLES_DIR + "spin_half/1d/trivial");
+        chain_one_options = read_json_wavefunction_from_dir(EXAMPLES_DIR + "spin_one/1d/trivial");
 
-//         mf_ansatz_half = std::shared_ptr<MeanFieldAnsatz>(new MeanFieldAnsatz_HALF(chain_half_options, chainLatticeHalf));
-//         mf_ansatz_one = std::shared_ptr<MeanFieldAnsatz>(new MeanFieldAnsatz_ONE(chain_one_options, chainLatticeOne));
+        mf_ansatz_half = std::shared_ptr<MeanFieldAnsatz>(new MeanFieldAnsatz_HALF(chain_half_options, chainLatticeHalf));
+        mf_ansatz_one = std::shared_ptr<MeanFieldAnsatz>(new MeanFieldAnsatz_ONE(chain_one_options, chainLatticeOne));
+
+        // mf_ansatz_half = new MeanFieldAnsatz_HALF(chain_half_options, chainLatticeHalf);
+        // mf_ansatz_one = new MeanFieldAnsatz_ONE(chain_one_options, chainLatticeOne);
         
-//     }
+    }
 
-//     Lattice chainLatticeHalf, chainLatticeOne;
+    Lattice chainLatticeHalf, chainLatticeOne;
 
-//     WavefunctionOptions chain_half_options, chain_one_options;
+    WavefunctionOptions chain_half_options, chain_one_options;
 
-//     std::shared_ptr<MeanFieldAnsatz> mf_ansatz_half, mf_ansatz_one;
-// };
+    std::shared_ptr<MeanFieldAnsatz> mf_ansatz_half, mf_ansatz_one;
 
-// TEST_F(ProjectedStateTest, CheckFixture) {
-//     EXPECT_EQ(chainLatticeHalf.get_N(), 2);
-//     EXPECT_EQ(chainLatticeOne.get_N(), 3);
+    // MeanFieldAnsatz *mf_ansatz_half, *mf_ansatz_one;
+};
 
-//     RandomEngine r(0, chainLatticeHalf.get_N(), chainLatticeHalf.get_neighbor_counts()[0]);
-//     ProjectedState wf_half(*mf_ansatz_half, r);
-//     std::vector<int> flips({0, 1});
-// 	std::cout << "Starting with psi = " << wf_half.get_det() << "\n";
-//     std::cout << "configuration = " << vec2str(wf_half.get_configuration()) << "\n";
-//     std::cout << "ratio = " << wf_half.psi_over_psi(flips) << "\n";
-//     wf_half.update(flips);
-// 	std::cout << "After update psi = " << wf_half.get_det() << "\n";
-//     std::cout << "configuration = " << vec2str(wf_half.get_configuration()) << "\n";
-//     wf_half.print_matrix("Slater");
-//     wf_half.print_matrix("LU");
-//     wf_half.print_matrix("Winv");
-//     wf_half.print_matrix("UP1");
-//     wf_half.print_matrix("UP2");
-//     wf_half.print_matrix("UP3");
-//     wf_half.print_matrix("ipiv");
+void testOrthonormality(ComplexDoubleMatrix<MKL_Complex16> matrix) {
+    ComplexDoubleMatrix<MKL_Complex16> conj_T = matrix.get_conj_transpose();
 
-//     RandomEngine r2(0, chainLatticeOne.get_N(), chainLatticeOne.get_neighbor_counts()[0]);
-//     ProjectedState wf_one(*mf_ansatz_one, r2);
-//     std::vector<int> flips1({0, 1});
-// 	std::cout << "Starting with psi = " << wf_one.get_det() << "\n";
-//     std::cout << "ratio = " << wf_one.psi_over_psi(flips1) << "\n";
-//     wf_one.update(flips1);
-// 	std::cout << "After update psi = " << wf_one.get_det() << "\n";
-//     std::cout << "configuration = " << vec2str(wf_one.get_configuration()) << "\n";
-//     wf_one.print_matrix("Slater");
-//     wf_one.print_matrix("LU");
-//     wf_one.print_matrix("Winv");
-//     wf_one.print_matrix("UP1");
-//     wf_one.print_matrix("UP2");
-//     wf_one.print_matrix("UP3");
-//     wf_one.print_matrix("ipiv");
-//     EXPECT_TRUE(true);
-// }
+    ASSERT_NE(matrix.data_ptr(), nullptr);
+    ASSERT_NE(matrix.data_ptr(), conj_T.data_ptr());
+    auto matrixTmatrix = conj_T * matrix;
+
+    for (int i = 0; i < matrixTmatrix.rows(); ++i) {
+        for (int j = 0; j < matrixTmatrix.cols(); ++j) {
+            if (i == j) {
+                ASSERT_COMPLEX_EQUAL(matrixTmatrix(i, j), MKL_Complex16({1.0, 0.0}));
+            } else {
+                ASSERT_COMPLEX_EQUAL(matrixTmatrix(i, j), MKL_Complex16({0.0, 0.0}));
+            }
+        }
+    }
+}
+
+TEST_F(ProjectedStateTest, CheckOrthonormalityHalf){
+
+    ComplexDoubleMatrix<MKL_Complex16> matrix = mf_ansatz_half->get_Phi();
+    testOrthonormality(matrix);
+
+}
+
+TEST_F(ProjectedStateTest, CheckOrthonormalityOne){
+    
+    ComplexDoubleMatrix<MKL_Complex16> matrix = mf_ansatz_one->get_Phi();
+    testOrthonormality(matrix);
+
+}
+
+TEST_F(ProjectedStateTest, CheckFixture) {
+    EXPECT_EQ(chainLatticeHalf.get_N(), 2);
+    EXPECT_EQ(chainLatticeOne.get_N(), 3);
+
+    RandomEngine r(0, chainLatticeHalf.get_N(), chainLatticeHalf.get_neighbor_counts()[0]);
+    ProjectedState wf_half(*mf_ansatz_half, r);
+    std::vector<int> flips({0, 1});
+	std::cout << "Starting with psi = " << wf_half.determinant() << "\n";
+    std::cout << "configuration = " << vec2str(wf_half.get_configuration()) << "\n";
+    wf_half.print_matrix("Winv");
+    std::cout << "ratio = " << wf_half.psi_over_psi(flips) << "\n";
+    wf_half.update(flips);
+	// std::cout << "After update psi = " << wf_half.determinant() << "\n";
+    std::cout << "After update configuration = " << vec2str(wf_half.get_configuration()) << "\n";
+
+    // RandomEngine r2(0, chainLatticeOne.get_N(), chainLatticeOne.get_neighbor_counts()[0]);
+    // ProjectedState wf_one(*mf_ansatz_one, r2);
+    // std::vector<int> flips1({0, 1});
+	// std::cout << "Starting with psi = " << wf_one.determinant() << "\n";
+    // std::cout << "ratio = " << wf_one.psi_over_psi(flips1) << "\n";
+    // wf_one.update(flips1);
+	// // std::cout << "After update psi = " << wf_one.determinant() << "\n";
+    // std::cout << "After update configuration = " << vec2str(wf_one.get_configuration()) << "\n";
+
+    EXPECT_TRUE(true);
+}
