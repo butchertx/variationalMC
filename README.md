@@ -4,7 +4,7 @@ C++ implementation of VMC for spin-1/2, spin-1, and SU(3) lattice models
 
 ## Documentation
 
-- [Documentation Homepage](https://butchertx.github.io/variationalMC/index.html)
+- (Work in progress...) [Documentation Homepage](https://butchertx.github.io/variationalMC/index.html)
 
 ### Quick Links
 
