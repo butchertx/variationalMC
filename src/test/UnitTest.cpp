@@ -88,14 +88,17 @@ TEST(MatrixTest, MatrixDiagonalize){
     m(1, 0) = {1.0, 0.0};
     m(1, 1) = {0.0, 0.0};
 
-    auto eigensystem = m.hermitian_diagonalize();
+    ComplexDoubleMatrix<MKL_Complex16> eigenvectors(2, 2);
+    Matrix<double> eigenvalues(2, 1);
+    m.hermitian_diagonalize(eigenvectors, eigenvalues);
+
     Matrix<double> result(2, 1);
     result(0, 0) = -1.0;
     result(1, 0) = 1.0;
 
-    EXPECT_EQ(eigensystem.second, result);
+    EXPECT_EQ(eigenvalues, result);
     EXPECT_EQ(m.data_ptr(), m.data_ptr()); // Ensure data pointers are consistent
-    EXPECT_NE(m.data_ptr(), eigensystem.first.data_ptr()); // Ensure data pointers are different
+    EXPECT_NE(m.data_ptr(), eigenvectors.data_ptr()); // Ensure data pointers are different
 }
 
 TEST(MatrixTest, MatrixNorm){
@@ -230,6 +233,15 @@ TEST_F(MFAnsatzTest, CheckFixture) {
     EXPECT_EQ(chainLatticeOne.get_N(), 3);
 }
 
+TEST_F(MFAnsatzTest, CreateHalfSpinAnsatz) {
+    WavefunctionOptions chain_half_options = read_json_wavefunction_from_dir(EXAMPLES_DIR + "spin_half/1d/trivial");
+    MeanFieldAnsatz_HALF mf_ansatz_half(chain_half_options, chainLatticeHalf);
+    
+    EXPECT_EQ(mf_ansatz_half.get_N(), 2);
+    EXPECT_EQ(mf_ansatz_half.get_dim(), 4);
+    EXPECT_EQ(mf_ansatz_half.get_spin_type(), vmctype::Spin_t::HALF);
+}
+
 // ProjectedState Tests
 
 class ProjectedStateTest : public ::testing::Test {
@@ -281,6 +293,7 @@ TEST_F(ProjectedStateTest, CheckOrthonormalityHalf){
 
     ComplexDoubleMatrix<MKL_Complex16> matrix = mf_ansatz_half->get_Phi();
     testOrthonormality(matrix);
+    std::cout << "Orthonormality check passed for half-spin ansatz.\n";
 
 }
 

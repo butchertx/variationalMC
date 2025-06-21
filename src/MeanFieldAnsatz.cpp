@@ -86,9 +86,7 @@ std::string MeanFieldAnsatz::get_tb_string() {
 }
 
 void MeanFieldAnsatz::diagonalize_hamiltonian() {
-	auto eigensystem = HMeanField.hermitian_diagonalize();
-	SingleParticleOrbitals = eigensystem.first;
-	SingleParticleEnergies = eigensystem.second;
+	HMeanField.hermitian_diagonalize(SingleParticleOrbitals, SingleParticleEnergies);
 }
 
 MeanFieldAnsatz_HALF::MeanFieldAnsatz_HALF(WavefunctionOptions& mf_in, Lattice& lat_in) 
@@ -129,7 +127,7 @@ MeanFieldAnsatz_HALF::MeanFieldAnsatz_HALF(WavefunctionOptions& mf_in, Lattice& 
 	}
 
 	HMeanField = ComplexDoubleMatrix<MKL_Complex16>(DIM, DIM);
-	SingleParticleOrbitals= ComplexDoubleMatrix<MKL_Complex16>(DIM, DIM);
+	SingleParticleOrbitals = ComplexDoubleMatrix<MKL_Complex16>(DIM, DIM);
 	SingleParticleEnergies = Matrix<double>(DIM, 1);
 	set_hamiltonian();
 	diagonalize_hamiltonian();
@@ -223,7 +221,7 @@ MeanFieldAnsatz_ONE::MeanFieldAnsatz_ONE(WavefunctionOptions& mf_in, Lattice& la
 
 	HMeanField = ComplexDoubleMatrix<MKL_Complex16>(DIM, DIM);
 	SingleParticleOrbitals = ComplexDoubleMatrix<MKL_Complex16>(DIM, DIM);
-	SingleParticleEnergies= Matrix<double>(DIM, 1);
+	SingleParticleEnergies = Matrix<double>(DIM, 1);
 	set_hamiltonian();
 	diagonalize_hamiltonian();
 	set_fermi_surface();

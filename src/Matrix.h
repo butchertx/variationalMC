@@ -76,6 +76,7 @@ protected:
 public:
 
     Matrix() : data_(nullptr), rows_(0), cols_(0) {}
+
     Matrix(int rows, int cols) : rows_(rows), cols_(cols) {
         if (data_ != nullptr) {
             mkl_free(data_);
@@ -85,6 +86,7 @@ public:
             data_[i] = T(0);
         }
     }
+
     Matrix(const Matrix<T>& other) : rows_(other.rows_), cols_(other.cols_) {
         if (data_ != nullptr) {
             mkl_free(data_);
@@ -404,16 +406,15 @@ public:
 
     // lapack routines
 
-    std::pair<ComplexDoubleMatrix<T>, Matrix<double>> hermitian_diagonalize() {
+    void hermitian_diagonalize(ComplexDoubleMatrix<T>& eigenvectors, Matrix<double>& eigenvalues) {
+        assert(eigenvectors.rows_ == this->rows_ && eigenvectors.cols_ == this->cols_);
+        assert(eigenvalues.rows_ == this->rows_ && eigenvalues.cols_ == 1);
         MKL_INT info;
-        ComplexDoubleMatrix<T> result(this->rows_, this->cols_);
-        Matrix<double> eigenvalues(this->rows_, 1);
-        std::memcpy(result.data_, this->data_, this->rows_ * this->cols_ * sizeof(T));
-        info = LAPACKE_zheev_64(LAPACK_ROW_MAJOR, 'V', 'U', result.rows_, result.data_, result.rows_, eigenvalues.data_);
+        std::memcpy(eigenvectors.data_, this->data_, this->rows_ * this->cols_ * sizeof(T));
+        info = LAPACKE_zheev_64(LAPACK_ROW_MAJOR, 'V', 'U', eigenvectors.rows_, eigenvectors.data_, eigenvectors.rows_, eigenvalues.data_);
         if (info != 0) {
             std::cerr << "Error in diagonalization: " << info << std::endl;
         }
-        return std::pair<ComplexDoubleMatrix<T>, Matrix<double>>(result, eigenvalues);
     }
 
     ComplexDoubleMatrix<T> operator*(const ComplexDoubleMatrix<T>& other) {
