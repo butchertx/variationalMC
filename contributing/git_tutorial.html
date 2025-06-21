@@ -1,0 +1,193 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Git Tutorial &mdash; variationalMC  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Additional Resources" href="../references/index.html" />
+    <link rel="prev" title="How to extend the code and contribute to the variationalMC" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            variationalMC
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Full Table of Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation/index.html">Installation guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../overview/index.html">Project overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html">Example problems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../lattices/index.html">Lattices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../wavefunctions/index.html">Wavefunctions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../models/index.html">Spin Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../montecarlo/index.html">Variational Monte Carlo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../project_spec/index.html">Project Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../testing/index.html">Test Suite</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">How to extend the code and contribute to the <code class="docutils literal notranslate"><span class="pre">variationalMC</span></code></a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Git Tutorial</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#create-a-new-branch">Create a new branch</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#edit-the-code">Edit the code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#commit-your-changes-to-your-development-branch">Commit your changes to your development branch</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#useful-commands">Useful commands</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#keep-your-branch-up-to-date-with-main">Keep your branch up-to-date with <code class="docutils literal notranslate"><span class="pre">main</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#sync-your-branch-with-main-with-a-rebase">Sync your branch with <code class="docutils literal notranslate"><span class="pre">main</span></code> with a rebase</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#create-a-pull-request">Create a pull request</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../references/index.html">Additional Resources</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">variationalMC</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">How to extend the code and contribute to the <code class="docutils literal notranslate"><span class="pre">variationalMC</span></code></a></li>
+      <li class="breadcrumb-item active">Git Tutorial</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/contributing/git_tutorial.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="git-tutorial">
+<h1>Git Tutorial<a class="headerlink" href="#git-tutorial" title="Link to this heading"></a></h1>
+<p>If you are new to git or want to refresh yourself on the Git Workflow, see [this online tutorial](<a class="reference external" href="https://www.atlassian.com/git/tutorials/setting-up-a-repository">https://www.atlassian.com/git/tutorials/setting-up-a-repository</a>).</p>
+<section id="create-a-new-branch">
+<h2>Create a new branch<a class="headerlink" href="#create-a-new-branch" title="Link to this heading"></a></h2>
+<p>To get started working on a feature, use the command</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>checkout<span class="w"> </span>-b<span class="w"> </span>&lt;descriptive-branch-name&gt;
+</pre></div>
+</div>
+<p>This command creates a new branch <code class="docutils literal notranslate"><span class="pre">&lt;descriptive-branch-name&gt;</span></code> (you don’t have to include the angular brackets), and switches to that new branch as the current branch.</p>
+</section>
+<section id="edit-the-code">
+<h2>Edit the code<a class="headerlink" href="#edit-the-code" title="Link to this heading"></a></h2>
+<p>Make edits to the code to work on your new feature.</p>
+</section>
+<section id="commit-your-changes-to-your-development-branch">
+<h2>Commit your changes to your development branch<a class="headerlink" href="#commit-your-changes-to-your-development-branch" title="Link to this heading"></a></h2>
+<p>Use <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">add</span> <span class="pre">&lt;file&gt;</span></code> to stage changes in a given file.  This marks them to be committed.  Then run <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">commit</span></code> to commit your changes.  This is like pressing <code class="docutils literal notranslate"><span class="pre">ctrl-S</span></code> when working on a file in a text editor; it saves the changes you’ve made to your git branch.  Git will open a terminal editor (vim is the default) where you can type a commit message describing which changes you’ve made in this commit.  To exit vim, type <code class="docutils literal notranslate"><span class="pre">:wq</span></code> and press Enter.  You can also use the shorthand <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">commit</span> <span class="pre">-m</span> <span class="pre">&quot;&lt;message&gt;&quot;</span></code> to create a commit message in one step.</p>
+</section>
+<section id="useful-commands">
+<h2>Useful commands<a class="headerlink" href="#useful-commands" title="Link to this heading"></a></h2>
+<p>Use</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>status
+</pre></div>
+</div>
+<p>to view which branch you’re on, and any changed files that are staged or unstaged:</p>
+<img alt="https://user-images.githubusercontent.com/16173143/202441913-6b84ee3f-2be5-4a42-9c47-04f218fcfe5e.png" src="https://user-images.githubusercontent.com/16173143/202441913-6b84ee3f-2be5-4a42-9c47-04f218fcfe5e.png" />
+<p>The above image demonstrates a series of actions you would take to verify you’re on your development branch, and add and commit any files you’ve changed.</p>
+<p>Another useful command is</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>log
+</pre></div>
+</div>
+<p>This will make a list of the previous commits from your current branch:</p>
+<img alt="https://user-images.githubusercontent.com/16173143/202442235-9a63538f-520f-4948-b4c3-7e19dbcbe1a4.png" src="https://user-images.githubusercontent.com/16173143/202442235-9a63538f-520f-4948-b4c3-7e19dbcbe1a4.png" />
+</section>
+<section id="keep-your-branch-up-to-date-with-main">
+<h2>Keep your branch up-to-date with <code class="docutils literal notranslate"><span class="pre">main</span></code><a class="headerlink" href="#keep-your-branch-up-to-date-with-main" title="Link to this heading"></a></h2>
+<section id="sync-your-branch-with-main-with-a-rebase">
+<h3>Sync your branch with <code class="docutils literal notranslate"><span class="pre">main</span></code> with a rebase<a class="headerlink" href="#sync-your-branch-with-main-with-a-rebase" title="Link to this heading"></a></h3>
+<p>Run</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>fetch
+</pre></div>
+</div>
+<p>to fetch any changes to other branches/code on Github.  Then, run</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>rebase<span class="w"> </span>origin/main
+</pre></div>
+</div>
+<p>This will combine any commits from <code class="docutils literal notranslate"><span class="pre">main</span></code> into your commit history.  There may be merge conflicts that you will need to sort out.  I find this is easiest to do in VS Code with the visual interface (add the Git extension).  It will highlight changes and allow you to point-and-click to keep or discard changes.</p>
+<p>When <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">rebase</span></code> is finished, you will have a branch that can be merged without any conflicts.  Run</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>push<span class="w"> </span>origin<span class="w"> </span>&lt;branch-name&gt;
+</pre></div>
+</div>
+<p>This will push your branch to Github.  (Note: you can and should do this regularly, even if you don’t want to create a pull request yet.  This will allow other users to look at your code by pulling from Github).</p>
+</section>
+</section>
+<section id="create-a-pull-request">
+<h2>Create a pull request<a class="headerlink" href="#create-a-pull-request" title="Link to this heading"></a></h2>
+<p>To get your branch merged back into the main branch, you will need to create a “pull request” on Github.  When you push your branch, and log in to the Github repo, there will be a banner at the top asking you to “Compare &amp; pull request”.  Click this banner.  You will come to a screen that looks like this:</p>
+<img alt="https://user-images.githubusercontent.com/16173143/202440722-1e4832e8-3529-4148-a5a6-e8feedb3a901.png" src="https://user-images.githubusercontent.com/16173143/202440722-1e4832e8-3529-4148-a5a6-e8feedb3a901.png" />
+<p>At the top you can select which branches you want to merge.  You can also add a title and a description, using Markdown for formatting if desired.  Then click “Create pull request”.  This pull request can be viewed, edited, commented on, and eventually merged (by me, &#64;butchertx) by clicking the “Pull requests” tab at the top of the repository site page.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="How to extend the code and contribute to the variationalMC" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../references/index.html" class="btn btn-neutral float-right" title="Additional Resources" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Matt Butcher.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
